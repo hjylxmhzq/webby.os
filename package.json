@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "build": "lerna run build",
-    "start": "lerna run start --parallel --scope apps --scope core --scope client"
+    "start": "lerna run start --parallel --scope apps --scope @webby/core --scope client"
   },
   "devDependencies": {
     "lerna": "^6.6.1"

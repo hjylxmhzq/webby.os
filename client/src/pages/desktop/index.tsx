@@ -3,9 +3,12 @@ import style from './index.module.less';
 import { AppDefinition, appManager, WindowManager } from "src/utils/micro-app";
 import { useEffect, useRef, useState } from "react";
 import { autorun } from "mobx";
+import { http } from '@webby/core/tunnel';
 
+(window as any)._http = http;
 
 export function HomePage() {
+
   const mountPoint = useRef<HTMLDivElement>(null);
   const wm = useRef<WindowManager>();
   const [apps, setApps] = useState<{ [appName: string]: AppDefinition }>({});

@@ -102,6 +102,10 @@ module.exports = {
         target: 'http://127.0.0.1:7001',
         changeOrigin: true,
       },
+      '/tunnel': {
+        target: 'http://127.0.0.1:7001',
+        changeOrigin: true,
+      },
       '/apps': {
         target: 'http://127.0.0.1:7001',
         changeOrigin: true,

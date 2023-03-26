@@ -1,6 +1,6 @@
 import { makeAutoObservable } from "mobx";
 import { Theme } from "src/hooks/common";
-import { AppContext, AppInfo, AppState, AppWindow } from 'core/dist/web-app';
+import { AppContext, AppInfo, AppState, AppWindow } from '@webby/core/dist/web-app';
 import './micro-app.less';
 import { debounce } from "src/utils/common";
 

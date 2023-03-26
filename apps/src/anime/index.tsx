@@ -1,4 +1,4 @@
-import { AppContext, AppInfo } from 'core/web-app';
+import { AppContext, AppInfo } from '@webby/core/web-app';
 
 const iconUrl = 'https://cdn.yinghuazy.xyz/webjs/stui_tpl/statics/img/favicon.ico';
 

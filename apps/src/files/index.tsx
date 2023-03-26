@@ -1,4 +1,4 @@
-import { AppContext, AppInfo } from 'core/web-app';
+import { AppContext, AppInfo } from '@webby/core/web-app';
 
 const iconUrl = 'https://cloud.anylib.cc/favicon.ico';
 

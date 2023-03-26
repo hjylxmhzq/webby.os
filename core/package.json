@@ -1,5 +1,5 @@
 {
-  "name": "core",
+  "name": "@webby/core",
   "version": "1.0.0",
   "main": "./dist/index.js",
   "license": "MIT",
@@ -12,16 +12,20 @@
   ],
   "exports": {
     "./types": {
-      "default": "./dist/types/index.js",
-      "types": "./dist/types/index.d.ts"
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/types/index.js"
     },
     "./web-app": {
-      "default": "./dist/web-app/index.js",
-      "types": "./dist/web-app/index.d.ts"
+      "types": "./dist/web-app/index.d.ts",
+      "default": "./dist/web-app/index.js"
     },
     "./fs": {
-      "default": "./dist/fs/index.js",
-      "types": "./dist/fs/index.d.ts"
+      "types": "./dist/fs/index.d.ts",
+      "default": "./dist/fs/index.js"
+    },
+    "./tunnel": {
+      "types": "./dist/tunnel/index.d.ts",
+      "default": "./dist/tunnel/index.js"
     }
   },
   "devDependencies": {

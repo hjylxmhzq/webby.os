@@ -1,4 +1,4 @@
-import { AppContext, AppInfo } from 'core/web-app';
+import { AppContext, AppInfo } from '@webby/core/web-app';
 import React from 'react';
 import ReactDom from 'react-dom/client';
 import FileBrowser from './file';
