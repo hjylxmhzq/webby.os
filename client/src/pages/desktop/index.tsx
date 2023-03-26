@@ -18,17 +18,20 @@ export function HomePage() {
     if (!mountPoint.current) return;
     wm.current = new WindowManager(mountPoint.current);
     (window as any).wm = wm.current;
+    return () => {
+      wm.current?.destroy();
+    }
   }, []);
   const appNames = Object.keys(apps);
   return <div>
     <Header></Header>
     <div className={style['main-window']}>
+      <img className={style['desktop-bg']} src="https://images4.alphacoders.com/640/640956.jpg" alt="background" />
       <div ref={mountPoint}></div>
       <div className={style['icons-grid']}>
         {
           appNames.map(appName => {
             let app = apps[appName]!;
-            console.log(app)
             let iconUrl = app.getAppInfo().iconUrl;
             return <div key={appName} className={style['app-icon']} onClick={(e) => {
               if (e.button === 0 && mountPoint.current) {

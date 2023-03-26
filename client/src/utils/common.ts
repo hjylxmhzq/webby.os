@@ -7,3 +7,16 @@ export function debounce<T extends Function>(fn: T, delay = 500) {
     }, delay);
   }
 }
+
+export function fullscreen(el: HTMLElement) {
+  let elem: any = el; 
+  if (elem.requestFullScreen) {
+    elem.requestFullScreen();
+  } else if (elem.mozRequestFullScreen) {
+    elem.mozRequestFullScreen();
+  } else if (elem.webkitRequestFullScreen) {
+    elem.webkitRequestFullScreen();
+  } else if (elem.webkitEnterFullScreen) {
+    elem.webkitEnterFullScreen();
+  }
+}

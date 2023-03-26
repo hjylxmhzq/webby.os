@@ -1,5 +1,5 @@
 .header {
-  background-color: var(--bg-medium);
+  background-color: var(--bg-transparent);
   display: flex;
   justify-content: space-between;
   height: 25px;
@@ -11,8 +11,24 @@
   transition: color 0.2s, background-color 0.2s;
   position: relative;
   z-index: 99999;
+  backdrop-filter: blur(6px);
 }
 
 .menu-item {
   margin-right: 10px;
+}
+.right {
+  display: flex;
+  align-items: center;
+  > * {
+    padding: 0 3px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    &:hover {
+      background-color: var(--bg-medium-hover);
+    }
+  }
+}
+.icon {
+  font-size: 12px;
 }

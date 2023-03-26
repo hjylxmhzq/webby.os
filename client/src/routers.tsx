@@ -1,7 +1,7 @@
 import { RouteObject } from 'react-router';
 import FilePage from './pages/file';
 import GalleryPage from './pages/gallery';
-import { HomePage } from './pages/home';
+import { HomePage } from './pages/desktop';
 
 const routers: RouteObject[] = [
   {

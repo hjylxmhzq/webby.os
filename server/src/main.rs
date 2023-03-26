@@ -100,6 +100,7 @@ async fn main() -> Result<(), AppError> {
     App::new()
       .app_data(awmp_config)
       .app_data(web::Data::new(app_state.clone()))
+      .service(routers::tunnel::tunnel_routers())
       .service(routers::fs::file_routers())
       .service(routers::auth::auth_routers())
       .service(routers::gallery::gallery_routers())
