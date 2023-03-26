@@ -11,7 +11,7 @@ export default function Header() {
     function _setTime() {
       let now = new Date();
       let h = now.getHours();
-      let m = (now.getMinutes() + '0').substring(0, 2);
+      let m = ('0' + now.getMinutes()).substring(0, 2);
       let d = '上午';
       if (h >= 12) {
         d = '下午';
