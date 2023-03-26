@@ -1,0 +1,20 @@
+.popover-item {
+  color: var(--font-color);
+  box-shadow: var(--box-shadow);
+  background-color: var(--bg-medium);
+  border-radius: 3px;
+  animation: fade-out 0.2s ease-out 1 forwards;
+}
+
+@keyframes fade-out {
+  from {
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    pointer-events: all;
+    opacity: 1;
+    transform: translateY(0px);
+  }
+}

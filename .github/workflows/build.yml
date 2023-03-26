@@ -1,0 +1,133 @@
+name: Build
+
+on:
+  push:
+    branches: [ "release" ]
+    tags:
+      - '**'   
+  pull_request:
+    branches: [ "release" ]
+    tags:
+      - '**'   
+
+env:
+  CARGO_TERM_COLOR: always
+
+defaults:
+  run:
+    # necessary for windows
+    shell: bash
+
+jobs:
+  cross_build:
+    strategy:
+      fail-fast: false
+      matrix:
+        # a list of all the targets
+        include:
+          - TARGET: x86_64-unknown-linux-gnu # tested in a debian container on a mac
+            OS: ubuntu-latest
+          # - TARGET: x86_64-unknown-linux-musl # test in an alpine container on a mac
+          #   OS: ubuntu-latest
+          # - TARGET: aarch64-unknown-linux-gnu # tested on aws t4g.nano
+          #   OS: ubuntu-latest
+          # - TARGET: aarch64-unknown-linux-musl # tested on aws t4g.nano in alpine container
+          #   OS: ubuntu-latest
+          # - TARGET: armv7-unknown-linux-gnueabihf # raspberry pi 2-3-4, not tested
+          #   OS: ubuntu-latest
+          # - TARGET: armv7-unknown-linux-musleabihf # raspberry pi 2-3-4, not tested
+          #   OS: ubuntu-latest
+          # - TARGET: arm-unknown-linux-gnueabihf # raspberry pi 0-1, not tested
+          #   OS: ubuntu-latest
+          # - TARGET: arm-unknown-linux-musleabihf # raspberry pi 0-1, not tested
+          #   OS: ubuntu-latest
+          - TARGET: x86_64-apple-darwin # tested on a mac, is not properly signed so there are security warnings
+            OS: macos-latest
+          # - TARGET: x86_64-pc-windows-msvc # tested on a windows machine
+          #   OS: windows-latest
+    runs-on: ${{ matrix.OS }}
+    env:
+      NAME: server
+      TARGET: ${{ matrix.TARGET }}
+      OS: ${{ matrix.OS }}
+
+    defaults:
+      run:
+        working-directory: ./server
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup NodeJS Environment
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'yarn'
+          cache-dependency-path: 'client/yarn.lock'
+      - name: Build Frontend
+        working-directory: ./
+        run: bash ./build/frontend.sh
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.TARGET }}
+          override: true
+      - uses: marcopolo/cargo@master
+        with:
+          use-cross: false
+          command: build
+          working-directory: ./server
+          args: --release --target ${{ matrix.TARGET }}
+      - name: List target
+        working-directory: ./server
+        run: find ./target
+      - name: Compress
+        working-directory: ./server
+        run: |
+          mkdir -p ./artifacts
+          # windows is the only OS using a different convention for executable file name
+          if [[ $OS =~ ^windows.*$ ]]; then
+              EXEC=$NAME.exe
+          else
+              EXEC=$NAME
+          fi
+          if [[ $GITHUB_REF_TYPE =~ ^tag$ ]]; then
+            TAG=$GITHUB_REF_NAME
+          else
+            TAG=$GITHUB_SHA
+          fi
+          mv ./target/$TARGET/release/$EXEC ./filego
+          tar -czf ./artifacts/$NAME-$TARGET-$TAG.tar.gz filego
+      - name: Archive artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: result
+          path: |
+            ./server/artifacts
+
+  # deploys to github releases on tag
+  deploy:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: cross_build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: result
+          path: ./artifacts
+      - name: List
+        run: find ./artifacts
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./artifacts/*.tar.gz
+
+    # - name: Build Backend
+    #   run: bash ./build/backend.sh
+    # - name: Upload Build Artifact
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: dist
+    #     path: ./dist

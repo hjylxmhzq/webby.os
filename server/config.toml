@@ -1,0 +1,9 @@
+host = "127.0.0.1"
+port = 7001
+file_root = "./files"
+database_url = "sqlite://./app.db"
+upload_temp_dir = "./files/upload_temp"
+use_ffmpeg_trancode = false
+ffmpeg_bin_path = "ffmpeg"
+indexing_follow_link = true
+authentication = "none"
