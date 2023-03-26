@@ -1,6 +1,10 @@
 use include_dir::{include_dir, Dir};
 
-use std::future::{ready, Ready};
+use std::{
+  future::{ready, Ready},
+  path::PathBuf,
+  str::FromStr,
+};
 
 use actix_web::{
   body::BoxBody,
@@ -8,6 +12,8 @@ use actix_web::{
   Error, HttpResponse,
 };
 use futures_util::future::LocalBoxFuture;
+
+use crate::config;
 
 // There are two steps in middleware processing.
 // 1. Middleware initialization, middleware factory gets called with
@@ -17,10 +23,21 @@ pub struct StaticServer;
 
 static STATIC_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/static");
 
-pub fn get_file<'a>(s: &'a str) -> Option<&'static [u8]> {
+pub fn get_file<'a>(s: &'a str) -> Option<Vec<u8>> {
+  let static_dir = config!(static_dir);
+  if !static_dir.is_empty() && !s.contains("..") {
+    let p = PathBuf::from_str(&static_dir).unwrap().join(s);
+    if p.exists() {
+      let content = std::fs::read(p);
+      if let Ok(content) = content {
+        return Some(content);
+      }
+    }
+  }
+  
   let file = STATIC_DIR.get_file(s);
   if let Some(file) = file {
-    Some(file.contents())
+    Some(file.contents().to_vec())
   } else {
     None
   }
@@ -63,11 +80,17 @@ where
   fn call(&self, req: ServiceRequest) -> Self::Future {
     let p = req.path();
     let ret = get_file(&p[1..]);
+    let g = mime_guess::from_path(p).first();
     if let Some(content) = ret {
       return Box::pin(async move {
-        let resp = HttpResponse::Ok()
-          .insert_header(("cache-control", "max-age=2592000"))
-          .body(content);
+        let mut resp_builder = HttpResponse::Ok();
+        resp_builder.insert_header(("cache-control", "max-age=2592000"));
+        if let Some(g) = g {
+          let mime = g.to_string();
+          resp_builder.content_type(mime);
+        }
+
+        let resp = resp_builder.body(content);
         let r = ServiceResponse::new(req.request().clone(), resp);
         Ok(r)
       });

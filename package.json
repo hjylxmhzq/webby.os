@@ -1,0 +1,17 @@
+{
+  "name": "root",
+  "private": true,
+  "workspaces": [
+    "apps",
+    "client",
+    "core"
+  ],
+  "scripts": {
+    "build": "lerna run build",
+    "start": "lerna run start --parallel --scope apps --scope core --scope client"
+  },
+  "devDependencies": {
+    "lerna": "^6.6.1"
+  },
+  "packageManager": "yarn@3.5.0"
+}

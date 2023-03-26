@@ -15,9 +15,38 @@
   left: 0;
   right: 0;
   bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-content: flex-start;
+  flex-wrap: wrap;
 }
 
 .app-icon {
   width: 100px;
   height: 100px;
+  cursor: pointer;
+  overflow: hidden;
+  border-radius: 5px;
+  text-align: center;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: var(--bg-medium-hover);
+  }
+}
+
+.app-icon-img {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80px;
+
+  >img {
+    user-select: none;
+    border-radius: 5px;
+    overflow: hidden;
+    object-fit: contain;
+    width: 60px;
+    height: 60px;
+  }
 }

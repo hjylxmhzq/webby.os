@@ -5,3 +5,5 @@
 *.db
 /server/files
 /server/static
+node_modules
+.yarn

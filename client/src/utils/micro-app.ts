@@ -1,48 +1,20 @@
 import { makeAutoObservable } from "mobx";
 import { Theme } from "src/hooks/common";
-
-export interface MicroAppContext {
-  window: MicroAppWindowInfo;
-  theme: Theme;
-  appRoot: string;
-  appRootEl: HTMLElement;
-  channel: MessagePort,
-  setWindowSize: (w: number, h: number) => void;
-}
-
-export interface MicroAppWindowInfo {
-  width: number;
-  height: number;
-}
-
-export interface MicroApp {
-  mount(ctx: MicroAppContext): Promise<void>;
-  unmount(ctx: MicroAppContext): Promise<void>;
-  getAppInfo(): Promise<void>;
-}
-interface AppContextInfo {
-  el: HTMLDivElement,
-  name: string,
-  isActive: boolean,
-  app: AppDefinition,
-  mountPoint: HTMLElement,
-  ctx: MicroAppContext,
-  channel: MessagePort,
-}
+import { AppContext, AppInfo, AppState } from 'core/dist/web-app';
 
 const activeZIndex = '9999';
 const nonactiveZIndex = '999';
 
 const builtinApps = [
-  'file-browser',
+  ['file-browser', 'Files'],
 ];
 
-builtinApps.forEach(appName => {
-  installBuiltinApp(appName);
+builtinApps.forEach(([appScriptName, appName]) => {
+  installBuiltinApp(appScriptName, appName);
 });
 
 export class WindowManager {
-  public openedApps: AppContextInfo[] = [];
+  public openedApps: AppState[] = [];
   constructor(public container: HTMLElement) { }
   async postMessage(appName: string, message: any) {
     const app = this.openedApps.find(app => appName === app.name);
@@ -104,8 +76,8 @@ export class WindowManager {
   }
 }
 
-export async function installBuiltinApp(appName: string) {
-  const appScript = process.env.PUBLIC_URL + '/static/js/apps/' + appName + '.js';
+export async function installBuiltinApp(appScriptName: string, appName: string) {
+  const appScript = '/apps/' + appScriptName + '.js';
   installApp(appScript, appName);
 }
 
@@ -113,36 +85,81 @@ export async function installApp(src: string, appName: string) {
   await loadModule(src, appName);
 }
 
-export async function startApp(container: HTMLElement, appName: string, beforeClose: () => void): Promise<AppContextInfo | undefined> {
+export async function startApp(container: HTMLElement, appName: string, beforeClose: () => void): Promise<AppState | undefined> {
 
-  const app = window.apps.get(appName);
+  const app = appManager.get(appName);
   if (!app) {
     console.error('app not installed');
     return;
   }
 
-  const appEl = createAppWindow(appName);
+  const appWindow = createAppWindow(appName, beforeClose);
 
-  appEl.style.opacity = '0';
+  appWindow.setVisible(false);
+  container.appendChild(appWindow.window);
+  setTimeout(() => {
+    appWindow.setVisible(true);
+  });
+
+  const { ctx, sender } = createContext(appWindow.window.id, appWindow.body, 'light');
+  await app.mount(ctx);
+  return {
+    el: appWindow.window,
+    name: appName,
+    app: app,
+    ctx: ctx,
+    isActive: false,
+    channel: sender,
+  };
+}
+
+export function createAppWindow(appName: string, beforeClose?: () => void) {
+  const appEl = document.createElement('div');
+  appEl.id = 'app-' + appName;
+  appEl.style.width = '500px';
+  appEl.style.height = '500px';
+  appEl.style.position = 'fixed';
+  appEl.style.left = '100px';
+  appEl.style.top = '100px';
+  appEl.style.boxShadow = 'var(--box-shadow)';
+  appEl.style.borderRadius = '10px';
   appEl.style.backgroundColor = 'white';
   appEl.style.overflow = 'hidden';
   appEl.style.zIndex = activeZIndex;
+  appEl.style.color = 'var(--font-color)';
+  appEl.style.transition = 'transform 0.2s, opacity 0.2s';
 
-  container.appendChild(appEl);
+  const setVisible = (visible: boolean) => {
+    if (visible) {
+      appEl.style.pointerEvents = 'all';
+      appEl.style.opacity = '1';
+      appEl.style.transform = 'scale(1)';
+    } else {
+      appEl.style.pointerEvents = 'none';
+      appEl.style.opacity = '0';
+      appEl.style.transform = 'scale(0.5)';
+    }
+  }
+
+  appEl.style.opacity = '0';
+
   appEl.style.opacity = '1';
   const titleBar = document.createElement('div');
   titleBar.innerHTML = `<span style="${stylus(`display: flex;
     padding: 0 10px;
     height: 22px;
     font-size: 14px;
-    background-color: #eee;
+    background-color: var(--bg-medium);
     line-height: 22px;
     user-select: none;
-  `)}"><span class="app_window_close_btn">X</span><span style="flex-grow: 1;">${appName}</span></span>`
+  `)}"><span class="app_window_close_btn" style="cursor: pointer;">X</span><span class="title_text" style="flex-grow: 1;">${appName}</span></span>`
   const closeBtn = titleBar.querySelector('.app_window_close_btn') as HTMLSpanElement;
   closeBtn?.addEventListener('click', () => {
-    beforeClose();
-    appEl.parentElement?.removeChild(appEl);
+    beforeClose?.();
+    setVisible(false);
+    setTimeout(() => {
+      appEl.parentElement?.removeChild(appEl);
+    }, 400);
   });
 
   let isMouseDown = false;
@@ -154,7 +171,6 @@ export async function startApp(container: HTMLElement, appName: string, beforeCl
     startElPos = [parseFloat(appEl.style.left), parseFloat(appEl.style.top)];
   });
   window.addEventListener('mouseup', () => {
-    const rect = appEl.getBoundingClientRect();
     isMouseDown = false;
   });
   window.addEventListener('mousemove', (e) => {
@@ -168,39 +184,34 @@ export async function startApp(container: HTMLElement, appName: string, beforeCl
   const mountPoint = document.createElement('div');
   appEl.appendChild(titleBar);
   appEl.appendChild(mountPoint);
-  const { ctx, sender } = createContext(500, 500, appEl.id, mountPoint, 'light');
-  await app.mount(ctx);
+
+  mountPoint.style.cssText = `position: absolute;
+  background-color: var(--bg-medium-hover);
+  top: 22px;
+  bottom: 0;
+  left: 0;
+  right: 0;`;
+
+  const titleText = titleBar.querySelector('.title_text') as HTMLSpanElement;
+  const setTitle = (title: string) => {
+    titleText!.innerText = title;
+  };
   return {
-    el: appEl,
-    mountPoint,
-    name: appName,
-    app: app,
-    ctx: ctx,
-    isActive: false,
-    channel: sender,
+    window: appEl,
+    body: mountPoint,
+    titleBar,
+    setTitle,
+    setVisible
   };
 }
 
-export function createAppWindow(appName: string, width: number = 700, height: number = 600) {
-  const appEl = document.createElement('div');
-  appEl.id = 'app-' + appName;
-  appEl.style.width = '500px';
-  appEl.style.height = '500px';
-  appEl.style.position = 'fixed';
-  appEl.style.left = '100px';
-  appEl.style.top = '20px';
-  appEl.style.boxShadow = '#7367674d 2px 2px 5px 2px';
-  appEl.style.borderRadius = '10px';
-  return appEl;
-}
-
-export function loadModule(src: string, moduleName: string): Promise<MicroApp> {
+export function loadModule(src: string, moduleName: string): Promise<AppDefinition | undefined> {
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.type = 'module';
     script.innerHTML = `
       import { unmount, mount, getAppInfo } from "${src}";
-      window.apps.register('${moduleName}', {
+      window._apps.register('${moduleName}', {
         unmount,
         mount,
         getAppInfo,
@@ -208,6 +219,7 @@ export function loadModule(src: string, moduleName: string): Promise<MicroApp> {
     `;
     script.addEventListener('load', () => {
       script.parentElement?.removeChild(script);
+      resolve(appManager.get(moduleName));
     });
     script.addEventListener('error', (err) => {
       reject(err);
@@ -216,17 +228,13 @@ export function loadModule(src: string, moduleName: string): Promise<MicroApp> {
   })
 }
 
-export function createContext(width: number, height: number, appRoot: string, appRootEl: HTMLElement, theme: Theme) {
+export function createContext(appRoot: string, appRootEl: HTMLElement, theme: Theme) {
   const setWindowSize = (w: number, h: number) => {
     appRootEl.style.width = w + 'px';
     appRootEl.style.height = h + 'px';
   };
   const channel = new MessageChannel();
-  const ctx: MicroAppContext = {
-    window: {
-      width,
-      height,
-    },
+  const ctx: AppContext = {
     appRoot,
     appRootEl,
     theme,
@@ -240,9 +248,9 @@ export function createContext(width: number, height: number, appRoot: string, ap
 }
 
 export interface AppDefinition {
-  mount(ctx: MicroAppContext): Promise<void>;
-  unmount(ctx: MicroAppContext): Promise<void>;
-  getAppInfo(): any;
+  mount(ctx: AppContext): Promise<void>;
+  unmount(ctx: AppContext): Promise<void>;
+  getAppInfo(): AppInfo;
 }
 
 export class AppsRegister {
@@ -262,8 +270,8 @@ export class AppsRegister {
   }
 }
 
-window.apps = new AppsRegister();
-
+export const appManager = new AppsRegister();
+(window as any)._apps = appManager;
 function stylus(s: string) {
   return s.split('\n').join('');
 }

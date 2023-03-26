@@ -27,7 +27,7 @@ const ForkTsCheckerWebpackPlugin =
 const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
 const CopyPlugin = require("copy-webpack-plugin");
 const WriteFilePlugin = require('write-file-webpack-plugin');
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+// const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 const createEnvironmentHash = require('./webpack/persistentCache/createEnvironmentHash');
 
@@ -107,7 +107,6 @@ module.exports = function (webpackEnv) {
   const isEnvProduction = webpackEnv === 'production';
 
   const pages = fs.readdirSync('./src/isolate-pages');
-  const webApps = fs.readdirSync('./src/apps');
 
   const pageEntries = pages.reduce((prev, file) => {
     let entryName = file.split('.')[0];
@@ -119,21 +118,6 @@ module.exports = function (webpackEnv) {
     main: './src/index.tsx',
   });
 
-  const webAppEntries = webApps.reduce((prev, app) => {
-    return {
-      ...prev,
-      ['apps/' + app]: {
-        import: path.join('./src/apps', app, 'index.tsx'),
-        library: {
-          // all options under `output.library` can be used here
-          // name: app,
-          type: 'module',
-          // umdNamedDefine: true,
-        },
-      },
-    }
-  }, {});
-
   const htmlWithChuncks = Object.keys(pageEntries).map(name => {
     return {
       chunks: [name],
@@ -144,9 +128,7 @@ module.exports = function (webpackEnv) {
 
   const entries = {
     ...pageEntries,
-    ...webAppEntries,
   }
-
 
   const htmlPlugins = htmlWithChuncks.map((chunkOption) => {
 
@@ -696,11 +678,11 @@ module.exports = function (webpackEnv) {
           { from: "./node_modules/pdfjs-dist/build/pdf.worker.min.js", to: path.join(paths.appBuild, 'static/js') },
         ],
       }),
-      new BundleAnalyzerPlugin({
-        analyzerMode: 'static',
-        openAnalyzer: false,
-        reportFilename: path.join(paths.appSrc, '../report.html'),
-      }),
+      // new BundleAnalyzerPlugin({
+      //   analyzerMode: 'static',
+      //   openAnalyzer: false,
+      //   reportFilename: path.join(paths.appSrc, '../report.html'),
+      // }),
       new WriteFilePlugin(),
       // Generates an `index.html` file with the <script> injected.
       ...htmlPlugins,

@@ -1,0 +1,32 @@
+{
+  "name": "core",
+  "version": "1.0.0",
+  "main": "./dist/index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsc --watch"
+  },
+  "files": [
+    "./dist"
+  ],
+  "exports": {
+    "./types": {
+      "default": "./dist/types/index.js",
+      "types": "./dist/types/index.d.ts"
+    },
+    "./web-app": {
+      "default": "./dist/web-app/index.js",
+      "types": "./dist/web-app/index.d.ts"
+    },
+    "./fs": {
+      "default": "./dist/fs/index.js",
+      "types": "./dist/fs/index.d.ts"
+    }
+  },
+  "devDependencies": {
+    "ts-loader": "^9.4.2",
+    "typescript": "^5.0.2",
+    "webpack-cli": "^5.0.1"
+  }
+}

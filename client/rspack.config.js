@@ -13,7 +13,6 @@ dirs.forEach(dir => {
 const isProd = process.env.NODE_ENV === 'production';
 const emitSourceMap = isProd ? false : 'source-map';
 const pages = fs.readdirSync('./src/isolate-pages');
-const webApps = fs.readdirSync('./src/apps');
 const outputDir = path.resolve(__dirname, '../server/static');
 
 if (isProd && fs.existsSync(outputDir)) {
@@ -30,21 +29,6 @@ const pageEntries = pages.reduce((prev, file) => {
   index: './src/index.tsx',
 });
 
-const webAppEntries = webApps.reduce((prev, app) => {
-  return {
-    ...prev,
-    ['_app-' + app]: {
-      import: path.join('./src/apps', app, 'index.tsx'),
-      library: {
-        // all options under `output.library` can be used here
-        // name: '_app-' + app,
-        type: 'module',
-        umdNamedDefine: true,
-      },
-    },
-  }
-}, {});
-
 const htmlWithChuncks = Object.keys(pageEntries).map(name => {
   return {
     chunks: [name],
@@ -55,22 +39,17 @@ const htmlWithChuncks = Object.keys(pageEntries).map(name => {
 
 const entries = {
   ...pageEntries,
-  ...webAppEntries,
 }
 
 module.exports = {
   entry: entries,
   output: {
-    filename: '[name].js',
+    filename: '[name]_[hash].js',
     path: outputDir,
-    library: {
-      // all options under `output.library` can be used here
-      // name: '_app-' + app,
-      name: '[name]',
-      type: 'umd',
-      umdNamedDefine: true,
-    },
   },
+  // externals: {
+  //   react: 'React',
+  // },
   resolve: {
     alias: {
       ...srcAlias
@@ -120,6 +99,10 @@ module.exports = {
   devServer: {
     proxy: {
       '/file': {
+        target: 'http://127.0.0.1:7001',
+        changeOrigin: true,
+      },
+      '/apps': {
         target: 'http://127.0.0.1:7001',
         changeOrigin: true,
       },
