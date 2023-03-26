@@ -7,3 +7,4 @@
 /server/static
 node_modules
 .yarn
+/core/dist
