@@ -37,6 +37,10 @@ export interface AppWindow {
   setSize(w: number, h: number): void;
   getSize(): { width: number, height: number };
   checkPos(): void;
+  onBeforeClose(cb: () => void): () => void;
+  onActive(cb: () => void): () => void;
+  onWindowMove(cb: (left: number, top: number) => void): () => void;
+  onWindowResize(cb: (w: number, h: number) => void): () => void;
 }
 export interface AppState {
   el: HTMLElement,

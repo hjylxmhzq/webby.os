@@ -27,6 +27,7 @@ export class WindowManager {
   public onResize: () => void;
   public eventBus = eventbus;
   public activeApp: AppState | null = null;
+  public cacheWindowPos: { [appName: string]: { width: number, height: number, left: number, top: number } } = {};
   constructor(public container: HTMLElement) {
     this.checkActiveTimer = window.setInterval(() => {
       if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') {
@@ -92,22 +93,42 @@ export class WindowManager {
       this.updateActiveApp(existApp);
       return;
     }
-    const beforeClose = (app: AppState) => {
-      app.app.unmount(app.ctx);
+    let app = await startApp(this.container, appName);
+    if (!app) return;
+    const beforeClose = () => {
+      app!.app.unmount(app!.ctx);
       let idx = this.openedApps.findIndex(app => app.name === appName);
       if (idx > -1) {
         this.openedApps.splice(idx, 1);
       }
       const oldApp = this.activeApp;
       this.activeApp = null;
+      unbindMove();
+      unbindResize();
       this.eventBus.emit('active_app_change', null, oldApp);
     };
-    const onActive = (app: AppState) => {
-      console.log('active', app)
-      this.updateActiveApp(app);
+    const onActive = () => {
+      this.updateActiveApp(app!);
     }
-    let app = await startApp(this.container, appName, { beforeClose, onActive });
-    if (!app) return;
+    app.ctx.appWindow.onBeforeClose(beforeClose);
+    app.ctx.appWindow.onActive(onActive);
+    if (this.cacheWindowPos[appName]) {
+      const { width, height, left, top } = this.cacheWindowPos[appName];
+      app.ctx.appWindow.setPos(left, top);
+      app.ctx.appWindow.setSize(width, height);
+    } else {
+      this.cacheWindowPos[appName] = {
+        width: 500, height: 500, left: 0, top: 0,
+      }
+    }
+    let unbindMove = app.ctx.appWindow.onWindowMove((left, top) => {
+      this.cacheWindowPos[appName].left = left;
+      this.cacheWindowPos[appName].top = top;
+    });
+    let unbindResize = app.ctx.appWindow.onWindowResize((w, h) => {
+      this.cacheWindowPos[appName].width = w;
+      this.cacheWindowPos[appName].height = h;
+    });
     app.ctx.appWindow.setActive(true);
     app.ctx.appWindow.focus();
     this.openedApps.push(app);
@@ -141,10 +162,7 @@ export async function installApp(src: string, appName: string) {
   await loadModule(src, appName);
 }
 
-export async function startApp(container: HTMLElement, appName: string, options: {
-  beforeClose?: (app: AppState) => void,
-  onActive?: (app: AppState) => void
-}): Promise<AppState | undefined> {
+export async function startApp(container: HTMLElement, appName: string): Promise<AppState | undefined> {
 
   const app = appManager.get(appName);
   if (!app) {
@@ -152,14 +170,13 @@ export async function startApp(container: HTMLElement, appName: string, options:
     return;
   }
 
-  const appWindow = createAppWindow(appName, { beforeClose: () => options.beforeClose?.(appState), onActive: () => options.onActive?.(appState) });
+  const appWindow = createAppWindow(appName);
 
   appWindow.setVisible(false);
   container.appendChild(appWindow.window);
   setTimeout(() => {
     appWindow.setVisible(true);
   });
-
 
   const { ctx, sender } = createContext(appWindow, 'light');
   await app.mount(ctx);
@@ -175,7 +192,7 @@ export async function startApp(container: HTMLElement, appName: string, options:
 }
 
 let nextWindowOffset = 0;
-export function createAppWindow(appName: string, options: { beforeClose?: () => void, onActive?: () => void }): AppWindow {
+export function createAppWindow(appName: string): AppWindow {
   const clientWidth = document.documentElement.clientWidth;
   const clientHeight = document.documentElement.clientHeight;
 
@@ -235,8 +252,11 @@ export function createAppWindow(appName: string, options: { beforeClose?: () => 
     user-select: none;
   `)}"><span class="app_window_close_btn" style="cursor: pointer;">X</span><span class="title_text" style="flex-grow: 1;">${appName}</span></span>`
   const closeBtn = titleBar.querySelector('.app_window_close_btn') as HTMLSpanElement;
+  let beforeCloseCbs: (() => void)[] = [];
   closeBtn.addEventListener('click', (e) => {
-    options.beforeClose?.();
+    for (let cb of beforeCloseCbs) {
+      cb();
+    }
     setVisible(false);
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', onMouseUp);
@@ -324,39 +344,76 @@ export function createAppWindow(appName: string, options: { beforeClose?: () => 
     startElPos = [parseFloat(appEl.style.left), parseFloat(appEl.style.top)];
   });
   window.addEventListener('mouseup', onMouseUp);
+  const onResizeCbs: ((w: number, h: number) => void)[] = [];
+  const onMoveCbs: ((left: number, top: number) => void)[] = [];
+  const onWindowResize = (cb: (w: number, h: number) => void) => {
+    onResizeCbs.push(cb);
+    return () => {
+      const idx = onResizeCbs.findIndex(c => c === cb);
+      if (idx > -1) {
+        onResizeCbs.splice(idx, 1);
+      }
+    }
+  }
+  const onWindowMove = (cb: (left: number, top: number) => void) => {
+    onMoveCbs.push(cb);
+    return () => {
+      const idx = onMoveCbs.findIndex(c => c === cb);
+      if (idx > -1) {
+        onMoveCbs.splice(idx, 1);
+      }
+    }
+  }
   const onMouseMove = (e: MouseEvent) => {
+    let _w = startElSize[0];
+    let _h = startElSize[1];
+    let _left = startElPos[0];
+    let _top = startElPos[1];
     if (resizing) {
       let delta = [e.clientX - startCursorPos[0], e.clientY - startCursorPos[1]];
       if (resizing & verticalRight) {
-        let w = startElSize[0] + delta[0];
+        const w = startElSize[0] + delta[0];
         if (w >= appWindow.minWidth) {
+          _w = w;
           appEl.style.width = w + 'px';
         }
       }
       if (resizing & horizonBottom) {
-        let h = startElSize[1] + delta[1];
+        const h = startElSize[1] + delta[1];
         if (h >= appWindow.minHeight) {
+          _h = h;
           appEl.style.height = h + 'px';
         }
       }
       if (resizing & horizonTop) {
-        let h = startElSize[1] - delta[1];
+        const h = startElSize[1] - delta[1];
         if (h >= appWindow.minHeight) {
           appEl.style.height = h + 'px';
-          appEl.style.top = startElPos[1] + delta[1] + 'px';
+          const top = startElPos[1] + delta[1];
+          appEl.style.top = top + 'px';
+          _h = h;
+          _top = top;
         }
       }
       if (resizing & verticalLeft) {
-        let w = startElSize[0] - delta[0];
+        const w = startElSize[0] - delta[0];
         if (w >= appWindow.minWidth) {
           appEl.style.width = w + 'px';
-          appEl.style.left = startElPos[0] + delta[0] + 'px';
+          const left = startElPos[0] + delta[0]
+          appEl.style.left = left + 'px';
+          _w = w;
+          _left = left;
         }
       }
+      onMoveCbs.forEach(cb => cb(_left, _top));
+      onResizeCbs.forEach(cb => cb(_w, _h));
     } else if (isMouseDown) {
       let delta = [e.clientX - startCursorPos[0], e.clientY - startCursorPos[1]];
-      appEl.style.left = startElPos[0] + delta[0] + 'px';
-      appEl.style.top = startElPos[1] + delta[1] + 'px';
+      let left = startElPos[0] + delta[0];
+      let top = startElPos[1] + delta[1];
+      appEl.style.left = left + 'px';
+      appEl.style.top = top + 'px';
+      onMoveCbs.forEach(cb => cb(left, top));
     }
   }
   window.addEventListener('mousemove', onMouseMove);
@@ -390,21 +447,21 @@ export function createAppWindow(appName: string, options: { beforeClose?: () => 
         appEl.style.top = ttop + 'px';
         appEl.style.width = twidth + 'px';
         appEl.style.height = theight + 'px';
+        onResizeCbs.forEach(cb => cb(twidth, theight));
+        onMoveCbs.forEach(cb => cb(tleft, ttop));
       });
     } else {
       appEl.style.left = tleft + 'px';
       appEl.style.top = ttop + 'px';
       appEl.style.width = twidth + 'px';
       appEl.style.height = theight + 'px';
+      onResizeCbs.forEach(cb => cb(twidth, theight));
+      onMoveCbs.forEach(cb => cb(tleft, ttop));
     }
   });
   const mountPoint = document.createElement('div');
   appEl.appendChild(titleBar);
   appEl.appendChild(mountPoint);
-
-  appEl.addEventListener('mousedown', () => {
-    options.onActive?.();
-  });
 
   mountPoint.style.cssText = `position: absolute;
   background-color: var(--bg-medium-hover);
@@ -440,7 +497,23 @@ export function createAppWindow(appName: string, options: { beforeClose?: () => 
     appEl.style.left = left + 'px';
     appEl.style.top = top + 'px';
   }
-  let appWindow = {
+  const onActive = (cb: () => void) => {
+    const fn = () => cb();
+    appEl.addEventListener('mousedown', fn);
+    return () => {
+      appEl.removeEventListener('mousedown', fn);
+    };
+  }
+  const onBeforeClose = (cb: () => void) => {
+    beforeCloseCbs.push(cb);
+    return () => {
+      const idx = beforeCloseCbs.findIndex(c => c === cb);
+      if (idx > -1) {
+        beforeCloseCbs.splice(idx, 1);
+      }
+    }
+  }
+  let appWindow: AppWindow = {
     minWidth: 200,
     minHeight: 200,
     window: appEl,
@@ -454,6 +527,10 @@ export function createAppWindow(appName: string, options: { beforeClose?: () => 
     getSize,
     setPos,
     checkPos,
+    onActive,
+    onBeforeClose,
+    onWindowMove,
+    onWindowResize,
   };
   return appWindow;
 }
