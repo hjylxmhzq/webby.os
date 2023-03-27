@@ -1,24 +1,26 @@
 import { AppContext, AppInfo } from '@webby/core/web-app';
+import React from 'react';
+import ReactDom from 'react-dom/client';
+import FilePage from './src/file-page';
 
 const iconUrl = 'https://cloud.anylib.cc/favicon.ico';
 
+let root: ReactDom.Root;
 export async function mount(ctx: AppContext) {
-  const root = ctx.appRootEl;
-  const iframe = document.createElement('iframe');
-  iframe.style.width = '100%';
-  iframe.style.height = '100%';
-  iframe.style.boxSizing = 'border-box';
-  root.appendChild(iframe);
-  iframe.src = 'https://cloud.anylib.cc/';
+  ctx.appWindow.setSize(800, 600);
+  ctx.appWindow.setPos(100, 200);
+  root = ReactDom.createRoot(ctx.appRootEl);
+  const openFile = (file: string) => ctx.openFileBy('Image', file);
+  root.render(<FilePage openFile={openFile}/>)
 }
 
 export async function unmount(ctx: AppContext) {
-  ctx.appRootEl.innerHTML = '';
+  root?.unmount();
 }
 
 export function getAppInfo(): AppInfo {
   return {
-    name: 'Baidu',
+    name: 'Files',
     iconUrl,
     width: 500,
     height: 500,

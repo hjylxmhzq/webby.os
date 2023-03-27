@@ -39,11 +39,12 @@ class ZIndexManager {
 const zIndexManager = new ZIndexManager();
 
 const builtinApps = [
-  ['file-browser', 'Files'],
+  ['file-browser', 'Cloud'],
   ['test', 'Test'],
   ['book', 'Book'],
-  ['files', 'Cloud'],
+  ['files', 'Files'],
   ['anime', 'Anime'],
+  ['image', 'Image'],
 ];
 
 builtinApps.forEach(([appScriptName, appName]) => {
@@ -52,12 +53,18 @@ builtinApps.forEach(([appScriptName, appName]) => {
 
 export class WindowManager {
   public openedApps: AppState[] = [];
-  public checkActiveTimer: number;
-  public onResize: () => void;
+  public checkActiveTimer?: number;
+  public onResize?: () => void;
   public eventBus = eventbus;
   public activeApp: AppState | null = null;
   public cacheWindowPos: { [appName: string]: { width: number, height: number, left: number, top: number } } = {};
-  constructor(public container: HTMLElement) {
+  public container: HTMLElement = document.body;
+  public isInited = false;
+  init(container: HTMLElement) {
+    if (this.isInited) {
+      throw new Error('window manager is already inited');
+    }
+    this.container = container;
     this.checkActiveTimer = window.setInterval(() => {
       if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') {
         let hasActive = false;
@@ -87,6 +94,14 @@ export class WindowManager {
     }, 200);
     window.addEventListener('resize', this.onResize);
   }
+  async openFileBy(appName: string, file: string) {
+    await this.startApp(appName);
+    let existApp = this.getAppByName(appName);
+    if (existApp) {
+      existApp.ctx.openFile(file);
+      return;
+    }
+  }
   updateActiveApp(app: AppState | null) {
     if (this.activeApp !== app) {
       const oldApp = this.activeApp;
@@ -106,7 +121,10 @@ export class WindowManager {
   }
   destroy() {
     window.clearInterval(this.checkActiveTimer);
-    window.removeEventListener('resize', this.onResize);
+    if (this.onResize) {
+      window.removeEventListener('resize', this.onResize);
+    }
+    this.isInited = false;
   }
   async postMessage(appName: string, message: any) {
     const app = this.openedApps.find(app => appName === app.name);
@@ -146,9 +164,13 @@ export class WindowManager {
       app.ctx.appWindow.setPos(left, top);
       app.ctx.appWindow.setSize(width, height);
     } else {
-      this.cacheWindowPos[appName] = {
-        width: 500, height: 500, left: 0, top: 0,
-      }
+      setTimeout(() => {
+        const s = app!.ctx.appWindow.getSize();
+        const p = app!.ctx.appWindow.getPos();
+        this.cacheWindowPos[appName] = {
+          width: s.width, height: s.height, left: p.left, top: p.top,
+        }
+      }, 200);
     }
     let unbindMove = app.ctx.appWindow.onWindowMove((left, top) => {
       this.cacheWindowPos[appName].left = left;
@@ -199,7 +221,7 @@ export async function startApp(container: HTMLElement, appName: string): Promise
     return;
   }
 
-  const appWindow = createAppWindow(appName);
+  const appWindow = createAppWindow(appName, app.container);
 
   appWindow.setVisible(false);
   container.appendChild(appWindow.window);
@@ -221,7 +243,7 @@ export async function startApp(container: HTMLElement, appName: string): Promise
 }
 
 let nextWindowOffset = 0;
-export function createAppWindow(appName: string): AppWindow {
+export function createAppWindow(appName: string, appContainer: HTMLElement): AppWindow {
   const clientWidth = document.documentElement.clientWidth;
   const clientHeight = document.documentElement.clientHeight;
 
@@ -275,7 +297,7 @@ export function createAppWindow(appName: string): AppWindow {
     padding: 0 10px;
     height: 22px;
     font-size: 14px;
-    background-color: var(--bg-medium);
+    background-image: linear-gradient(0deg, #00000042, transparent);
     line-height: 22px;
     user-select: none;
   `)}"><span class="app_window_close_btn" style="cursor: pointer;">X</span><span class="title_text" style="flex-grow: 1;">${appName}</span></span>`
@@ -315,7 +337,7 @@ export function createAppWindow(appName: string): AppWindow {
   const verticalRight = 1 << 3;
 
   resizeHandler.addEventListener('mousedown', (e) => {
-    mountPoint.style.pointerEvents = 'none';
+    appContainer.style.pointerEvents = 'none';
     const el = (e.target as HTMLElement);
     resizing = 0;
     if (el.classList.contains('resize_handler')) {
@@ -355,7 +377,7 @@ export function createAppWindow(appName: string): AppWindow {
     }
   };
   const onMouseUp = () => {
-    mountPoint.style.pointerEvents = 'all';
+    appContainer.style.pointerEvents = 'all';
     checkPos();
     resizing = 0;
     isMouseDown = false;
@@ -366,7 +388,7 @@ export function createAppWindow(appName: string): AppWindow {
   let startElPos = [0, 0];
   let startElSize = [0, 0];
   titleBar.addEventListener('mousedown', (e) => {
-    mountPoint.style.pointerEvents = 'none';
+    appContainer.style.pointerEvents = 'none';
     isMouseDown = true;
     startCursorPos = [e.clientX, e.clientY];
     startElPos = [parseFloat(appEl.style.left), parseFloat(appEl.style.top)];
@@ -487,11 +509,14 @@ export function createAppWindow(appName: string): AppWindow {
       onMoveCbs.forEach(cb => cb(tleft, ttop));
     }
   });
-  const mountPoint = document.createElement('div');
-  appEl.appendChild(titleBar);
-  appEl.appendChild(mountPoint);
 
-  mountPoint.style.cssText = `position: absolute;
+  const mountPoint = document.createElement('div');
+  appContainer.shadowRoot?.appendChild(mountPoint);
+
+  appEl.appendChild(titleBar);
+  appEl.appendChild(appContainer);
+
+  appContainer.style.cssText = `position: absolute;
   background-color: var(--bg-medium-hover);
   top: 22px;
   bottom: 0;
@@ -506,10 +531,20 @@ export function createAppWindow(appName: string): AppWindow {
     appEl.focus();
   };
   const getSize = () => {
-    const rect = appEl.getBoundingClientRect();
+    const w = parseFloat(appEl.style.width);
+    const h = parseFloat(appEl.style.height);
     return {
-      width: rect.width,
-      height: rect.height,
+      width: w,
+      height: h,
+    }
+  };
+
+  const getPos = () => {
+    const left = parseFloat(appEl.style.left);
+    const top = parseFloat(appEl.style.top);
+    return {
+      left,
+      top,
     }
   };
   const getRect = () => {
@@ -520,10 +555,12 @@ export function createAppWindow(appName: string): AppWindow {
     lastRect = getRect();
     appEl.style.width = w + 'px';
     appEl.style.height = h + 'px';
+    onResizeCbs.forEach(cb => cb(w, h));
   };
   const setPos = (left: number, top: number) => {
     appEl.style.left = left + 'px';
     appEl.style.top = top + 'px';
+    onMoveCbs.forEach(cb => cb(left, top));
   }
   const onActive = (cb: () => void) => {
     const fn = () => cb();
@@ -559,21 +596,60 @@ export function createAppWindow(appName: string): AppWindow {
     onBeforeClose,
     onWindowMove,
     onWindowResize,
+    getRect,
+    getPos,
   };
   return appWindow;
 }
 
 export function loadModule(src: string, moduleName: string): Promise<AppDefinition | undefined> {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     const script = document.createElement('script');
-    script.type = 'module';
+    const resp = await fetch(src, { method: 'get' });
+    const scriptContent = await resp.text();
+    const container = document.createElement('div');
+    const shadow = container.attachShadow({ mode: 'open' });
+    const fakeFrame = document.createElement('div');
+    fakeFrame.innerHTML = `
+    <head><title></title></head>
+    `;
+    const mountPoint = document.createElement('div');
+    fakeFrame.appendChild(mountPoint);
+    shadow.appendChild(fakeFrame);
+
     script.innerHTML = `
-      import { unmount, mount, getAppInfo } from "${src}";
-      window._apps.register('${moduleName}', {
-        unmount,
-        mount,
-        getAppInfo,
-      });
+      (function() {
+        
+        const container = document.createElement('div');
+        const shadow = container.attachShadow({mode: 'open'});
+        const fakeFrame = document.createElement('div');
+        const head = document.createElement('div');
+        fakeFrame.appendChild(head);
+        shadow.appendChild(fakeFrame);
+
+        const fakeDocument = __createFakeDocument(fakeFrame, head);
+        const scopedConsole = __createScopeConsole(${JSON.stringify(moduleName)});
+
+        const __module = { exports: {} };
+        
+        (function (window, document, console, module, exports){
+          
+          ${scriptContent}
+  
+        })(window, fakeDocument, scopedConsole, __module, __module.exports);
+        
+        console.log('install app: ${moduleName}', __module);
+        
+        window._apps.register('${moduleName}', {
+          unmount: __module.exports.unmount,
+          mount: __module.exports.mount,
+          getAppInfo: __module.exports.getAppInfo,
+          container,
+        });
+
+        // document.body.appendChild(container);
+
+      })();
     `;
     script.addEventListener('load', () => {
       script.parentElement?.removeChild(script);
@@ -592,7 +668,7 @@ export function createContext(appWindow: AppWindow, theme: Theme) {
     appWindow.window.style.height = h + 'px';
   };
   const channel = new MessageChannel();
-
+  const eventBus = new EventEmitter();
   const ctx: AppContext = {
     appRoot: appWindow.body.id,
     appRootEl: appWindow.body,
@@ -601,6 +677,18 @@ export function createContext(appWindow: AppWindow, theme: Theme) {
     setWindowSize,
     channel: channel.port2,
     systemMenu: [],
+    onOpenFile(cb) {
+      eventBus.on('open_file', cb);
+      return () => {
+        eventBus.off('open_file', cb);
+      }
+    },
+    async openFile(file: string) {
+      eventBus.emit('open_file', file);
+    },
+    async openFileBy(appName: string, file: string) {
+      windowManager.openFileBy(appName, file);
+    }
   };
   const _ctx = makeAutoObservable(ctx);
   return {
@@ -613,6 +701,7 @@ export interface AppDefinition {
   mount(ctx: AppContext): Promise<void>;
   unmount(ctx: AppContext): Promise<void>;
   getAppInfo(): AppInfo;
+  container: HTMLElement;
 }
 
 export class AppsRegister {
@@ -637,3 +726,44 @@ export const appManager = new AppsRegister();
 function stylus(s: string) {
   return s.split('\n').join('');
 }
+
+function createFakeDocument(scope: HTMLElement, scopeHead: HTMLElement) {
+  const proxy = new Proxy(document, {
+    get(target, key: keyof Document) {
+      if (key === 'querySelector') {
+        function q(selector: string) {
+          const el = document.querySelector(selector);
+          if (el?.tagName.toLowerCase() === 'head') {
+            return scopeHead
+          }
+          return scope.querySelector(selector);
+        }
+        return q;
+      } else {
+        if (typeof target[key] === 'function') {
+          const d: any = target[key];
+          return d.bind(target);
+        } else {
+          return target[key];
+        }
+      }
+    }
+  });
+  return proxy
+}
+function createScopeConsole(scope: string) {
+  const proxy = new Proxy(console, {
+    get(target, key: keyof Console) {
+        const c = console[key]
+        if (typeof c === 'function') {
+          return (c as any).bind(console, `[${scope}]: `);
+        }
+        return c;
+    }
+  });
+  return proxy
+}
+(window as any).__createFakeDocument = createFakeDocument;
+(window as any).__createScopeConsole = createScopeConsole;
+
+export const windowManager = new WindowManager();

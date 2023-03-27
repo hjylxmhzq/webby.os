@@ -5,6 +5,8 @@ const iconUrl = 'https://m.xbiquge.so/favicon.ico';
 export async function mount(ctx: AppContext) {
   
   const root = ctx.appRootEl;
+  root.style.position = 'absolute';
+  root.style.inset = '0';
   const iframe = document.createElement('iframe');
   iframe.style.width = '100%';
   iframe.style.height = '100%';

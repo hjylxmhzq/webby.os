@@ -8,6 +8,9 @@ export interface AppContext {
   appWindow: AppWindow,
   systemMenu: AppMenu[],
   setWindowSize: (w: number, h: number) => void;
+  onOpenFile(cb: (file: string) => void): () => void;
+  openFile(file: string): Promise<void>;
+  openFileBy(appName: string, file: string): Promise<void>;
 }
 
 export interface AppDefinition {
@@ -36,6 +39,8 @@ export interface AppWindow {
   setPos(left: number, top: number): void;
   setSize(w: number, h: number): void;
   getSize(): { width: number, height: number };
+  getRect(): DOMRect;
+  getPos(): { left: number, top: number };
   checkPos(): void;
   onBeforeClose(cb: () => void): () => void;
   onActive(cb: () => void): () => void;

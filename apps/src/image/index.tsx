@@ -11,19 +11,19 @@ export async function mount(ctx: AppContext) {
       {
         name: 'anylib',
         onClick() {
-          iframe.src = 'https://www.anylib.cc';
+          img.src = 'https://www.anylib.cc';
         },
       },
       {
         name: 'cloud',
         onClick() {
-          iframe.src = 'https://cloud.anylib.cc';
+          img.src = 'https://cloud.anylib.cc';
         },
       },
       {
         name: 'book',
         onClick() {
-          iframe.src = 'https://m.xbiquge.so';
+          img.src = 'https://m.xbiquge.so';
         },
       }
     ]
@@ -31,14 +31,15 @@ export async function mount(ctx: AppContext) {
   const root = ctx.appRootEl;
   root.style.position = 'absolute';
   root.style.inset = '0';
-  const iframe = document.createElement('iframe');
-  iframe.style.width = '100%';
-  iframe.style.height = '100%';
-  iframe.style.boxSizing = 'border-box';
-  root.appendChild(iframe);
-  iframe.src = 'https://www.anylib.cc';
+  const img = document.createElement('img');
+  img.style.width = '100%';
+  img.style.height = '100%';
+  img.style.boxSizing = 'border-box';
+  img.style.objectFit = 'contain';
+  root.appendChild(img);
+  img.src = 'https://v1.vuepress.vuejs.org/hero.png';
   ctx.onOpenFile((file) => {
-    iframe.src = file;
+    img.src = file;
     console.log('open: ', file);
   });
 }
