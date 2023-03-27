@@ -1,4 +1,4 @@
-import { has, makeAutoObservable } from "mobx";
+import { makeAutoObservable } from "mobx";
 import { Theme } from "src/hooks/common";
 import { AppContext, AppInfo, AppState, AppWindow } from '@webby/core/web-app';
 import './micro-app.less';
@@ -6,8 +6,37 @@ import { debounce } from "src/utils/common";
 import EventEmitter from "events";
 
 const eventbus = new EventEmitter();
-const activeZIndex = '9999';
-const nonactiveZIndex = '999';
+
+class ZIndexManager {
+  public zIndex = 1;
+  public mapping: ([HTMLElement, number])[] = [];
+  setTop(el: HTMLElement) {
+    this.zIndex += 1;
+    el.style.zIndex = this.zIndex + '';
+    const idx = this.mapping.findIndex(([ele]) => ele === el);
+
+    if (idx > -1) {
+      this.mapping[idx][1] = this.zIndex;
+    } else {
+      this.mapping.push([el, this.zIndex]);
+    }
+
+    // rerange
+    this.mapping = this.mapping.filter(([el]) => {
+      if (document.contains(el)) {
+        return true;
+      }
+      return false;
+    });
+    this.mapping.sort((a, b) => { return a[1] - b[1] });
+    this.mapping.forEach(([el], idx) => {
+      this.mapping[idx][1] = idx + 1;
+      el.style.zIndex = idx + 1 + '';
+    });
+    this.zIndex = this.mapping.length;
+  }
+}
+const zIndexManager = new ZIndexManager();
 
 const builtinApps = [
   ['file-browser', 'Files'],
@@ -207,12 +236,12 @@ export function createAppWindow(appName: string): AppWindow {
   appEl.style.borderRadius = '10px';
   appEl.style.backgroundColor = 'white';
   appEl.style.overflow = 'hidden';
-  appEl.style.zIndex = activeZIndex;
   appEl.style.color = 'var(--font-color)';
   appEl.style.backgroundColor = 'var(--bg-medium-hover)';
   appEl.style.transition = 'transform 0.2s, opacity 0.2s, box-shadow 0.1s';
   appEl.style.outline = 'none';
   appEl.tabIndex = 0;
+  zIndexManager.setTop(appEl);
 
   nextWindowOffset = (nextWindowOffset + 20) % 100;
 
@@ -230,10 +259,9 @@ export function createAppWindow(appName: string): AppWindow {
 
   const setActive = (active: boolean) => {
     if (active) {
-      appEl.style.zIndex = activeZIndex;
+      zIndexManager.setTop(appEl);
       appEl.style.boxShadow = 'var(--box-shadow-grow)';
     } else {
-      appEl.style.zIndex = nonactiveZIndex;
       appEl.style.boxShadow = 'var(--box-shadow-shrink)';
     }
   }
