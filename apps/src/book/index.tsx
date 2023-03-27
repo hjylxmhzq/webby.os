@@ -3,6 +3,7 @@ import { AppContext, AppInfo } from '@webby/core/web-app';
 const iconUrl = 'https://m.xbiquge.so/favicon.ico';
 
 export async function mount(ctx: AppContext) {
+  
   const root = ctx.appRootEl;
   const iframe = document.createElement('iframe');
   iframe.style.width = '100%';

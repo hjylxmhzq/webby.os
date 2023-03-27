@@ -6,6 +6,7 @@ export interface AppContext {
   appRootEl: HTMLElement;
   channel: MessagePort,
   appWindow: AppWindow,
+  systemMenu: AppMenu[],
   setWindowSize: (w: number, h: number) => void;
 }
 
@@ -44,4 +45,19 @@ export interface AppState {
   app: AppDefinition,
   ctx: AppContext,
   channel: MessagePort,
+}
+
+export interface AppMenu {
+  name: string;
+  icon?: string | URL | HTMLElement,
+  onClick?(name: AppMenu): void;
+  children?: AppMenu[];
+  shortcut?: string[];
+}
+
+export interface AppControlMenu {
+  icon?: string | URL | HTMLElement,
+  onClick?(name: string): void;
+  children?: AppMenu[];
+  shortcut?: string[];
 }

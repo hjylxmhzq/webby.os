@@ -1,12 +1,12 @@
-import { useNavigate } from "react-router";
 import style from './header.module.less';
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTheme } from "src/hooks/common";
 import Icon from "src/components/icon/icon";
 import { fullscreen } from "src/utils/common";
+import { DropdownMenu } from "src/pages/desktop/components/header/dropdown-menu";
+import { AppMenu, AppState } from '@webby/core/web-app';
 
-export default function Header() {
-  const history = useNavigate();
+export default function Header(props: { menu: AppMenu[], activeApp?: AppState | null }) {
   const [time, setTime] = useState('');
 
   useEffect(() => {
@@ -31,10 +31,28 @@ export default function Header() {
   }, []);
 
   const [theme, toggleTheme] = useTheme();
+  const el = useRef<HTMLDivElement>(null);
 
-  return <div className={style.header}>
-    <nav>
-      <span className={style['menu-item']} onClick={() => history('/', { state: { currentDir: '' } })}>File</span>
+  // useEffect(() => {
+  //   if (!el.current) return;
+  //   const onMousedown = (e: MouseEvent) => {
+  //     e.stopPropagation();
+  //   };
+  //   let ele = el.current;
+  //   ele.addEventListener('mousedown', onMousedown);
+  //   return () => {
+  //     ele.removeEventListener('mousedown', onMousedown);
+  //   }
+  // }, []);
+
+  return <div className={style.header} ref={el}>
+    <nav className={style.left}>
+      <span className={style['menu-item']}>{props.activeApp ? props.activeApp.name : 'Desktop'}</span>
+      {
+        props.menu.map((onemenu) => {
+          return <DropdownMenu key={onemenu.name} menu={onemenu} />;
+        })
+      }
     </nav>
     <span className={style.right}>
       <span onClick={() => {

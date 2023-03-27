@@ -1,9 +1,11 @@
-import { makeAutoObservable } from "mobx";
+import { has, makeAutoObservable } from "mobx";
 import { Theme } from "src/hooks/common";
-import { AppContext, AppInfo, AppState, AppWindow } from '@webby/core/dist/web-app';
+import { AppContext, AppInfo, AppState, AppWindow } from '@webby/core/web-app';
 import './micro-app.less';
 import { debounce } from "src/utils/common";
+import EventEmitter from "events";
 
+const eventbus = new EventEmitter();
 const activeZIndex = '9999';
 const nonactiveZIndex = '999';
 
@@ -23,16 +25,29 @@ export class WindowManager {
   public openedApps: AppState[] = [];
   public checkActiveTimer: number;
   public onResize: () => void;
+  public eventBus = eventbus;
+  public activeApp: AppState | null = null;
   constructor(public container: HTMLElement) {
     this.checkActiveTimer = window.setInterval(() => {
-      if (document.activeElement) {
+      if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') {
+        let hasActive = false;
         this.openedApps.forEach((app) => {
           if (app.ctx.appWindow.window.contains(document.activeElement)) {
+            hasActive = true;
+            if (this.activeApp !== app) {
+              const oldApp = this.activeApp;
+              this.activeApp = app;
+              this.eventBus.emit('active_app_change', app, oldApp);
+            }
             app.ctx.appWindow.setActive(true);
           } else {
             app.ctx.appWindow.setActive(false);
           }
         });
+        if (!hasActive && this.activeApp) {
+          this.eventBus.emit('active_app_change', null, this.activeApp);
+          this.activeApp = null;
+        }
       }
     }, 200);
     this.onResize = debounce(() => {
@@ -41,6 +56,23 @@ export class WindowManager {
       });
     }, 200);
     window.addEventListener('resize', this.onResize);
+  }
+  updateActiveApp(app: AppState | null) {
+    if (this.activeApp !== app) {
+      const oldApp = this.activeApp;
+      this.activeApp = app;
+      this.eventBus.emit('active_app_change', app, oldApp);
+      app?.ctx.appWindow.setActive(true);
+      app?.ctx.appWindow.focus();
+      this.openedApps.forEach(otherApp => {
+        if (otherApp !== app) {
+          otherApp.ctx.appWindow.setActive(false);
+        }
+      });
+    }
+  }
+  getAppByName(name: string) {
+    return this.openedApps.find(app => app.name === name);
   }
   destroy() {
     window.clearInterval(this.checkActiveTimer);
@@ -55,40 +87,31 @@ export class WindowManager {
     }
   }
   async startApp(appName: string) {
-    let isExist = false;
-    this.openedApps.forEach(app => {
-      if (app.name === appName) {
-        isExist = true;
-        app.isActive = true;
-      } else {
-        app.isActive = false;
-      }
-    });
-    if (isExist) {
+    let existApp = this.getAppByName(appName);
+    if (existApp) {
+      this.updateActiveApp(existApp);
       return;
     }
-    this.blur();
-    const beforeClose = () => {
-      app?.app.unmount(app.ctx);
+    const beforeClose = (app: AppState) => {
+      app.app.unmount(app.ctx);
       let idx = this.openedApps.findIndex(app => app.name === appName);
       if (idx > -1) {
         this.openedApps.splice(idx, 1);
       }
+      const oldApp = this.activeApp;
+      this.activeApp = null;
+      this.eventBus.emit('active_app_change', null, oldApp);
     };
-    const onActive = () => {
-      this.openedApps.forEach(app => {
-        app.ctx.appWindow.setActive(false);
-      });
-      app?.ctx.appWindow.setActive(true);
+    const onActive = (app: AppState) => {
+      console.log('active', app)
+      this.updateActiveApp(app);
     }
     let app = await startApp(this.container, appName, { beforeClose, onActive });
     if (!app) return;
     app.ctx.appWindow.setActive(true);
     app.ctx.appWindow.focus();
-    this.openedApps.push({
-      ...app,
-      isActive: true,
-    });
+    this.openedApps.push(app);
+    this.updateActiveApp(app);
   }
   async close(appName: string) {
     const app = this.openedApps.find(app => app.name === appName);
@@ -105,9 +128,7 @@ export class WindowManager {
     app.ctx.appWindow.setActive(true);
   }
   async blur() {
-    this.openedApps.forEach(app => {
-      app.ctx.appWindow.setActive(false);
-    });
+    this.updateActiveApp(null);
   }
 }
 
@@ -120,7 +141,10 @@ export async function installApp(src: string, appName: string) {
   await loadModule(src, appName);
 }
 
-export async function startApp(container: HTMLElement, appName: string, options: { beforeClose?: () => void, onActive?: () => void }): Promise<AppState | undefined> {
+export async function startApp(container: HTMLElement, appName: string, options: {
+  beforeClose?: (app: AppState) => void,
+  onActive?: (app: AppState) => void
+}): Promise<AppState | undefined> {
 
   const app = appManager.get(appName);
   if (!app) {
@@ -128,7 +152,7 @@ export async function startApp(container: HTMLElement, appName: string, options:
     return;
   }
 
-  const appWindow = createAppWindow(appName, { beforeClose: options.beforeClose, onActive: options.onActive });
+  const appWindow = createAppWindow(appName, { beforeClose: () => options.beforeClose?.(appState), onActive: () => options.onActive?.(appState) });
 
   appWindow.setVisible(false);
   container.appendChild(appWindow.window);
@@ -136,9 +160,10 @@ export async function startApp(container: HTMLElement, appName: string, options:
     appWindow.setVisible(true);
   });
 
+
   const { ctx, sender } = createContext(appWindow, 'light');
   await app.mount(ctx);
-  return {
+  let appState = {
     el: appWindow.window,
     name: appName,
     app: app,
@@ -146,16 +171,21 @@ export async function startApp(container: HTMLElement, appName: string, options:
     isActive: false,
     channel: sender,
   };
+  return appState;
 }
 
+let nextWindowOffset = 0;
 export function createAppWindow(appName: string, options: { beforeClose?: () => void, onActive?: () => void }): AppWindow {
+  const clientWidth = document.documentElement.clientWidth;
+  const clientHeight = document.documentElement.clientHeight;
+
   const appEl = document.createElement('div');
   appEl.id = 'app-' + appName;
   appEl.style.width = '500px';
   appEl.style.height = '500px';
   appEl.style.position = 'fixed';
-  appEl.style.left = '100px';
-  appEl.style.top = '100px';
+  appEl.style.left = clientWidth / 2 - 250 + nextWindowOffset + 'px';
+  appEl.style.top = clientHeight / 2 - 250 + nextWindowOffset + 'px';
   appEl.style.boxShadow = 'var(--box-shadow)';
   appEl.style.borderRadius = '10px';
   appEl.style.backgroundColor = 'white';
@@ -166,6 +196,8 @@ export function createAppWindow(appName: string, options: { beforeClose?: () => 
   appEl.style.transition = 'transform 0.2s, opacity 0.2s, box-shadow 0.1s';
   appEl.style.outline = 'none';
   appEl.tabIndex = 0;
+
+  nextWindowOffset = (nextWindowOffset + 20) % 100;
 
   const setVisible = (visible: boolean) => {
     if (visible) {
@@ -203,7 +235,7 @@ export function createAppWindow(appName: string, options: { beforeClose?: () => 
     user-select: none;
   `)}"><span class="app_window_close_btn" style="cursor: pointer;">X</span><span class="title_text" style="flex-grow: 1;">${appName}</span></span>`
   const closeBtn = titleBar.querySelector('.app_window_close_btn') as HTMLSpanElement;
-  closeBtn.addEventListener('click', () => {
+  closeBtn.addEventListener('click', (e) => {
     options.beforeClose?.();
     setVisible(false);
     window.removeEventListener('mousemove', onMouseMove);
@@ -212,6 +244,9 @@ export function createAppWindow(appName: string, options: { beforeClose?: () => 
       appEl.parentElement?.removeChild(appEl);
     }, 400);
   });
+  closeBtn.addEventListener('mousedown', (e) => {
+    e.stopPropagation();
+  })
 
   const resizeHandler = document.createElement('div');
   resizeHandler.innerHTML = `
@@ -452,6 +487,7 @@ export function createContext(appWindow: AppWindow, theme: Theme) {
     appWindow.window.style.height = h + 'px';
   };
   const channel = new MessageChannel();
+
   const ctx: AppContext = {
     appRoot: appWindow.body.id,
     appRootEl: appWindow.body,
@@ -459,9 +495,11 @@ export function createContext(appWindow: AppWindow, theme: Theme) {
     theme,
     setWindowSize,
     channel: channel.port2,
+    systemMenu: [],
   };
+  const _ctx = makeAutoObservable(ctx);
   return {
-    ctx,
+    ctx: _ctx,
     sender: channel.port1,
   };
 }
