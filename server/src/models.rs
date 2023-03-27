@@ -65,3 +65,13 @@ pub struct FileIndexSizeCount {
 pub struct FileIndexLastUpdatedAt {
   pub updated_at: String,
 }
+
+#[derive(Queryable, Debug, Serialize)]
+#[diesel(table_name = kv_storage)]
+pub struct KvStorage {
+  pub username: String,
+  pub key: String,
+  pub value: String,
+  pub collection: String,
+  pub is_private: String,
+}

@@ -15,6 +15,16 @@ diesel::table! {
 }
 
 diesel::table! {
+    kv_storage (username, collection, key) {
+        username -> Text,
+        collection -> Text,
+        key -> Text,
+        value -> Text,
+        is_private -> Bool,
+    }
+}
+
+diesel::table! {
     users (username) {
         username -> Text,
         password -> Text,
@@ -26,5 +36,6 @@ diesel::table! {
 
 diesel::allow_tables_to_appear_in_same_query!(
     file_index,
+    kv_storage,
     users,
 );

@@ -1,8 +1,6 @@
 use crate::utils::error::AppError;
 use actix_web::{self, web, App, HttpServer};
-use chrono::NaiveTime;
 use config::APP_CONFIG;
-use schedulers::update_file_index::JOB_UPDATE_GALLERY;
 use serde::{Deserialize, Serialize};
 use std::{
   collections::HashMap,
@@ -101,6 +99,7 @@ async fn main() -> Result<(), AppError> {
       .app_data(awmp_config)
       .app_data(web::Data::new(app_state.clone()))
       .service(routers::tunnel::tunnel_routers())
+      .service(routers::kv_storage::kv_storage_routers())
       .service(routers::fs::file_routers())
       .service(routers::auth::auth_routers())
       .service(routers::gallery::gallery_routers())
@@ -134,16 +133,6 @@ fn init() -> AppState {
 
   let mut conn = connect_db();
   run_migrations(&mut conn);
-
-  JOB_UPDATE_GALLERY
-    .lock()
-    .unwrap()
-    .set_file_root(&abs_file_root);
-  JOB_UPDATE_GALLERY
-    .lock()
-    .unwrap()
-    .init(NaiveTime::from_hms_opt(3, 0, 0).unwrap())
-    .unwrap();
 
   auto_create_user(&mut conn);
 
