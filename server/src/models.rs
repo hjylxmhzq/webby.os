@@ -66,12 +66,39 @@ pub struct FileIndexLastUpdatedAt {
   pub updated_at: String,
 }
 
-#[derive(Queryable, Debug, Serialize)]
+#[derive(Queryable, Debug, Serialize, Insertable)]
 #[diesel(table_name = kv_storage)]
-pub struct KvStorage {
+pub struct NewKvStorage<'a> {
+  pub username: &'a str,
+  pub collection: &'a str,
+  pub key: &'a str,
+  pub value: &'a str,
+  pub is_private: bool,
+}
+
+#[derive(Queryable, Debug, Serialize, Insertable)]
+#[diesel(table_name = kv_storage)]
+pub struct KvStorageDoc {
   pub username: String,
+  pub collection: String,
   pub key: String,
   pub value: String,
-  pub collection: String,
-  pub is_private: String,
+  pub is_private: bool,
 }
+
+#[derive(Queryable, Debug, Serialize, QueryableByName)]
+#[diesel(table_name = kv_storage)]
+pub struct KvStorageDocOnlyCollection {
+  pub username: String,
+  pub collection: String,
+}
+
+#[derive(Queryable, Debug, Serialize, QueryableByName)]
+#[diesel(table_name = kv_storage)]
+pub struct KvStorageDocNoValue {
+  pub username: String,
+  pub collection: String,
+  pub key: String,
+  pub is_private: bool,
+}
+

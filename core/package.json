@@ -11,6 +11,10 @@
     "./dist"
   ],
   "exports": {
+    "./kv-storage": {
+      "types": "./dist/kv-storage/index.d.ts",
+      "default": "./dist/kv-storage/index.js"
+    },
     "./types": {
       "types": "./dist/types/index.d.ts",
       "default": "./dist/types/index.js"

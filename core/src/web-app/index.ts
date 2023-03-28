@@ -1,4 +1,5 @@
 import { Theme } from "../types/theme";
+import type EventEmitter from 'events';
 
 export interface AppContext {
   theme: Theme;
@@ -9,8 +10,9 @@ export interface AppContext {
   systemMenu: AppMenu[],
   setWindowSize: (w: number, h: number) => void;
   onOpenFile(cb: (file: string) => void): () => void;
-  openFile(file: string): Promise<void>;
+  openFile(file: string): Promise<boolean>;
   openFileBy(appName: string, file: string): Promise<void>;
+  registerExt(ext: string[]): void;
 }
 
 export interface AppDefinition {
@@ -24,6 +26,7 @@ export interface AppInfo {
   height: number,
   name: string,
   iconUrl: string,
+  supportExts: string[],
 }
 
 export interface AppWindow {
@@ -54,6 +57,7 @@ export interface AppState {
   app: AppDefinition,
   ctx: AppContext,
   channel: MessagePort,
+  eventBus: EventEmitter,
 }
 
 export interface AppMenu {

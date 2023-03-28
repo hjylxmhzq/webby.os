@@ -1,0 +1,35 @@
+.checkbox {
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+
+  .tick {
+    transition: opacity 0.2s;
+    opacity: 0;
+    display: block;
+
+    &.checked {
+      opacity: 1;
+    }
+  }
+}
+
+.tick {
+  cursor: pointer;
+  &::after {
+    content: "";
+    width: 20%;
+    height: 50%;
+    display: block;
+    left: 4px;
+    top: 0px;
+    transform: rotate(45deg);
+    position: absolute;
+    border: 2px solid #aaa;
+    border-top-color: transparent;
+    border-left-color: transparent;
+  }
+}

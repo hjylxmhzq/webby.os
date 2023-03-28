@@ -25,5 +25,6 @@ export function getAppInfo(): AppInfo {
     iconUrl,
     width: 500,
     height: 500,
+    supportExts: [],
   }
 }

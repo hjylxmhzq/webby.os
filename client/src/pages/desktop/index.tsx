@@ -5,8 +5,12 @@ import { useEffect, useRef, useState } from "react";
 import { autorun } from "mobx";
 import { http } from '@webby/core/tunnel';
 import { AppMenu, AppState } from "@webby/core/web-app";
+import { Collection } from '@webby/core/kv-storage'
 
 (window as any)._http = http;
+(window as any)._Collection = Collection;
+
+// const remote_store = new Collection('desktop_config');
 
 export function HomePage() {
 
@@ -38,16 +42,16 @@ export function HomePage() {
   return <div>
     <Header menu={currentMenu} activeApp={activeApp}></Header>
     <div className={style['main-window']}>
-      <img className={style['desktop-bg']} onMouseDown={deactiveApps} src="https://images4.alphacoders.com/640/640956.jpg" alt="background" />
+      {/* <img className={style['desktop-bg']} onMouseDown={deactiveApps} src="https://images4.alphacoders.com/640/640956.jpg" alt="background" /> */}
       <div ref={mountPoint}></div>
       <div className={style['icons-grid']} onMouseDown={deactiveApps}>
         {
           appNames.map(appName => {
             let app = apps[appName]!;
             let iconUrl = app.getAppInfo().iconUrl;
-            return <div key={appName} className={style['app-icon']} onClick={(e) => {
+            return <div key={appName} className={style['app-icon']} onClick={async (e) => {
               if (e.button === 0 && mountPoint.current) {
-                windowManager.startApp(appName);
+                await windowManager.startApp(appName);
               }
             }}>
               <div className={style['app-icon-img']}>

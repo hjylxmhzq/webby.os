@@ -1,4 +1,5 @@
 import { AppContext, AppInfo } from '@webby/core/web-app';
+import path from 'path-browserify';
 import React from 'react';
 import ReactDom from 'react-dom/client';
 import FilePage from './src/file-page';
@@ -10,7 +11,13 @@ export async function mount(ctx: AppContext) {
   ctx.appWindow.setSize(800, 600);
   ctx.appWindow.setPos(100, 200);
   root = ReactDom.createRoot(ctx.appRootEl);
-  const openFile = (file: string) => ctx.openFileBy('Image', file);
+  const openFile = async (file: string) => {
+    const is_open = await ctx.openFile(file);
+    if (!is_open) {
+      const ext = path.parse(file).ext;
+      alert(`未找到可打开${ext}后缀文件的App`)
+    }
+  };
   root.render(<FilePage openFile={openFile}/>)
 }
 
@@ -24,5 +31,6 @@ export function getAppInfo(): AppInfo {
     iconUrl,
     width: 500,
     height: 500,
+    supportExts: [],
   }
 }

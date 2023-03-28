@@ -4,7 +4,11 @@ import { AppContext, AppInfo, AppState, AppWindow } from '@webby/core/web-app';
 import './micro-app.less';
 import { debounce } from "src/utils/common";
 import EventEmitter from "events";
+import { http } from '@webby/core/tunnel';
+import { Collection } from "@webby/core/kv-storage";
+import path from "path-browserify";
 
+const store = new Collection('app_manager');
 const eventbus = new EventEmitter();
 
 class ZIndexManager {
@@ -45,6 +49,7 @@ const builtinApps = [
   ['files', 'Files'],
   ['anime', 'Anime'],
   ['image', 'Image'],
+  ['text-editor', 'TextEditor'],
 ];
 
 builtinApps.forEach(([appScriptName, appName]) => {
@@ -64,6 +69,11 @@ export class WindowManager {
     if (this.isInited) {
       throw new Error('window manager is already inited');
     }
+    store.get('cacheWindowPos').then((v) => {
+      if (v) {
+        this.cacheWindowPos = JSON.parse(v);
+      }
+    });
     this.container = container;
     this.checkActiveTimer = window.setInterval(() => {
       if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') {
@@ -94,11 +104,20 @@ export class WindowManager {
     }, 200);
     window.addEventListener('resize', this.onResize);
   }
+  async openFile(file: string) {
+    const ext = path.parse(file).ext;
+    const apps = appManager.getSupportedAppsByExt(ext);
+    if (apps.length) {
+      await this.openFileBy(apps[0], file);
+      return true;
+    }
+    return false;
+  }
   async openFileBy(appName: string, file: string) {
     await this.startApp(appName);
     let existApp = this.getAppByName(appName);
     if (existApp) {
-      existApp.ctx.openFile(file);
+      existApp.eventBus.emit('open_file', file);
       return;
     }
   }
@@ -164,22 +183,22 @@ export class WindowManager {
       app.ctx.appWindow.setPos(left, top);
       app.ctx.appWindow.setSize(width, height);
     } else {
-      setTimeout(() => {
-        const s = app!.ctx.appWindow.getSize();
-        const p = app!.ctx.appWindow.getPos();
-        this.cacheWindowPos[appName] = {
-          width: s.width, height: s.height, left: p.left, top: p.top,
-        }
-      }, 200);
+      const s = app!.ctx.appWindow.getSize();
+      const p = app!.ctx.appWindow.getPos();
+      this.cacheWindowPos[appName] = {
+        width: s.width, height: s.height, left: p.left, top: p.top,
+      }
     }
-    let unbindMove = app.ctx.appWindow.onWindowMove((left, top) => {
+    let unbindMove = app.ctx.appWindow.onWindowMove(debounce((left: number, top: number) => {
       this.cacheWindowPos[appName].left = left;
       this.cacheWindowPos[appName].top = top;
-    });
-    let unbindResize = app.ctx.appWindow.onWindowResize((w, h) => {
+      store.set('cacheWindowPos', JSON.stringify(this.cacheWindowPos));
+    }, 1000));
+    let unbindResize = app.ctx.appWindow.onWindowResize(debounce((w: number, h: number) => {
       this.cacheWindowPos[appName].width = w;
       this.cacheWindowPos[appName].height = h;
-    });
+      store.set('cacheWindowPos', JSON.stringify(this.cacheWindowPos));
+    }, 1000));
     app.ctx.appWindow.setActive(true);
     app.ctx.appWindow.focus();
     this.openedApps.push(app);
@@ -229,7 +248,7 @@ export async function startApp(container: HTMLElement, appName: string): Promise
     appWindow.setVisible(true);
   });
 
-  const { ctx, sender } = createContext(appWindow, 'light');
+  const { ctx, sender, eventBus } = createContext(appWindow, 'light');
   await app.mount(ctx);
   let appState = {
     el: appWindow.window,
@@ -238,6 +257,7 @@ export async function startApp(container: HTMLElement, appName: string): Promise
     ctx: ctx,
     isActive: false,
     channel: sender,
+    eventBus,
   };
   return appState;
 }
@@ -605,17 +625,15 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
 export function loadModule(src: string, moduleName: string): Promise<AppDefinition | undefined> {
   return new Promise(async (resolve, reject) => {
     const script = document.createElement('script');
-    const resp = await fetch(src, { method: 'get' });
-    const scriptContent = await resp.text();
-    const container = document.createElement('div');
-    const shadow = container.attachShadow({ mode: 'open' });
-    const fakeFrame = document.createElement('div');
-    fakeFrame.innerHTML = `
-    <head><title></title></head>
-    `;
-    const mountPoint = document.createElement('div');
-    fakeFrame.appendChild(mountPoint);
-    shadow.appendChild(fakeFrame);
+    let scriptContent;
+    if (src.startsWith('http://') || src.startsWith('https://')) {
+      const resp = await http.fetch(src, { method: 'get' });
+      scriptContent = await resp.text();
+    } else {
+      const resp = await fetch(src, { method: 'get' });
+      scriptContent = await resp.text();
+    }
+    const escapedModuleName = JSON.stringify(moduleName);
 
     script.innerHTML = `
       (function() {
@@ -628,7 +646,8 @@ export function loadModule(src: string, moduleName: string): Promise<AppDefiniti
         shadow.appendChild(fakeFrame);
 
         const fakeDocument = __createFakeDocument(fakeFrame, head);
-        const scopedConsole = __createScopeConsole(${JSON.stringify(moduleName)});
+        const scopedConsole = __createScopeConsole(${escapedModuleName});
+        const fakeWindow = __createFakeWindow();
 
         const __module = { exports: {} };
         
@@ -636,11 +655,11 @@ export function loadModule(src: string, moduleName: string): Promise<AppDefiniti
           
           ${scriptContent}
   
-        })(window, fakeDocument, scopedConsole, __module, __module.exports);
+        })(fakeWindow, fakeDocument, scopedConsole, __module, __module.exports);
         
-        console.log('install app: ${moduleName}', __module);
+        console.log('install app: ${escapedModuleName}', __module);
         
-        window._apps.register('${moduleName}', {
+        window._apps.register(${escapedModuleName}, {
           unmount: __module.exports.unmount,
           mount: __module.exports.mount,
           getAppInfo: __module.exports.getAppInfo,
@@ -656,6 +675,7 @@ export function loadModule(src: string, moduleName: string): Promise<AppDefiniti
       resolve(appManager.get(moduleName));
     });
     script.addEventListener('error', (err) => {
+      script.parentElement?.removeChild(script);
       reject(err);
     })
     document.body.appendChild(script);
@@ -669,7 +689,12 @@ export function createContext(appWindow: AppWindow, theme: Theme) {
   };
   const channel = new MessageChannel();
   const eventBus = new EventEmitter();
+  const supportExts: string[] = [];
+  const registerExt = (ext: string[]) => {
+    supportExts.push(...ext);
+  }
   const ctx: AppContext = {
+    registerExt,
     appRoot: appWindow.body.id,
     appRootEl: appWindow.body,
     appWindow,
@@ -683,8 +708,8 @@ export function createContext(appWindow: AppWindow, theme: Theme) {
         eventBus.off('open_file', cb);
       }
     },
-    async openFile(file: string) {
-      eventBus.emit('open_file', file);
+    async openFile(file: string): Promise<boolean> {
+      return await windowManager.openFile(file);
     },
     async openFileBy(appName: string, file: string) {
       windowManager.openFileBy(appName, file);
@@ -694,6 +719,7 @@ export function createContext(appWindow: AppWindow, theme: Theme) {
   return {
     ctx: _ctx,
     sender: channel.port1,
+    eventBus,
   };
 }
 
@@ -716,6 +742,24 @@ export class AppsRegister {
   get(appName: string): undefined | AppDefinition {
     return this.apps[appName];
   };
+  getSupportedAppsByExt(ext: string): string[] {
+    function normalize(ext: string) {
+      while (ext.startsWith('.')) {
+        ext = ext.slice(1);
+      }
+      return ext;
+    }
+    return Object.keys(this.apps).filter(appName => {
+      const app = this.apps[appName];
+      const info = app.getAppInfo();
+      for (let e of info.supportExts) {
+        if (normalize(e) === normalize(ext)) {
+          return true;
+        }
+      }
+      return false;
+    })
+  }
   all() {
     return Object.keys(this.apps);
   }
@@ -751,18 +795,43 @@ function createFakeDocument(scope: HTMLElement, scopeHead: HTMLElement) {
   });
   return proxy
 }
-function createScopeConsole(scope: string) {
-  const proxy = new Proxy(console, {
-    get(target, key: keyof Console) {
-        const c = console[key]
-        if (typeof c === 'function') {
-          return (c as any).bind(console, `[${scope}]: `);
+
+function createFakeWindow() {
+  const fakeWindow = Object.create(null);
+  const proxy = new Proxy(window, {
+    get(target, key: any) {
+      if (fakeWindow[key] !== undefined) {
+        return fakeWindow[key];
+      } else {
+        if (typeof target[key] === 'function') {
+          let d: any = target[key];
+          return d.bind(target);
+        } else {
+          return target[key];
         }
-        return c;
+      }
+    },
+    set(target, key, value) {
+      fakeWindow[key] = value;
+      return true;
     }
   });
   return proxy
 }
+
+function createScopeConsole(scope: string) {
+  const proxy = new Proxy(console, {
+    get(target, key: keyof Console) {
+      const c = console[key]
+      if (typeof c === 'function') {
+        return (c as any).bind(console, `[${scope}]: `);
+      }
+      return c;
+    }
+  });
+  return proxy
+}
+(window as any).__createFakeWindow = createFakeWindow;
 (window as any).__createFakeDocument = createFakeDocument;
 (window as any).__createScopeConsole = createScopeConsole;
 

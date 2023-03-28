@@ -81,6 +81,14 @@ export async function read_text_file(dir: string, file: string) {
   return content;
 }
 
+export async function read_file(file: string): Promise<Blob> {
+  const url = new URL('/file/read', window.location.origin);
+  const file_path = path.join(file);
+  let resp = await post_raw(url.toString(), { file: file_path });
+  let content = await resp.blob();
+  return content;
+}
+
 export async function read_zip_entries(dir: string, file: string) {
   const url = new URL('/file/read_zip_entries', window.location.origin);
   const file_path = path.join(dir, file);
