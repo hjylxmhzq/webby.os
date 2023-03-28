@@ -63,7 +63,7 @@ jobs:
         with:
           node-version: 16
           cache: 'yarn'
-          cache-dependency-path: 'client/yarn.lock'
+          cache-dependency-path: 'yarn.lock'
       - name: Build Frontend
         working-directory: ./
         run: bash ./build/frontend.sh
