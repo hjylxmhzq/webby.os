@@ -51,6 +51,7 @@ const builtinApps = [
   ['image', 'Image'],
   ['text-editor', 'TextEditor'],
   ['setting', 'Setting'],
+  ['video-player', 'VideoPlayer'],
 ];
 
 builtinApps.forEach(([appScriptName, appName]) => {
@@ -784,6 +785,8 @@ function createFakeDocument(scope: HTMLElement, scopeHead: HTMLElement) {
           return scope.querySelector(selector);
         }
         return q;
+      } else if (key === 'head') {
+        return scopeHead;
       } else {
         if (typeof target[key] === 'function') {
           const d: any = target[key];
