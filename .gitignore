@@ -6,5 +6,5 @@
 /server/files
 /server/static
 node_modules
-.yarn
+.yarn/cache
 /core/dist
