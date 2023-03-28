@@ -23,6 +23,17 @@ module.exports = {
         exclude: /node_modules/,
       },
       {
+        test: /\.(png|jpg|gif|svg)$/i,
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              limit: 8192,
+            },
+          },
+        ],
+      },
+      {
         test: /\.less$/,
         exclude: /\.module\.less$/,
         use: ['style-loader', 'css-loader', 'less-loader'],

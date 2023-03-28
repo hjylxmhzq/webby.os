@@ -50,6 +50,7 @@ const builtinApps = [
   ['anime', 'Anime'],
   ['image', 'Image'],
   ['text-editor', 'TextEditor'],
+  ['setting', 'Setting'],
 ];
 
 builtinApps.forEach(([appScriptName, appName]) => {

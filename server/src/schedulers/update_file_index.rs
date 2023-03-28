@@ -52,10 +52,12 @@ impl UpdateGalleryJob {
     }
   }
 
+  #[allow(unused)]
   pub fn set_file_root(&mut self, file_root: &PathBuf) {
     self.file_root = Some(file_root.clone());
   }
 
+  #[allow(unused)]
   pub fn stop(&mut self) {
     if let Some(_) = self.schedule_handle {
       let s = self.schedule_handle.take().unwrap();
@@ -242,6 +244,7 @@ impl UpdateGalleryJob {
     Ok(())
   }
 
+  #[allow(unused)]
   pub fn init(&mut self, at_time: NaiveTime) -> Result<(), AppError> {
     self.stop();
     // Create a new scheduler

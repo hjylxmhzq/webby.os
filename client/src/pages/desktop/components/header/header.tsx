@@ -5,6 +5,24 @@ import Icon from "src/components/icon/icon";
 import { fullscreen } from "src/utils/common";
 import { DropdownMenu } from "src/pages/desktop/components/header/dropdown-menu";
 import { AppMenu, AppState } from '@webby/core/web-app';
+import { logout } from 'src/apis/auth';
+import { windowManager } from 'src/utils/micro-app';
+
+const luanchMenu: AppMenu = {
+  name: 'Desktop',
+  children: [{
+    name: '系统设置',
+    async onClick() {
+      windowManager.startApp('Setting');
+    }
+  }, {
+    name: '退出登录',
+    async onClick() {
+      await logout();
+      window.location.href = '/login';
+    }
+  }]
+}
 
 export default function Header(props: { menu: AppMenu[], activeApp?: AppState | null }) {
   const [time, setTime] = useState('');
@@ -33,21 +51,9 @@ export default function Header(props: { menu: AppMenu[], activeApp?: AppState | 
   const [theme, toggleTheme] = useTheme();
   const el = useRef<HTMLDivElement>(null);
 
-  // useEffect(() => {
-  //   if (!el.current) return;
-  //   const onMousedown = (e: MouseEvent) => {
-  //     e.stopPropagation();
-  //   };
-  //   let ele = el.current;
-  //   ele.addEventListener('mousedown', onMousedown);
-  //   return () => {
-  //     ele.removeEventListener('mousedown', onMousedown);
-  //   }
-  // }, []);
-
   return <div className={style.header} ref={el}>
     <nav className={style.left}>
-      <span className={style['menu-item']}>{props.activeApp ? props.activeApp.name : 'Desktop'}</span>
+      <DropdownMenu menu={luanchMenu} />
       {
         props.menu.map((onemenu) => {
           return <DropdownMenu key={onemenu.name} menu={onemenu} />;
