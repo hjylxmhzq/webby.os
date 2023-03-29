@@ -4805,6 +4805,7 @@ __metadata:
   resolution: "apps@workspace:apps"
   dependencies:
     "@webby/core": "*"
+    client: "*"
     css-loader: ^6.7.3
     less: ^4.1.3
     less-loader: ^11.1.0
@@ -5874,7 +5875,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"client@workspace:client":
+"client@*, client@workspace:client":
   version: 0.0.0-use.local
   resolution: "client@workspace:client"
   dependencies:
@@ -5892,6 +5893,7 @@ __metadata:
     "@types/path-browserify": ^1.0.0
     "@types/react": ^18.0.27
     "@types/react-dom": ^18.0.10
+    "@webby/core": "*"
     axios: ^1.3.2
     babel-jest: ^27.4.2
     babel-loader: ^8.2.3
