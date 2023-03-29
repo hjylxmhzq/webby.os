@@ -6,6 +6,7 @@ import { autorun } from "mobx";
 import { http } from '@webby/core/tunnel';
 import { AppMenu, AppState } from "@webby/core/web-app";
 import { Collection } from '@webby/core/kv-storage'
+import { debounce } from "src/utils/common";
 
 (window as any)._http = http;
 (window as any)._Collection = Collection;
@@ -20,9 +21,8 @@ export function HomePage() {
   const [activeApp, setActiveApp] = useState<AppState | null>(null);
 
   useEffect(() => {
-    autorun(() => {
-      let app = appManager.apps;
-      setApps({ ...app });
+    const unbind = appManager.onAppInstalled(() => {
+      setApps({ ...appManager.apps });
     });
     if (!mountPoint.current) return;
     windowManager.init(mountPoint.current);
@@ -32,7 +32,7 @@ export function HomePage() {
       else setCurrentMenu([]);
     });
     return () => {
-      windowManager.destroy();
+      unbind();
     }
   }, []);
   const appNames = Object.keys(apps).sort();

@@ -42,22 +42,6 @@ class ZIndexManager {
 }
 const zIndexManager = new ZIndexManager();
 
-const builtinApps = [
-  ['file-browser', 'Cloud'],
-  ['test', 'Test'],
-  ['book', 'Book'],
-  ['files', 'Files'],
-  ['anime', 'Anime'],
-  ['image', 'Image'],
-  ['text-editor', 'TextEditor'],
-  ['setting', 'Setting'],
-  ['video-player', 'VideoPlayer'],
-];
-
-builtinApps.forEach(([appScriptName, appName]) => {
-  installBuiltinApp(appScriptName, appName);
-});
-
 export class WindowManager {
   public openedApps: AppState[] = [];
   public checkActiveTimer?: number;
@@ -223,15 +207,6 @@ export class WindowManager {
   async blur() {
     this.updateActiveApp(null);
   }
-}
-
-export async function installBuiltinApp(appScriptName: string, appName: string) {
-  const appScript = '/apps/' + appScriptName + '.js';
-  installApp(appScript, appName);
-}
-
-export async function installApp(src: string, appName: string) {
-  await loadModule(src, appName);
 }
 
 export async function startApp(container: HTMLElement, appName: string): Promise<AppState | undefined> {
@@ -624,19 +599,14 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
   return appWindow;
 }
 
-export function loadModule(src: string, moduleName: string): Promise<AppDefinition | undefined> {
+export function loadModule(scriptContent: string, moduleName: string): Promise<AppDefinition> {
   return new Promise(async (resolve, reject) => {
     const script = document.createElement('script');
-    let scriptContent;
-    if (src.startsWith('http://') || src.startsWith('https://')) {
-      const resp = await http.fetch(src, { method: 'get' });
-      scriptContent = await resp.text();
-    } else {
-      const resp = await fetch(src, { method: 'get' });
-      scriptContent = await resp.text();
-    }
     const escapedModuleName = JSON.stringify(moduleName);
 
+    const m = (window as any).__modules;
+    (window as any).__modules = m || {};
+    (window as any).__modules[moduleName] = { exports: {} };
     script.innerHTML = `
       (function() {
         
@@ -651,7 +621,7 @@ export function loadModule(src: string, moduleName: string): Promise<AppDefiniti
         const scopedConsole = __createScopeConsole(${escapedModuleName});
         const fakeWindow = __createFakeWindow();
 
-        const __module = { exports: {} };
+        const __module = window.__modules[${escapedModuleName}];
         
         (function (window, document, console, module, exports){
           
@@ -661,26 +631,18 @@ export function loadModule(src: string, moduleName: string): Promise<AppDefiniti
         
         console.log('install app: ${escapedModuleName}', __module);
         
-        window._apps.register(${escapedModuleName}, {
-          unmount: __module.exports.unmount,
-          mount: __module.exports.mount,
-          getAppInfo: __module.exports.getAppInfo,
-          container,
-        });
+        __module.exports.container = container;
 
         // document.body.appendChild(container);
 
       })();
     `;
-    script.addEventListener('load', () => {
-      script.parentElement?.removeChild(script);
-      resolve(appManager.get(moduleName));
-    });
-    script.addEventListener('error', (err) => {
-      script.parentElement?.removeChild(script);
-      reject(err);
-    })
     document.body.appendChild(script);
+    setTimeout(() => {
+      document.body.removeChild(script);
+      const __module = (window as any).__modules[moduleName];
+      resolve(__module.exports);
+    });
   })
 }
 
@@ -734,12 +696,44 @@ export interface AppDefinition {
 
 export class AppsRegister {
   apps: { [appName: string]: AppDefinition };
+  downloadedApps: { [appName: string]: string } = {};
+  remote = new Collection('app_manager');
+  eventBus = new EventEmitter();
   constructor() {
     this.apps = {};
-    makeAutoObservable(this);
   }
-  register(name: string, app: AppDefinition) {
+  onAppInstalled(cb: (appName: string) => void): () => void {
+    this.eventBus.on('app_installed', cb);
+    return () => {
+      this.eventBus.off('app_installed', cb);
+    }
+  }
+  async download(name: string, src: string) {
+    if (this.downloadedApps[name]) {
+      return;
+    }
+    async function downloadApp(src: string) {
+      let scriptContent;
+      if (src.startsWith('http://') || src.startsWith('https://')) {
+        const resp = await http.fetch(src, { method: 'get' });
+        scriptContent = await resp.text();
+      } else {
+        const resp = await fetch(src, { method: 'get' });
+        scriptContent = await resp.text();
+      }
+      return scriptContent;
+    }
+    const appScript = await downloadApp(src);
+    this.downloadedApps[name] = appScript;
+  }
+  async install(name: string) {
+    const appScript = this.downloadedApps[name];
+    if (!appScript) {
+      throw new Error(`app ${name} is not downloaded`);
+    }
+    const app = await loadModule(appScript, name);
     this.apps[name] = app;
+    this.eventBus.emit('app_installed', name);
   }
   get(appName: string): undefined | AppDefinition {
     return this.apps[appName];
@@ -772,6 +766,29 @@ export const appManager = new AppsRegister();
 function stylus(s: string) {
   return s.split('\n').join('');
 }
+
+const builtinApps = [
+  ['file-browser', 'Cloud'],
+  ['test', 'Test'],
+  ['book', 'Book'],
+  ['files', 'Files'],
+  ['anime', 'Anime'],
+  ['image', 'Image'],
+  ['text-editor', 'TextEditor'],
+  ['setting', 'Setting'],
+  ['video-player', 'VideoPlayer'],
+  ['shell', 'Shell'],
+];
+
+export async function installBuiltinApp(appScriptName: string, appName: string) {
+  const appScriptSrc = '/apps/' + appScriptName + '.js';
+  await appManager.download(appName, appScriptSrc);
+  await appManager.install(appName);
+}
+
+builtinApps.forEach(([appScriptName, appName]) => {
+  installBuiltinApp(appScriptName, appName);
+});
 
 function createFakeDocument(scope: HTMLElement, scopeHead: HTMLElement) {
   const proxy = new Proxy(document, {

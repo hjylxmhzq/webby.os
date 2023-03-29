@@ -100,6 +100,7 @@ async fn main() -> Result<(), AppError> {
       .app_data(web::Data::new(app_state.clone()))
       .service(routers::tunnel::tunnel_routers())
       .service(routers::kv_storage::kv_storage_routers())
+      .service(routers::shell::shell_routers())
       .service(routers::fs::file_routers())
       .service(routers::auth::auth_routers())
       .service(routers::gallery::gallery_routers())
