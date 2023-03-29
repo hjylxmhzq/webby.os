@@ -97,8 +97,8 @@ jobs:
           else
             TAG=$GITHUB_SHA
           fi
-          mv ./target/$TARGET/release/$EXEC ./filego
-          tar -czf ./artifacts/$NAME-$TARGET-$TAG.tar.gz filego
+          mv ./target/$TARGET/release/$EXEC ./webbyos
+          tar -czf ./artifacts/$NAME-$TARGET-$TAG.tar.gz webbyos
       - name: Archive artifact
         uses: actions/upload-artifact@v2
         with:
