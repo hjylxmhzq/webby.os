@@ -17,6 +17,7 @@ pub struct AppConfig {
   pub search_index_path: Option<String>,
   pub authentication: Option<String>,
   pub static_dir: Option<String>,
+  pub shell: Option<String>,
 }
 
 /// Simple program to greet a person
@@ -63,6 +64,7 @@ impl Default for AppConfig {
       search_index_path: Some("index".to_owned()),
       authentication: Some("user".to_owned()),
       static_dir: Some("./static".to_owned()),
+      shell: Some("zsh".to_owned()),
     }
   }
 }

@@ -4,8 +4,7 @@ import { AppContext, AppInfo } from '@webby/core/web-app';
 import ImagePreview from './image-viewer';
 import { FileStat, readdir } from '@webby/core/fs';
 import path from 'path-browserify';
-
-const iconUrl = 'https://v1.vuepress.vuejs.org/hero.png';
+import iconUrl from './icon.svg';
 
 let reactRoot: ReactDom.Root;
 

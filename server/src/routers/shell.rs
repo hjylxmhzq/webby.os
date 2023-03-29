@@ -1,25 +1,22 @@
 use std::{
-  process::Stdio,
+  io::{BufReader, Read, Write},
+  process::Command,
+  thread,
   time::{Duration, Instant},
 };
 
 use actix::{Actor, AsyncContext, Handler, StreamHandler};
 use actix_web::{web, Error, HttpRequest, HttpResponse, Scope};
 use actix_web_actors::ws;
-use futures::executor::block_on;
-use image::EncodableLayout;
 use ptyprocess::PtyProcess;
 use serde::Deserialize;
-use tokio::{
-  io::{AsyncReadExt, AsyncWriteExt},
-  process::{Child, Command},
-};
 
-static DEFAULT_SHELL: &'static str = "zsh";
+use crate::config;
 
 /// Define HTTP actor
 struct MyWs {
-  child: Option<Child>,
+  // child: Option<Child>,
+  process: Option<PtyProcess>,
   hb: Instant,
 }
 
@@ -30,7 +27,8 @@ impl Actor for MyWs {
 impl MyWs {
   fn new() -> Self {
     Self {
-      child: None,
+      // child: None,
+      process: None,
       hb: Instant::now(),
     }
   }
@@ -56,6 +54,12 @@ struct ClientMessage {
   payload: String,
 }
 
+#[derive(Deserialize)]
+struct SetTTYSizePayload {
+  rows: u16,
+  cols: u16,
+}
+
 /// Handler for ws::Message message
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
   fn started(&mut self, ctx: &mut Self::Context) {
@@ -63,41 +67,33 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
     ctx.run_interval(std::time::Duration::from_secs(10), |act, ctx| {
       let now = Instant::now();
       if now.duration_since(act.hb) > Duration::from_secs(60) {
+        if let Some(ref mut process) = act.process {
+          process.kill(ptyprocess::Signal::SIGKILL).unwrap();
+        }
         ctx.close(None);
+      }
+      if let Some(ref mut process) = act.process {
+        if !process.is_alive().unwrap() {
+          ctx.close(None);
+        }
       }
       ctx.ping(b"PING");
     });
 
-    // let mut process = PtyProcess::spawn(Command::new("bash"));
+    let process = PtyProcess::spawn(Command::new(config!(shell))).unwrap();
 
-    let mut cmd = Command::new(DEFAULT_SHELL);
+    let pty_handle = process.get_raw_handle().unwrap();
+
+    self.process = Some(process);
     let addr = ctx.address();
-    let mut child = cmd
-      .stdin(Stdio::piped())
-      .stdout(Stdio::piped())
-      .stderr(Stdio::piped())
-      .spawn()
-      .unwrap();
-
-    let mut stdout = child.stdout.take().unwrap();
-    let mut stderr = child.stderr.take().unwrap();
-
-    self.child = Some(child);
-    let addr1 = addr.clone();
-    tokio::spawn(async move {
+    thread::spawn(move || {
+      let mut reader = BufReader::new(pty_handle);
       let buf = &mut [0; 4096];
-      while let Ok(s) = stdout.read(buf).await {
-        let mut v = buf[0..s].to_vec();
-        v.push(0);
-        addr1.do_send(WsMessage(v));
-      }
-    });
-    tokio::spawn(async move {
-      let buf = &mut [0; 4096];
-      while let Ok(s) = stderr.read(buf).await {
-        let mut v = buf[0..s].to_vec();
-        v.push(1);
-        addr.do_send(WsMessage(v));
+      while let Ok(s) = reader.read(buf) {
+        if s == 0 {
+          break;
+        }
+        addr.do_send(WsMessage(buf[0..s].to_vec()));
       }
     });
   }
@@ -116,24 +112,24 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
 
         if msg.r#type == "cmd" {
           let cmd = msg.payload;
-          let child = &mut self.child;
-          if let Some(child) = child {
-            block_on(async {
-              let c = child.stdin.as_mut().unwrap();
-              c.write_all(cmd.as_bytes()).await.unwrap();
-            });
+          let process = &mut self.process;
+          if let Some(process) = process {
+            let mut pty_handler = process.get_raw_handle().unwrap();
+            pty_handler.write_all(cmd.as_bytes()).unwrap();
+            if config!(shell) != "zsh" {
+              ctx.binary(cmd.as_bytes().to_vec());
+            }
+          }
+        } else if msg.r#type == "set_size" {
+          let sizes: SetTTYSizePayload = serde_json::from_str(&msg.payload).unwrap();
+          let process = &mut self.process;
+          if let Some(process) = process {
+            process.set_window_size(sizes.cols, sizes.rows).unwrap();
           }
         }
         ctx.text("");
       }
-      Ok(ws::Message::Binary(bin)) => {
-        let child = &mut self.child;
-        if let Some(child) = child {
-          block_on(async {
-            let c = child.stdin.as_mut().unwrap();
-            c.write_all(bin.as_bytes()).await.unwrap();
-          });
-        }
+      Ok(ws::Message::Binary(_)) => {
         ctx.text("");
       }
       _ => (),

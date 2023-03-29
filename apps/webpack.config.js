@@ -2,10 +2,21 @@ const path = require('path');
 const fs = require('fs');
 
 const apps = fs.readdirSync('./src');
-const entries = apps.reduce((prev, app) => {
+const entries = apps.map((app) => {
+  if (app.endsWith('js') || app.endsWith('tsx') || app.endsWith('ts')) {
+    return [path.parse(app).name, path.join('./src', app)];
+  }
+  const fList = ['js', 'ts', 'tsx'].map(ext => path.join('./src', app, `index.${ext}`));
+  for (let f of fList) {
+    if (fs.existsSync(f)) {
+      return [app, f];
+    }
+  }
+}).filter(app => !!app).reduce((prev, [appName, appSrc]) => {
+  console.log(appName, appSrc);
   return {
     ...prev,
-    [app]: './' + path.join('src', app, 'index.tsx'),
+    [appName]: './' + appSrc,
   }
 }, {});
 
@@ -23,12 +34,12 @@ module.exports = {
         exclude: /node_modules/,
       },
       {
-        test: /\.(png|jpg|gif|svg)$/i,
+        test: /\.(png|jpg|gif|ico|svg)$/i,
         use: [
           {
             loader: 'url-loader',
             options: {
-              limit: 8192,
+              limit: 200_000,
             },
           },
         ],

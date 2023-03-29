@@ -42,7 +42,7 @@ export function HomePage() {
   return <div>
     <Header menu={currentMenu} activeApp={activeApp}></Header>
     <div className={style['main-window']}>
-      {/* <img className={style['desktop-bg']} onMouseDown={deactiveApps} src="https://images4.alphacoders.com/640/640956.jpg" alt="background" /> */}
+      <img className={style['desktop-bg']} onMouseDown={deactiveApps} src="https://images4.alphacoders.com/640/640956.jpg" alt="background" />
       <div ref={mountPoint}></div>
       <div className={style['icons-grid']} onMouseDown={deactiveApps}>
         {

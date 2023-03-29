@@ -599,7 +599,7 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
   return appWindow;
 }
 
-export function loadModule(scriptContent: string, moduleName: string): Promise<AppDefinition> {
+export function loadModule(appScript: { scriptContent: string, scriptSrc: string }, moduleName: string): Promise<AppDefinition> {
   return new Promise(async (resolve, reject) => {
     const script = document.createElement('script');
     const escapedModuleName = JSON.stringify(moduleName);
@@ -617,17 +617,25 @@ export function loadModule(scriptContent: string, moduleName: string): Promise<A
         fakeFrame.appendChild(head);
         shadow.appendChild(fakeFrame);
 
-        const fakeDocument = __createFakeDocument(fakeFrame, head);
+        const fakeDocument = __createFakeDocument(fakeFrame, head, fakeFrame);
         const scopedConsole = __createScopeConsole(${escapedModuleName});
         const fakeWindow = __createFakeWindow();
 
         const __module = window.__modules[${escapedModuleName}];
+        const __import = { meta: { url: ${JSON.stringify(appScript.scriptSrc)} }};
         
-        (function (window, document, console, module, exports){
+        (function (window, document, console, module, exports, __import){
+          try {
+            
+            ${appScript.scriptContent}
           
-          ${scriptContent}
+          } catch (e) {
+
+            console.error('Error occurs in', ${escapedModuleName}, e);
+
+          }
   
-        })(fakeWindow, fakeDocument, scopedConsole, __module, __module.exports);
+        })(fakeWindow, fakeDocument, scopedConsole, __module, __module.exports, __import);
         
         console.log('install app: ${escapedModuleName}', __module);
         
@@ -641,7 +649,11 @@ export function loadModule(scriptContent: string, moduleName: string): Promise<A
     setTimeout(() => {
       document.body.removeChild(script);
       const __module = (window as any).__modules[moduleName];
-      resolve(__module.exports);
+      const appDef = __module.exports as AppDefinition;
+      if (typeof appDef.mount !== 'function' || typeof appDef.getAppInfo !== 'function') {
+        reject(`install app [${moduleName}] error`);
+      }
+      resolve(appDef);
     });
   })
 }
@@ -696,7 +708,7 @@ export interface AppDefinition {
 
 export class AppsRegister {
   apps: { [appName: string]: AppDefinition };
-  downloadedApps: { [appName: string]: string } = {};
+  downloadedApps: { [appName: string]: { scriptContent: string, scriptSrc: string } } = {};
   remote = new Collection('app_manager');
   eventBus = new EventEmitter();
   constructor() {
@@ -724,7 +736,7 @@ export class AppsRegister {
       return scriptContent;
     }
     const appScript = await downloadApp(src);
-    this.downloadedApps[name] = appScript;
+    this.downloadedApps[name] = { scriptContent: appScript, scriptSrc: src };
   }
   async install(name: string) {
     const appScript = this.downloadedApps[name];
@@ -790,7 +802,7 @@ builtinApps.forEach(([appScriptName, appName]) => {
   installBuiltinApp(appScriptName, appName);
 });
 
-function createFakeDocument(scope: HTMLElement, scopeHead: HTMLElement) {
+function createFakeDocument(scope: HTMLElement, scopeHead: HTMLElement, mountPoint: HTMLElement) {
   const proxy = new Proxy(document, {
     get(target, key: keyof Document) {
       if (key === 'querySelector') {
@@ -799,11 +811,16 @@ function createFakeDocument(scope: HTMLElement, scopeHead: HTMLElement) {
           if (el?.tagName.toLowerCase() === 'head') {
             return scopeHead
           }
+          if (el?.tagName.toLowerCase() === 'body') {
+            return mountPoint
+          }
           return scope.querySelector(selector);
         }
         return q;
       } else if (key === 'head') {
         return scopeHead;
+      } else if (key === 'body') {
+        return mountPoint;
       } else {
         if (typeof target[key] === 'function') {
           const d: any = target[key];

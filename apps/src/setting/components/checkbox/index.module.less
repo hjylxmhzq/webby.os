@@ -1,0 +1,17 @@
+.checkbox {
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+
+  .tick {
+    transition: opacity 0.2s;
+    opacity: 0;
+    display: block;
+    &.checked {
+      opacity: 1;
+    }
+  }
+}

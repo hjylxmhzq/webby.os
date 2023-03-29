@@ -3,8 +3,7 @@ import path from 'path-browserify';
 import React from 'react';
 import ReactDom from 'react-dom/client';
 import FilePage from './src/file-page';
-
-const iconUrl = 'https://cloud.anylib.cc/favicon.ico';
+import iconUrl from './icon.ico';
 
 let root: ReactDom.Root;
 export async function mount(ctx: AppContext) {

@@ -1,0 +1,22 @@
+.progress {
+  width: 100%;
+  height: 20px;
+  line-height: 20px;
+  position: relative;
+
+  &>div {
+    transition: all 0.1s;
+  }
+}
+
+.text {
+  position: absolute;
+  left: 10px;
+  bottom: 0;
+  line-height: 20px;
+  font-size: 12px;
+  color: #fff;
+  white-space: nowrap;
+  transform: translate3d(0, 0, 0); // fix safari mix-blend-mode: difference has no effect
+  mix-blend-mode: difference;
+}

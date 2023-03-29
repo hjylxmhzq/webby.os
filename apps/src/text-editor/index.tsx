@@ -1,7 +1,6 @@
 import { read_file } from '@webby/core/fs';
 import { AppContext, AppInfo } from '@webby/core/web-app';
-
-const iconUrl = 'https://v1.vuepress.vuejs.org/hero.png';
+import iconUrl from './icon.svg';
 
 export async function mount(ctx: AppContext) {
   const root = ctx.appRootEl;

@@ -5,8 +5,22 @@ import { FitAddon } from 'xterm-addon-fit';
 // import { WebglAddon } from 'xterm-addon-webgl';
 import { CanvasAddon } from 'xterm-addon-canvas';
 import 'xterm/css/xterm.css';
+import style from './index.module.less';
+import iconUrl from './icon.svg';
 
-const iconUrl = 'https://v1.vuepress.vuejs.org/hero.png';
+function debounce<T extends Function>(fn: T, delay = 500, mw?: (...args: any[]) => any) {
+  let timer: number | undefined;
+  return (...args: any[]) => {
+    let v: any;
+    if (mw) {
+      v = mw(...args);
+    }
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => {
+      fn(...args, v);
+    }, delay);
+  }
+}
 
 let shell: Shell;
 export async function mount(ctx: AppContext) {
@@ -21,6 +35,7 @@ export async function mount(ctx: AppContext) {
   xtermEl.style.inset = '0';
   xtermEl.style.left = '10px';
   xtermEl.style.position = 'absolute';
+  xtermEl.classList.add(style.container);
 
 
   root.appendChild(xtermEl);
@@ -43,42 +58,44 @@ export async function mount(ctx: AppContext) {
 
   fitAddon.fit();
 
+  xterm.onResize(debounce(({ cols, rows }: { cols: number, rows: number }) => {
+    shell.setSize(cols, rows);
+  }));
+
   ctx.appWindow.onWindowResize(() => {
     fitAddon.fit();
   });
   shell = new Shell('ws://localhost:7001/shell/start');
 
-  const term = new Term(xterm);
+  // const term = new Term(xterm);
   xterm.onKey(function ({ key, domEvent: e }) {
     const keyCode = e.key;
 
-    console.log(keyCode, JSON.stringify(key));
-    if (keyCode === 'Backspace') {
-      term.back();
-    } else if (keyCode === "ArrowUp") {
-      term.up();
-    } else if (keyCode === "ArrowDown") {
-      term.down()
-    } else if (keyCode === "ArrowLeft") {
-      term.left();
-    } else if (keyCode === "ArrowRight") {
-      term.right()
-    } else if (keyCode === "Enter") {
-      shell.write(term.currentLine + '\n');
-      term.enter();
-    } else {
-      term.write(key);
-    }
+    // console.log(keyCode, JSON.stringify(key));
+
+    shell.write(key);
+    // if (keyCode === 'Backspace') {
+    //   term.back();
+    // } else if (keyCode === "ArrowUp") {
+    //   term.up();
+    // } else if (keyCode === "ArrowDown") {
+    //   term.down()
+    // } else if (keyCode === "ArrowLeft") {
+    //   term.left();
+    // } else if (keyCode === "ArrowRight") {
+    //   term.right()
+    // } else if (keyCode === "Enter") {
+    //   term.enter();
+    // } else {
+    //   // term.write(key);
+    // }
   });
 
   shell.onStdOut(text => {
-    console.log(JSON.stringify(text));
-    const t = text.split('\n').join('\n\r');
-    term.write_raw(t);
+    xterm.write(text);
   });
   shell.onStdErr(text => {
-    const t = text.split('\n').join('\n\r');
-    term.write_raw(t);
+    xterm.write(text);
   });
   (document as any)._fit = fitAddon;
 }
@@ -103,13 +120,13 @@ class Term {
   cursor = 0;
   currentLine = '';
   offset = 0;
-  constructor(public term: Terminal, public promptText = '> ') {
-    this.promtp(false);
+  constructor(public term: Terminal, public promptText = '') {
   }
   clearLine() {
-    this.term.write('\r');
-    this.term.write(' '.repeat(this.currentLine.length + this.promptText.length));
-    this.term.write('\r');
+    let tLen = this.currentLine.length + this.promptText.length;
+    this.term.write('\b'.repeat(tLen));
+    this.term.write(' '.repeat(tLen));
+    this.term.write('\b'.repeat(tLen));
   }
   promtp(newLine = true) {
     if (newLine) {

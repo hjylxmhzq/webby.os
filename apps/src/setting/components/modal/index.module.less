@@ -1,0 +1,42 @@
+
+.modal {
+  color: var(--font-color);
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 10px;
+  background-color: var(--bg-medium);
+  border-radius: 5px;
+  box-shadow: var(--box-shadow);
+  min-width: 100px;
+  animation: scaleup 0.2s ease-out 1 forwards;
+  overflow: hidden;
+}
+
+@keyframes scaleup {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.mask {
+  position: fixed;
+  pointer-events: none;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  background-color: #57575763;
+}
+
+.container {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  right: 0;
+}

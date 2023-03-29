@@ -21,10 +21,8 @@ export class Shell {
       this.ws.addEventListener('message', async (e) => {
         if (e.data instanceof Blob) {
           let ab = await e.data.arrayBuffer();
-          let u8arr = new DataView(ab);
-          let isErr = u8arr.getInt8(ab.byteLength - 1) === 1;
-          let content = ab.slice(0, -1);
-          const text = this.decoder.decode(content, { stream: true });
+          let isErr = false;
+          const text = this.decoder.decode(ab, { stream: true });
           if (isErr) {
             if (this.onStdErrCb) {
               this.onStdErrCb(text);
@@ -56,6 +54,15 @@ export class Shell {
       this.onStdErrCb(this.stderr.join(''));
       this.stderr.length = 0;
     }
+  }
+  async setSize(cols: number, rows: number) {
+    await this.readyPromise;
+    this.ws.send(JSON.stringify({
+      type: "set_size",
+      payload: JSON.stringify({
+        cols, rows,
+      }),
+    }));
   }
   async write(text: string) {
     await this.readyPromise;
