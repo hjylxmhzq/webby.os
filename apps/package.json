@@ -9,7 +9,10 @@
   },
   "dependencies": {
     "@webby/core": "*",
+    "cherry-markdown": "^0.8.17",
     "client": "*",
+    "easymde": "^2.18.0",
+    "editor.md": "^1.5.0",
     "path-browserify": "^1.0.1",
     "plyr-react": "^5.1.2",
     "react": "^18.2.0",

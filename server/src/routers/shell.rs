@@ -82,35 +82,46 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
       let now = Instant::now();
       if now.duration_since(act.hb) > Duration::from_secs(60) {
         if let Some(ref mut process) = act.process {
-          process.kill(ptyprocess::Signal::SIGKILL).unwrap();
+          process.kill(ptyprocess::Signal::SIGKILL).ok();
         }
         ctx.close(None);
       }
       if let Some(ref mut process) = act.process {
-        if !process.is_alive().unwrap() {
+        if !process.is_alive().map_or(false, |v| v) {
           ctx.close(None);
         }
       }
       ctx.ping(b"PING");
     });
 
-    let process = PtyProcess::spawn(Command::new(config!(shell))).unwrap();
+    let process = PtyProcess::spawn(Command::new(config!(shell)));
+    if let Ok(mut process) = process {
+      process.set_echo(true, None).ok();
 
-    let pty_handle = process.get_raw_handle().unwrap();
+      let pty_handle = process.get_raw_handle();
 
-    self.process = Some(process);
-    let addr = ctx.address();
-    thread::spawn(move || {
-      let mut reader = BufReader::new(pty_handle);
-      let buf = &mut [0; 4096];
-      while let Ok(s) = reader.read(buf) {
-        if s == 0 {
-          break;
-        }
-        addr.do_send(WsMessage(buf[0..s].to_vec()));
+      if let Ok(pty_handle) = pty_handle {
+        self.process = Some(process);
+        let addr = ctx.address();
+        thread::spawn(move || {
+          let mut reader = BufReader::new(pty_handle);
+          let buf = &mut [0; 4096];
+          while let Ok(s) = reader.read(buf) {
+            if s == 0 {
+              break;
+            }
+            addr.do_send(WsMessage(buf[0..s].to_vec()));
+          }
+          addr.do_send(WsTextMessage(
+            r#"{ "type": "shell_closed", "payload": "" }"#.to_owned(),
+          ));
+        });
+      } else {
+        ctx.text(r#"{ "type": "spawn_shell_error", "payload": "" }"#.to_owned());
       }
-      addr.do_send(WsTextMessage(r#"{ "type": "shell_closed", "payload": "" }"#.to_owned()));
-    });
+    } else {
+      ctx.text(r#"{ "type": "spawn_shell_error", "payload": "" }"#.to_owned());
+    }
   }
 
   fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
@@ -123,24 +134,31 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
         self.hb = Instant::now();
       }
       Ok(ws::Message::Text(text)) => {
-        let msg: ClientMessage = serde_json::from_str(&text.to_string()).unwrap();
-
-        if msg.r#type == "cmd" {
-          let cmd = msg.payload;
-          let process = &mut self.process;
-          if let Some(process) = process {
-            let mut pty_handler = process.get_raw_handle().unwrap();
-            pty_handler.write_all(cmd.as_bytes()).unwrap();
-            if config!(shell) != "zsh" {
-              ctx.binary(cmd.as_bytes().to_vec());
+        let msg = serde_json::from_str::<ClientMessage>(&text.to_string());
+        if let Ok(msg) = msg {
+          if msg.r#type == "cmd" {
+            let cmd = msg.payload;
+            let process = &mut self.process;
+            if let Some(process) = process {
+              let mut pty_handler = process.get_raw_handle().unwrap();
+              pty_handler.write_all(cmd.as_bytes()).unwrap();
+            } else {
+              ctx.text(r#"{ "type": "error", "payload": "shell_is_not_start" }"#.to_owned());
+              ctx.close(None);
+            }
+          } else if msg.r#type == "set_size" {
+            let sizes = serde_json::from_str::<SetTTYSizePayload>(&msg.payload);
+            if let Ok(sizes) = sizes {
+              let process = &mut self.process;
+              if let Some(process) = process {
+                process.set_window_size(sizes.cols, sizes.rows).unwrap();
+              }
+            } else {
+              ctx.text(r#"{ "type": "error", "payload": "message format error" }"#.to_owned());    
             }
           }
-        } else if msg.r#type == "set_size" {
-          let sizes: SetTTYSizePayload = serde_json::from_str(&msg.payload).unwrap();
-          let process = &mut self.process;
-          if let Some(process) = process {
-            process.set_window_size(sizes.cols, sizes.rows).unwrap();
-          }
+        } else {
+          ctx.text(r#"{ "type": "error", "payload": "message format error" }"#.to_owned());
         }
         ctx.text("");
       }

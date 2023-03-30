@@ -61,6 +61,12 @@ export class WindowManager {
       }
     });
     this.container = container;
+    window.addEventListener('focusin', (e) => {
+      console.log(e);
+    });
+    window.addEventListener('focusout', (e) => {
+      console.log(e);
+    });
     this.checkActiveTimer = window.setInterval(() => {
       if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') {
         let hasActive = false;
@@ -603,11 +609,13 @@ export function loadModule(appScript: { scriptContent: string, scriptSrc: string
   return new Promise(async (resolve, reject) => {
     const script = document.createElement('script');
     const escapedModuleName = JSON.stringify(moduleName);
+    const escapedScriptSrc = JSON.stringify(appScript.scriptSrc);
 
     const m = (window as any).__modules;
     (window as any).__modules = m || {};
     (window as any).__modules[moduleName] = { exports: {} };
-    script.innerHTML = `
+    
+    const s = `
       (function() {
         
         const container = document.createElement('div');
@@ -617,14 +625,14 @@ export function loadModule(appScript: { scriptContent: string, scriptSrc: string
         fakeFrame.appendChild(head);
         shadow.appendChild(fakeFrame);
 
-        const fakeDocument = __createFakeDocument(fakeFrame, head, fakeFrame);
+        const fakeDocument = __createFakeDocument(fakeFrame, head, fakeFrame, ${escapedScriptSrc});
         const scopedConsole = __createScopeConsole(${escapedModuleName});
-        const fakeWindow = __createFakeWindow();
+        const fakeWindow = __createFakeWindow(fakeDocument);
 
         const __module = window.__modules[${escapedModuleName}];
         const __import = { meta: { url: ${JSON.stringify(appScript.scriptSrc)} }};
         
-        (function (window, document, console, module, exports, __import){
+        (function (window, globalThis, document, console, module, exports, __import){
           try {
             
             ${appScript.scriptContent}
@@ -635,7 +643,7 @@ export function loadModule(appScript: { scriptContent: string, scriptSrc: string
 
           }
   
-        })(fakeWindow, fakeDocument, scopedConsole, __module, __module.exports, __import);
+        })(fakeWindow, fakeWindow, fakeDocument, scopedConsole, __module, __module.exports, __import);
         
         console.log('install app: ${escapedModuleName}', __module);
         
@@ -645,9 +653,13 @@ export function loadModule(appScript: { scriptContent: string, scriptSrc: string
 
       })();
     `;
+
+    const blobSrc = URL.createObjectURL(new Blob([s], { type: 'application/javascript' }));
+    script.src = blobSrc;
     document.body.appendChild(script);
-    setTimeout(() => {
+    script.addEventListener('load', () => {
       document.body.removeChild(script);
+      URL.revokeObjectURL(blobSrc);
       const __module = (window as any).__modules[moduleName];
       const appDef = __module.exports as AppDefinition;
       if (typeof appDef.mount !== 'function' || typeof appDef.getAppInfo !== 'function') {
@@ -782,9 +794,7 @@ function stylus(s: string) {
 const builtinApps = [
   ['file-browser', 'Cloud'],
   ['test', 'Test'],
-  ['book', 'Book'],
   ['files', 'Files'],
-  ['anime', 'Anime'],
   ['image', 'Image'],
   ['text-editor', 'TextEditor'],
   ['setting', 'Setting'],
@@ -802,7 +812,7 @@ builtinApps.forEach(([appScriptName, appName]) => {
   installBuiltinApp(appScriptName, appName);
 });
 
-function createFakeDocument(scope: HTMLElement, scopeHead: HTMLElement, mountPoint: HTMLElement) {
+function createFakeDocument(scope: HTMLElement, scopeHead: HTMLElement, mountPoint: HTMLElement, scriptSrc: string) {
   const proxy = new Proxy(document, {
     get(target, key: keyof Document) {
       if (key === 'querySelector') {
@@ -819,35 +829,41 @@ function createFakeDocument(scope: HTMLElement, scopeHead: HTMLElement, mountPoi
         return q;
       } else if (key === 'head') {
         return scopeHead;
+      } else if (key === 'documentElement') {
+        return scope;
       } else if (key === 'body') {
         return mountPoint;
+      } else if (key === 'currentScript') {
+        return {
+          src: scriptSrc,
+          type: 'application/javascript',
+          charset: 'utf-8',
+          async: false,
+          defer: false,
+        };
       } else {
+        let v;
         if (typeof target[key] === 'function') {
           const d: any = target[key];
-          return d.bind(target);
+          v = d.bind(target);
         } else {
-          return target[key];
+          v = target[key];
         }
+        return v;
       }
     }
   });
   return proxy
 }
 
-function createFakeWindow() {
+function createFakeWindow(fakeDocument: Document) {
   const fakeWindow = Object.create(null);
   const proxy = new Proxy(window, {
     get(target, key: any) {
-      if (fakeWindow[key] !== undefined) {
-        return fakeWindow[key];
-      } else {
-        if (typeof target[key] === 'function') {
-          let d: any = target[key];
-          return d.bind(target);
-        } else {
-          return target[key];
-        }
+      if (key === 'document') {
+        return fakeDocument;
       }
+      return target[key];
     },
     set(target, key, value) {
       fakeWindow[key] = value;

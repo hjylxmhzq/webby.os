@@ -22,9 +22,6 @@ const entries = apps.map((app) => {
 
 module.exports = {
   mode: 'production',
-  experiments: {
-    outputModule: true,
-  },
   entry: entries,
   module: {
     rules: [
@@ -79,6 +76,7 @@ module.exports = {
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, '../server/static/apps'),
+    publicPath: '/static/apps',
     library: {
       type: 'commonjs',
     }

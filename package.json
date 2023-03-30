@@ -11,7 +11,11 @@
     "start": "lerna run start --parallel --scope apps --scope @webby/core --scope client"
   },
   "devDependencies": {
+    "@types/tinymce": "^4.6.5",
     "lerna": "^6.6.1"
   },
-  "packageManager": "yarn@3.5.0"
+  "packageManager": "yarn@3.5.0",
+  "dependencies": {
+    "tinymce": "^6.4.1"
+  }
 }

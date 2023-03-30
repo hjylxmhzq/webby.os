@@ -122,6 +122,9 @@ export async function mount(ctx: AppContext) {
       }
     ]
   }];
+  setTimeout(() => {
+    ctx.appWindow.setSize(900, 600);
+  });
   const root = ctx.appRootEl;
   root.style.position = 'absolute';
   root.style.inset = '0';
