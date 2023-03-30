@@ -71,8 +71,8 @@ export async function mount(ctx: AppContext) {
     xterm.write('\n\rconnection is closed');
   });
   // const term = new Term(xterm);
-  xterm.onKey(function ({ key, domEvent: e }) {
-    const keyCode = e.key;
+
+  xterm.onData(function (key) {
 
     // console.log(keyCode, JSON.stringify(key));
     shell.write(key);
