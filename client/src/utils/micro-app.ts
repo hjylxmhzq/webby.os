@@ -61,12 +61,6 @@ export class WindowManager {
       }
     });
     this.container = container;
-    window.addEventListener('focusin', (e) => {
-      console.log(e);
-    });
-    window.addEventListener('focusout', (e) => {
-      console.log(e);
-    });
     this.checkActiveTimer = window.setInterval(() => {
       if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') {
         let hasActive = false;
@@ -605,17 +599,16 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
   return appWindow;
 }
 
-export function loadModule(appScript: { scriptContent: string, scriptSrc: string }, moduleName: string): Promise<AppDefinition> {
-  return new Promise(async (resolve, reject) => {
-    const script = document.createElement('script');
-    const escapedModuleName = JSON.stringify(moduleName);
-    const escapedScriptSrc = JSON.stringify(appScript.scriptSrc);
+export async function loadModule(appScript: { scriptContent: string, scriptSrc: string }, moduleName: string): Promise<AppDefinition> {
+  const script = document.createElement('script');
+  const escapedModuleName = JSON.stringify(moduleName);
+  const escapedScriptSrc = JSON.stringify(appScript.scriptSrc);
 
-    const m = (window as any).__modules;
-    (window as any).__modules = m || {};
-    (window as any).__modules[moduleName] = { exports: {} };
-    
-    const s = `
+  const m = (window as any).__modules;
+  (window as any).__modules = m || {};
+  (window as any).__modules[moduleName] = { exports: {} };
+
+  const sandbox = `
       (function() {
         
         const container = document.createElement('div');
@@ -654,20 +647,65 @@ export function loadModule(appScript: { scriptContent: string, scriptSrc: string
       })();
     `;
 
-    const blobSrc = URL.createObjectURL(new Blob([s], { type: 'application/javascript' }));
-    script.src = blobSrc;
-    document.body.appendChild(script);
-    script.addEventListener('load', () => {
-      document.body.removeChild(script);
-      URL.revokeObjectURL(blobSrc);
-      const __module = (window as any).__modules[moduleName];
-      const appDef = __module.exports as AppDefinition;
-      if (typeof appDef.mount !== 'function' || typeof appDef.getAppInfo !== 'function') {
-        reject(`install app [${moduleName}] error`);
-      }
-      resolve(appDef);
-    });
-  })
+  const noSandbox = `
+      (function() {
+        
+        const container = document.createElement('div');
+        const shadow = container.attachShadow({mode: 'open'});
+        const fakeFrame = document.createElement('div');
+        const head = document.createElement('div');
+        fakeFrame.appendChild(head);
+        shadow.appendChild(fakeFrame);
+
+        const scopedConsole = __createScopeConsole(${escapedModuleName});
+
+        const __module = window.__modules[${escapedModuleName}];
+        const __import = { meta: { url: ${JSON.stringify(appScript.scriptSrc)} }};
+        
+        (function (console, module, exports, __import){
+          try {
+            
+            ${appScript.scriptContent}
+          
+          } catch (e) {
+
+            console.error('Error occurs in', ${escapedModuleName}, e);
+
+          }
+  
+        })(scopedConsole, __module, __module.exports, __import);
+        
+        console.log('install app: ${escapedModuleName}', __module);
+        
+        __module.exports.container = container;
+
+        // document.body.appendChild(container);
+
+      })();
+    `;
+
+  function loadScript(s: string): Promise<AppDefinition> {
+    return new Promise(async (resolve, reject) => {
+      const blobSrc = URL.createObjectURL(new Blob([s], { type: 'application/javascript' }));
+      script.src = blobSrc;
+      document.body.appendChild(script);
+      script.addEventListener('load', () => {
+        document.body.removeChild(script);
+        URL.revokeObjectURL(blobSrc);
+        const __module = (window as any).__modules[moduleName];
+        const appDef = __module.exports as AppDefinition;
+        if (typeof appDef.mount !== 'function' || typeof appDef.getAppInfo !== 'function') {
+          reject(`install app [${moduleName}] error`);
+        }
+        resolve(appDef);
+      });
+    })
+  }
+  let app = await loadScript(sandbox);
+  if (app.getAppInfo().noSandbox) {
+    app = await loadScript(noSandbox);
+  }
+  return app;
 }
 
 export function createContext(appWindow: AppWindow, theme: Theme) {
@@ -800,6 +838,7 @@ const builtinApps = [
   ['setting', 'Setting'],
   ['video-player', 'VideoPlayer'],
   ['shell', 'Shell'],
+  ['pdf-viewer', 'PdfViewer'],
 ];
 
 export async function installBuiltinApp(appScriptName: string, appName: string) {
@@ -858,12 +897,20 @@ function createFakeDocument(scope: HTMLElement, scopeHead: HTMLElement, mountPoi
 
 function createFakeWindow(fakeDocument: Document) {
   const fakeWindow = Object.create(null);
+  const cacheFn = Object.create(null);
   const proxy = new Proxy(window, {
     get(target, key: any) {
+      if (cacheFn[key]) return cacheFn[key];
       if (key === 'document') {
         return fakeDocument;
       }
-      return target[key];
+      let d: any = target[key];
+      if (typeof d === 'function') {
+        let k = d.bind(target);
+        cacheFn[key] = k;
+        return k;
+      }
+      return d;
     },
     set(target, key, value) {
       fakeWindow[key] = value;

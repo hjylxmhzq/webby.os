@@ -2,7 +2,6 @@ import Header from "./components/header/header";
 import style from './index.module.less';
 import { AppDefinition, appManager, windowManager } from "src/utils/micro-app";
 import { useEffect, useRef, useState } from "react";
-import { autorun } from "mobx";
 import { http } from '@webby/core/tunnel';
 import { AppMenu, AppState } from "@webby/core/web-app";
 import { Collection } from '@webby/core/kv-storage'
@@ -21,9 +20,9 @@ export function HomePage() {
   const [activeApp, setActiveApp] = useState<AppState | null>(null);
 
   useEffect(() => {
-    const unbind = appManager.onAppInstalled(() => {
+    const unbind = appManager.onAppInstalled(debounce(() => {
       setApps({ ...appManager.apps });
-    });
+    }));
     if (!mountPoint.current) return;
     windowManager.init(mountPoint.current);
     windowManager.eventBus.on('active_app_change', (app: AppState | null, _old) => {

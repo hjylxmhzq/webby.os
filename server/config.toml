@@ -7,4 +7,4 @@ use_ffmpeg_trancode = false
 ffmpeg_bin_path = "ffmpeg"
 indexing_follow_link = true
 authentication = "none"
-shell = "bash"
+shell = "zsh"

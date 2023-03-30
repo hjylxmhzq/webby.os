@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const CopyPlugin = require('copy-webpack-plugin');
 
 const apps = fs.readdirSync('./src');
 const entries = apps.map((app) => {
@@ -19,6 +20,8 @@ const entries = apps.map((app) => {
     [appName]: './' + appSrc,
   }
 }, {});
+
+const outputDir = path.resolve(__dirname, '../server/static/apps');
 
 module.exports = {
   mode: 'production',
@@ -69,13 +72,21 @@ module.exports = {
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
   },
+  plugins: [
+    new CopyPlugin({
+      patterns: [
+        { from: "../node_modules/pdfjs-dist/build/pdf.worker.min.js", to: path.join(outputDir, 'pdf-viewer') },
+        { from: "../node_modules/pdfjs-dist/cmaps", to: path.join(outputDir, 'pdf-viewer', 'cmaps') },
+      ],
+    }),
+  ],
   optimization: {
     minimize: false,
   },
   devtool: 'inline-source-map',
   output: {
     filename: '[name].js',
-    path: path.resolve(__dirname, '../server/static/apps'),
+    path: outputDir,
     publicPath: '/static/apps',
     library: {
       type: 'commonjs',

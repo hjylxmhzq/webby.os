@@ -34,7 +34,7 @@ pub fn get_file<'a>(s: &'a str) -> Option<Vec<u8>> {
       }
     }
   }
-  
+
   let file = STATIC_DIR.get_file(s);
   if let Some(file) = file {
     Some(file.contents().to_vec())
@@ -80,15 +80,15 @@ where
   fn call(&self, req: ServiceRequest) -> Self::Future {
     let p = req.path();
     let ret = get_file(&p[1..]);
-    let g = mime_guess::from_path(p).first();
+    let mime = mime_guess::from_path(p)
+      .first()
+      .map_or("text/plain".to_owned(), |v| v.to_string());
+
     if let Some(content) = ret {
       return Box::pin(async move {
         let mut resp_builder = HttpResponse::Ok();
         resp_builder.insert_header(("cache-control", "max-age=2592000"));
-        if let Some(g) = g {
-          let mime = g.to_string();
-          resp_builder.content_type(mime);
-        }
+        resp_builder.content_type(mime);
 
         let resp = resp_builder.body(content);
         let r = ServiceResponse::new(req.request().clone(), resp);

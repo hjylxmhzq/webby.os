@@ -153,6 +153,6 @@ export function getAppInfo(): AppInfo {
     iconUrl,
     width: 800,
     height: 500,
-    supportExts: ['mp4', 'mpeg', 'mkv', 'avi'],
+    supportExts: [],
   }
 }

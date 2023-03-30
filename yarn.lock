@@ -3730,15 +3730,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/codemirror@npm:^5.60.4":
-  version: 5.60.7
-  resolution: "@types/codemirror@npm:5.60.7"
-  dependencies:
-    "@types/tern": "*"
-  checksum: 0312ce032eb139b408588a7e7cf3b392a510a2cfa6f477f2dd20d8bca1990e5e6e5540e708f9a69d1a58e68ea7fd234b789c801aa7ef4f3b3dc32a1478b04a91
-  languageName: node
-  linkType: hard
-
 "@types/connect-history-api-fallback@npm:^1.3.5":
   version: 1.3.5
   resolution: "@types/connect-history-api-fallback@npm:1.3.5"
@@ -3935,13 +3926,6 @@ __metadata:
   version: 3.0.3
   resolution: "@types/less@npm:3.0.3"
   checksum: 389ce4c843fb88484ffbe4e3b63da0db1cea3e594c57086a5e642431f031f569819b4a210ae4ca109207d2307daa7e48e0e00315892fa7582748e0f434e62881
-  languageName: node
-  linkType: hard
-
-"@types/marked@npm:^4.0.7":
-  version: 4.0.8
-  resolution: "@types/marked@npm:4.0.8"
-  checksum: 68278fa7acaa5d920cdc239d675b5daf842e0ad4779e4848cd617d9baf2ac1afccb5a264c331e37d80031d647e1640cb983cd31e73d45b28552670b4853fad8e
   languageName: node
   linkType: hard
 
@@ -4880,14 +4864,13 @@ __metadata:
   resolution: "apps@workspace:apps"
   dependencies:
     "@webby/core": "*"
-    cherry-markdown: ^0.8.17
     client: "*"
+    copy-webpack-plugin: ^11.0.0
     css-loader: ^6.7.3
-    easymde: ^2.18.0
-    editor.md: ^1.5.0
     less: ^4.1.3
     less-loader: ^11.1.0
     path-browserify: ^1.0.1
+    pdfjs-dist: ^3.4.120
     plyr-react: ^5.1.2
     react: ^18.2.0
     react-dom: ^18.2.0
@@ -6135,22 +6118,6 @@ __metadata:
     chalk: ^2.4.1
     q: ^1.1.2
   checksum: 44736914aac2160d3d840ed64432a90a3bb72285a0cd6a688eb5cabdf15d15a85eee0915b3f6f2a4659d5075817b1cb577340d3c9cbb47d636d59ab69f819552
-  languageName: node
-  linkType: hard
-
-"codemirror-spell-checker@npm:1.1.2":
-  version: 1.1.2
-  resolution: "codemirror-spell-checker@npm:1.1.2"
-  dependencies:
-    typo-js: "*"
-  checksum: e58de8f64453352f4a42c3752650fa7d65dc8e9fbdbdc4a2a80a748e5d794e84c5779409386d8d1f06d41cad41bacb3bbce91eb2cd5a5548a59bb71d932dec96
-  languageName: node
-  linkType: hard
-
-"codemirror@npm:^5.63.1":
-  version: 5.65.12
-  resolution: "codemirror@npm:5.65.12"
-  checksum: 6fca4434ef781b0c393c0c24766c53a9a21e7bc5b48b22414032aa458574be5e6ec5d4d95e8d179769937c6c39a54564af8aebbf7f9dc289165bbcd0ae765be7
   languageName: node
   linkType: hard
 
@@ -8125,26 +8092,6 @@ __metadata:
   version: 0.1.2
   resolution: "duplexer@npm:0.1.2"
   checksum: 62ba61a830c56801db28ff6305c7d289b6dc9f859054e8c982abd8ee0b0a14d2e9a8e7d086ffee12e868d43e2bbe8a964be55ddbd8c8957714c87373c7a4f9b0
-  languageName: node
-  linkType: hard
-
-"easymde@npm:^2.18.0":
-  version: 2.18.0
-  resolution: "easymde@npm:2.18.0"
-  dependencies:
-    "@types/codemirror": ^5.60.4
-    "@types/marked": ^4.0.7
-    codemirror: ^5.63.1
-    codemirror-spell-checker: 1.1.2
-    marked: ^4.1.0
-  checksum: 1f763bac31be4d62a0a4f0892e68608768246dd815355b05bff38e7eb1f0eff543fc609abf504041a0282bb73c328e41df34a9d1c50c16a3bb9d1fc969f7f9af
-  languageName: node
-  linkType: hard
-
-"editor.md@npm:^1.5.0":
-  version: 1.5.0
-  resolution: "editor.md@npm:1.5.0"
-  checksum: e00312bc64424a46fa5dd748d340cb5a7c9709f131a2b0e50cdc1a9d6d7088ff3712d8457a70f416e7d5ac1059e552f45f035f35c0c46a74b6fca17767879f5c
   languageName: node
   linkType: hard
 
@@ -12489,15 +12436,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"marked@npm:^4.1.0":
-  version: 4.3.0
-  resolution: "marked@npm:4.3.0"
-  bin:
-    marked: bin/marked.js
-  checksum: 0db6817893952c3ec710eb9ceafb8468bf5ae38cb0f92b7b083baa13d70b19774674be04db5b817681fa7c5c6a088f61300815e4dd75a59696f4716ad69f6260
-  languageName: node
-  linkType: hard
-
 "mdn-data@npm:2.0.14":
   version: 2.0.14
   resolution: "mdn-data@npm:2.0.14"
@@ -14196,7 +14134,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pdfjs-dist@npm:^3.3.122":
+"pdfjs-dist@npm:^3.3.122, pdfjs-dist@npm:^3.4.120":
   version: 3.4.120
   resolution: "pdfjs-dist@npm:3.4.120"
   dependencies:
@@ -16150,6 +16088,7 @@ __metadata:
   resolution: "root@workspace:."
   dependencies:
     "@types/tinymce": ^4.6.5
+    cherry-markdown: ^0.8.17
     lerna: ^6.6.1
     tinymce: ^6.4.1
   languageName: unknown
@@ -17750,13 +17689,6 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: b63cb742fbb9aeb3085e002ad8f10d5fd963606aa4d6b3b65b4e76c396ff09739f03b5dbae08e1698c3bce9d5619d3f67aeb7ee470ed4016bd345b3cfe37b54a
-  languageName: node
-  linkType: hard
-
-"typo-js@npm:*":
-  version: 1.2.2
-  resolution: "typo-js@npm:1.2.2"
-  checksum: 425e5fbd525e61f95ccfaf521a87cf65c2940c386b7554ad837c58cfd972339441708bd5a5142042a521f20134a3aeef46b1e21fc8f0a642c59356fea3f3411c
   languageName: node
   linkType: hard
 

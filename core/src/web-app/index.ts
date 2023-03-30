@@ -27,6 +27,7 @@ export interface AppInfo {
   name: string,
   iconUrl: string,
   supportExts: string[],
+  noSandbox?: boolean,
 }
 
 export interface AppWindow {
