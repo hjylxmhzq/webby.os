@@ -24,6 +24,7 @@ export function HomePage() {
       setApps({ ...appManager.apps });
     }));
     if (!mountPoint.current) return;
+    if (windowManager.isInited) return;
     windowManager.init(mountPoint.current);
     windowManager.eventBus.on('active_app_change', (app: AppState | null, _old) => {
       setActiveApp(app);

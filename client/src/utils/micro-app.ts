@@ -48,16 +48,27 @@ export class WindowManager {
   public onResize?: () => void;
   public eventBus = eventbus;
   public activeApp: AppState | null = null;
-  public cacheWindowPos: { [appName: string]: { width: number, height: number, left: number, top: number } } = {};
+  public cacheWindowState: { [appName: string]: { width: number, height: number, left: number, top: number, open: boolean } } = {};
   public container: HTMLElement = document.body;
   public isInited = false;
   init(container: HTMLElement) {
     if (this.isInited) {
       throw new Error('window manager is already inited');
     }
-    store.get('cacheWindowPos').then((v) => {
+    this.isInited = true;
+    store.get('cacheWindowState').then(async (v) => {
       if (v) {
-        this.cacheWindowPos = JSON.parse(v);
+        this.cacheWindowState = JSON.parse(v);
+        await appManager.ready();
+        Object.keys(this.cacheWindowState).forEach(appName => {
+          if (!appManager.apps[appName]) {
+            delete this.cacheWindowState[appName];
+          } else if (this.cacheWindowState[appName].open) {
+            console.log('cache', appName, this.cacheWindowState);
+            this.startApp(appName, true);
+          }
+        });
+        await store.set('cacheWindowState', JSON.stringify(this.cacheWindowState));
       }
     });
     this.container = container;
@@ -125,6 +136,7 @@ export class WindowManager {
     return this.openedApps.find(app => app.name === name);
   }
   destroy() {
+    this.eventBus.emit("destroy");
     window.clearInterval(this.checkActiveTimer);
     if (this.onResize) {
       window.removeEventListener('resize', this.onResize);
@@ -139,19 +151,28 @@ export class WindowManager {
       console.error('app not opened');
     }
   }
-  async startApp(appName: string) {
+  async startApp(appName: string, resume: boolean = false, params: Record<string, string> = {}) {
     let existApp = this.getAppByName(appName);
     if (existApp) {
       this.updateActiveApp(existApp);
       return;
     }
-    let app = await startApp(this.container, appName);
+    let app = await startApp(this.container, appName, resume, params);
     if (!app) return;
-    const beforeClose = () => {
+    let isClose = false;
+    const beforeClose = (force = false) => {
+      if (isClose) return;
+      isClose = true;
+      this.cacheWindowState[appName].open = false;
+      store.set('cacheWindowState', JSON.stringify(this.cacheWindowState));
       app!.app.unmount(app!.ctx);
       let idx = this.openedApps.findIndex(app => app.name === appName);
       if (idx > -1) {
         this.openedApps.splice(idx, 1);
+      }
+      if (force) {
+        const w = app!.ctx.appWindow.window;
+        w.remove();
       }
       const oldApp = this.activeApp;
       this.activeApp = null;
@@ -159,31 +180,35 @@ export class WindowManager {
       unbindResize();
       this.eventBus.emit('active_app_change', null, oldApp);
     };
+    this.eventBus.once('destroy', () => beforeClose(true));
     const onActive = () => {
       this.updateActiveApp(app!);
     }
     app.ctx.appWindow.onBeforeClose(beforeClose);
     app.ctx.appWindow.onActive(onActive);
-    if (this.cacheWindowPos[appName]) {
-      const { width, height, left, top } = this.cacheWindowPos[appName];
+    if (this.cacheWindowState[appName]) {
+      const { width, height, left, top } = this.cacheWindowState[appName];
       app.ctx.appWindow.setPos(left, top);
       app.ctx.appWindow.setSize(width, height);
     } else {
       const s = app!.ctx.appWindow.getSize();
       const p = app!.ctx.appWindow.getPos();
-      this.cacheWindowPos[appName] = {
-        width: s.width, height: s.height, left: p.left, top: p.top,
+      this.cacheWindowState[appName] = {
+        width: s.width, height: s.height, left: p.left, top: p.top, open: true,
       }
     }
+    this.cacheWindowState[appName].open = true;
+    store.set('cacheWindowState', JSON.stringify(this.cacheWindowState));
+
     let unbindMove = app.ctx.appWindow.onWindowMove(debounce((left: number, top: number) => {
-      this.cacheWindowPos[appName].left = left;
-      this.cacheWindowPos[appName].top = top;
-      store.set('cacheWindowPos', JSON.stringify(this.cacheWindowPos));
+      this.cacheWindowState[appName].left = left;
+      this.cacheWindowState[appName].top = top;
+      store.set('cacheWindowState', JSON.stringify(this.cacheWindowState));
     }, 1000));
     let unbindResize = app.ctx.appWindow.onWindowResize(debounce((w: number, h: number) => {
-      this.cacheWindowPos[appName].width = w;
-      this.cacheWindowPos[appName].height = h;
-      store.set('cacheWindowPos', JSON.stringify(this.cacheWindowPos));
+      this.cacheWindowState[appName].width = w;
+      this.cacheWindowState[appName].height = h;
+      store.set('cacheWindowState', JSON.stringify(this.cacheWindowState));
     }, 1000));
     app.ctx.appWindow.setActive(true);
     app.ctx.appWindow.focus();
@@ -209,7 +234,7 @@ export class WindowManager {
   }
 }
 
-export async function startApp(container: HTMLElement, appName: string): Promise<AppState | undefined> {
+export async function startApp(container: HTMLElement, appName: string, resume: boolean, params: Record<string, string>): Promise<AppState | undefined> {
 
   const app = appManager.get(appName);
   if (!app) {
@@ -226,6 +251,8 @@ export async function startApp(container: HTMLElement, appName: string): Promise
   });
 
   const { ctx, sender, eventBus } = createContext(appWindow, 'light');
+  ctx.isResume = resume;
+  ctx.params = params;
   await app.mount(ctx);
   let appState = {
     el: appWindow.window,
@@ -725,7 +752,9 @@ export function createContext(appWindow: AppWindow, theme: Theme) {
     appRootEl: appWindow.body,
     appWindow,
     theme,
+    params: {},
     setWindowSize,
+    isResume: false,
     channel: channel.port2,
     systemMenu: [],
     onOpenFile(cb) {
@@ -756,18 +785,49 @@ export interface AppDefinition {
   container: HTMLElement;
 }
 
+const builtinApps = [
+  ['file-browser', 'Cloud'],
+  ['test', 'Test'],
+  ['files', 'Files'],
+  ['image', 'Image'],
+  ['text-editor', 'TextEditor'],
+  ['setting', 'Setting'],
+  ['video-player', 'VideoPlayer'],
+  ['shell', 'Shell'],
+  ['pdf-viewer', 'PdfViewer'],
+];
+
 export class AppsRegister {
   apps: { [appName: string]: AppDefinition };
   downloadedApps: { [appName: string]: { scriptContent: string, scriptSrc: string } } = {};
   remote = new Collection('app_manager');
   eventBus = new EventEmitter();
+  private readyPromise: Promise<void>;
   constructor() {
     this.apps = {};
+    this.readyPromise = (async () => {
+      await this.installBuiltinApps();
+      this.eventBus.emit('app_installed');
+    })();
+  }
+  ready() {
+    return this.readyPromise;
   }
   onAppInstalled(cb: (appName: string) => void): () => void {
     this.eventBus.on('app_installed', cb);
     return () => {
       this.eventBus.off('app_installed', cb);
+    }
+  }
+  async installBuiltinApps() {
+    const install = async (appScriptName: string, appName: string) => {
+      const appScriptSrc = '/apps/' + appScriptName + '.js';
+      await this.download(appName, appScriptSrc);
+      await this.install(appName);
+    }
+
+    for (let [appScriptName, appName] of builtinApps) {
+      await install(appScriptName, appName);
     }
   }
   async download(name: string, src: string) {
@@ -795,7 +855,6 @@ export class AppsRegister {
     }
     const app = await loadModule(appScript, name);
     this.apps[name] = app;
-    this.eventBus.emit('app_installed', name);
   }
   get(appName: string): undefined | AppDefinition {
     return this.apps[appName];
@@ -824,32 +883,12 @@ export class AppsRegister {
 }
 
 export const appManager = new AppsRegister();
+
 (window as any)._apps = appManager;
 function stylus(s: string) {
   return s.split('\n').join('');
 }
 
-const builtinApps = [
-  ['file-browser', 'Cloud'],
-  ['test', 'Test'],
-  ['files', 'Files'],
-  ['image', 'Image'],
-  ['text-editor', 'TextEditor'],
-  ['setting', 'Setting'],
-  ['video-player', 'VideoPlayer'],
-  ['shell', 'Shell'],
-  ['pdf-viewer', 'PdfViewer'],
-];
-
-export async function installBuiltinApp(appScriptName: string, appName: string) {
-  const appScriptSrc = '/apps/' + appScriptName + '.js';
-  await appManager.download(appName, appScriptSrc);
-  await appManager.install(appName);
-}
-
-builtinApps.forEach(([appScriptName, appName]) => {
-  installBuiltinApp(appScriptName, appName);
-});
 
 function createFakeDocument(scope: HTMLElement, scopeHead: HTMLElement, mountPoint: HTMLElement, scriptSrc: string) {
   const proxy = new Proxy(document, {

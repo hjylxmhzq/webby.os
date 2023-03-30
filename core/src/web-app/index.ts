@@ -8,6 +8,8 @@ export interface AppContext {
   channel: MessagePort,
   appWindow: AppWindow,
   systemMenu: AppMenu[],
+  isResume: boolean, // 是否从未unmount的状态恢复
+  params: Record<string, string>,
   setWindowSize: (w: number, h: number) => void;
   onOpenFile(cb: (file: string) => void): () => void;
   openFile(file: string): Promise<boolean>;

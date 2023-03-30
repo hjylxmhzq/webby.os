@@ -3,16 +3,18 @@ import { useEffect, useRef, useState } from "react";
 import style from './pdf-viewer.module.less';
 import { create_download_link_from_file_path } from '@webby/core/fs';
 
-export default function PdfViewer(props: { onFileOpen: (cb: (file: string) => void) => void }) {
+export default function PdfViewer(props: { onFileOpen: (cb: (file: string, pageIdx: number) => void) => void }) {
   GlobalWorkerOptions.workerSrc = '/apps/pdf-viewer/pdf.worker.min.js';
   const CMAP_URL = '/apps/pdf-viewer/cmaps/';
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const lastFile = useRef('');
   const [file, setFile] = useState('');
+  const [pageIdx, setPageIdx] = useState('');
 
   useEffect(() => {
-    props.onFileOpen((f: string) => {
+    props.onFileOpen((f: string, pageIdx: number = 0) => {
+      console.log('set file', f);
       setFile(f);
     });
   }, []);
