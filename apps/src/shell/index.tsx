@@ -65,14 +65,16 @@ export async function mount(ctx: AppContext) {
   ctx.appWindow.onWindowResize(() => {
     fitAddon.fit();
   });
-  shell = new Shell('ws://localhost:7001/shell/start');
+  shell = new Shell();
 
+  shell.onClose(() => {
+    xterm.write('\n\rconnection is closed');
+  });
   // const term = new Term(xterm);
   xterm.onKey(function ({ key, domEvent: e }) {
     const keyCode = e.key;
 
     // console.log(keyCode, JSON.stringify(key));
-
     shell.write(key);
     // if (keyCode === 'Backspace') {
     //   term.back();

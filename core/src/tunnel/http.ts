@@ -26,7 +26,7 @@ export async function fetch(url: RequestInfo | URL, init?: RequestInit & ExtraIn
   if (init?.keepResponseHeaders) {
     newHeader['x-keep-resp'] = init.keepResponseHeaders.join(',');
   }
-  newHeader['csrf_token'] = getCsrfToken() || '';
+  newHeader['csrf-token'] = getCsrfToken() || '';
   newHeader['target-url'] = url.toString();
   let newInit = init;
   if (newInit) {

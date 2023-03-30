@@ -47,7 +47,7 @@ jobs:
           #   OS: windows-latest
     runs-on: ${{ matrix.OS }}
     env:
-      NAME: server
+      NAME: webbyos
       TARGET: ${{ matrix.TARGET }}
       OS: ${{ matrix.OS }}
 

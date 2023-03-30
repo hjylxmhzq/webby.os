@@ -48,6 +48,20 @@ impl Handler<WsMessage> for MyWs {
   }
 }
 
+#[derive(actix::Message)]
+#[rtype(result = "String")] // result = your type T
+pub struct WsTextMessage(String);
+
+impl Handler<WsTextMessage> for MyWs {
+  type Result = String; // This type is T
+
+  fn handle(&mut self, msg: WsTextMessage, ctx: &mut Self::Context) -> Self::Result {
+    // Returns your type T
+    ctx.text(msg.0);
+    return "".to_owned();
+  }
+}
+
 #[derive(Deserialize)]
 struct ClientMessage {
   r#type: String,
@@ -95,6 +109,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
         }
         addr.do_send(WsMessage(buf[0..s].to_vec()));
       }
+      addr.do_send(WsTextMessage(r#"{ "type": "shell_closed", "payload": "" }"#.to_owned()));
     });
   }
 

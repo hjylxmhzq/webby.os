@@ -68,7 +68,7 @@ where
       let mut sess = req.get_session();
       let csrf_token = req
         .headers()
-        .get("csrf_token")
+        .get("csrf-token")
         .map_or("", |v| v.to_str().map_or("", |v| v));
       let is_csrf_token_valid = sess.is_csrf_token_valid(csrf_token).map_or(false, |v| v);
       if !is_csrf_token_valid {

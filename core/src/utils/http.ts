@@ -34,7 +34,7 @@ export async function post_raw(api: string, body: any, tag: string = 'default') 
     body: JSON.stringify(body),
     headers: {
       'content-type': 'application/json',
-      'csrf_token': getCsrfToken() || '',
+      'csrf-token': getCsrfToken() || '',
     }
   });
   httpGroupHandlers.set(tag, [abort, p]);
@@ -44,7 +44,7 @@ export async function post_raw(api: string, body: any, tag: string = 'default') 
 }
 
 export async function post_formdata(api: string, body: FormData, onUploadProgress?: (e: AxiosProgressEvent) => void) {
-  let resp = await axios.postForm(api, body, { headers: { 'csrf_token': getCsrfToken() || '', }, responseType: 'json', onUploadProgress });
+  let resp = await axios.postForm(api, body, { headers: { 'csrf-token': getCsrfToken() || '', }, responseType: 'json', onUploadProgress });
   return resp.data;
 }
 
