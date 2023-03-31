@@ -6,13 +6,13 @@ export class Collection {
   async set(key: string, value: string): Promise<void> {
     const r = await post('/kv_storage/set', {
       key, value, collection: this.collection
-    });
+    }, Math.random().toString());
     return r.data;
   }
   async get(key: string): Promise<string | null> {
     const r = await post('/kv_storage/get', {
       key, collection: this.collection
-    });
+    }, 'collection_get' + '_' + key + '_' + this.collection);
     let d = r.data;
     if (d.length > 0) {
       return d[0].value;
@@ -22,7 +22,7 @@ export class Collection {
   async has(key: string): Promise<string | null> {
     const r = await post('/kv_storage/has', {
       key, collection: this.collection
-    });
+    }, 'collection_has' + '_' + key + '_' + this.collection);
     let d = r.data;
     return d;
   }
@@ -38,7 +38,7 @@ export class Collection {
   async remove_all(): Promise<boolean> {
     const r = await post('/kv_storage/remove_collection', {
       collection: this.collection
-    });
+    }, 'collection_remove_all' + this.collection);
     return r.data;
   }
   static async collections(): Promise<string[]> {

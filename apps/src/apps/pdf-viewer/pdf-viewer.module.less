@@ -5,3 +5,119 @@
   height: auto;
   box-sizing: border-box;
 }
+
+.outline {
+  box-sizing: border-box;
+  flex: 0 0 200px;
+  background-color: var(--bg-medium);
+  text-align: left;
+  overflow: auto;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.outline-tree {
+  padding: 0px;
+}
+
+.subtree {
+  padding: 0px 0px 0px 10px;
+  overflow: hidden;
+}
+
+.tree-title {
+  cursor: pointer;
+  padding: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &:hover {
+    background-color: var(--bg-medium-hover);
+  }
+}
+
+.pdf-page {
+  flex: 0 0;
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+    background-color: var(--bg-medium-hover);
+    /* or add it to the track */
+  }
+
+  /* Add a thumb */
+  *::-webkit-scrollbar-thumb {
+    background: var(--bg-heavy);
+    border-radius: 2px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background-color: var(--bg-medium-hover);
+  }
+}
+
+.icon {
+  opacity: 0.5;
+  transition: transform 0.2s;
+  transform: rotate(-90deg);
+
+  &.open {
+    transform: rotate(0deg);
+  }
+}
+
+.title-bar {
+  text-align: left;
+  height: 20px;
+  display: flex;
+  padding: 0 10px;
+  justify-content: space-between;
+  font-size: 16px;
+  line-height: 16px;
+  align-items: center;
+}
+
+.title-icon {
+  cursor: pointer;
+  padding: 2px;
+  &:hover {
+    background-color: var(--bg-heavy);
+  }
+}
+.main-body {
+  position: absolute;
+  inset: 0;
+  top: 20px;
+  display: flex;
+}
+
+.pdf-text-container {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+}
+
+.pdf-viewer {
+  position: relative;
+}
+
+.pdf-text {
+  margin: 0 auto;
+  color: transparent;
+  position: relative;
+  overflow: hidden;
+  & * {
+    &::selection {
+      color: #4747474d;
+      background-color: #6275d96d;
+    }
+    &::-moz-selection { /* Code for Firefox */
+      color: #4747474d;
+      background-color: #6275d96d;
+    }
+    position: absolute;
+  }
+}

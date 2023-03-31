@@ -30,11 +30,11 @@ export async function mount(ctx: AppContext) {
     }
   });
   ctx.appWindow.onWindowResize(debounceThrottle((_w: number, _h: number, cw: number) => {
-    eventBus.emit("resize", cw);
+    // eventBus.emit("resize", cw);
   }, 1000, (w: number) => {
     return w;
   }));
-  
+
   if (ctx.isResume) {
     console.log('resume');
     store.get('last_open_file').then(f => {
@@ -47,11 +47,17 @@ export async function mount(ctx: AppContext) {
   function Index() {
     const [file, setFile] = useState('');
     const [pageIdx, setPageIdx] = useState(0);
-    const [width, setWidth] = useState(500);
+    const [width, setWidth] = useState(600);
     useEffect(() => {
       eventBus.on("openfile", (file) => setFile(file));
       eventBus.on("resize", (w) => {
         setWidth(w);
+      });
+      store.get('last_width').then((v: any) => {
+        const w = parseFloat(v);
+        if (!Number.isNaN(w)) {
+          setWidth(width);
+        }
       });
     }, []);
 
@@ -69,7 +75,11 @@ export async function mount(ctx: AppContext) {
       await store.set('last_scroll_top', st + '');
     }
 
-    return <PdfViewer onScroll={onScroll} onLoaded={onLoaded} file={file} pageIdx={pageIdx} width={width} />
+    const onResize = async (w: number) => {
+      await store.set('last_width', w + '');
+    }
+
+    return <PdfViewer onResize={onResize} onScroll={onScroll} onLoaded={onLoaded} file={file} pageIdx={pageIdx} width={width} />
   }
 
   reactRoot.render(<Index />)

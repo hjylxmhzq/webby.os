@@ -37,3 +37,5 @@ export function debounceThrottle<T extends Function>(fn: T, delay = 500, mw?: (.
     }, delay);
   }
 }
+
+export type PromiseValue<V> = V extends Promise<infer T> ? T : never;
