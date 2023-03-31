@@ -2,12 +2,13 @@ const path = require('path');
 const fs = require('fs');
 const CopyPlugin = require('copy-webpack-plugin');
 
-const apps = fs.readdirSync('./src');
+const appDir = './src/apps';
+const apps = fs.readdirSync(appDir);
 const entries = apps.map((app) => {
   if (app.endsWith('js') || app.endsWith('tsx') || app.endsWith('ts')) {
-    return [path.parse(app).name, path.join('./src', app)];
+    return [path.parse(app).name, path.join(appDir, app)];
   }
-  const fList = ['js', 'ts', 'tsx'].map(ext => path.join('./src', app, `index.${ext}`));
+  const fList = ['js', 'ts', 'tsx'].map(ext => path.join(appDir, app, `index.${ext}`));
   for (let f of fList) {
     if (fs.existsSync(f)) {
       return [app, f];
