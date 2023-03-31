@@ -24,8 +24,10 @@ const entries = apps.map((app) => {
 
 const outputDir = path.resolve(__dirname, '../server/static/apps');
 
+const isProd = process.env.NODE_ENV === 'production';
+
 module.exports = {
-  mode: 'production',
+  mode: isProd ? 'production' : 'development',
   entry: entries,
   module: {
     rules: [
@@ -82,9 +84,9 @@ module.exports = {
     }),
   ],
   optimization: {
-    minimize: false,
+    minimize: isProd ? true : false,
   },
-  devtool: 'inline-source-map',
+  devtool: isProd ? false : 'inline-source-map',
   output: {
     filename: '[name].js',
     path: outputDir,

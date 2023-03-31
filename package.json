@@ -8,7 +8,8 @@
   ],
   "scripts": {
     "build": "lerna run build",
-    "start": "lerna run start --parallel --scope apps --scope @webby/core --scope client"
+    "start": "lerna run start --parallel --scope apps --scope @webby/core --scope client",
+    "server": "cd server && cargo watch -x run"
   },
   "devDependencies": {
     "@types/tinymce": "^4.6.5",

@@ -786,6 +786,7 @@ export interface AppDefinition {
 }
 
 const builtinApps = [
+  ['paint', 'Paint'],
   ['file-browser', 'Cloud'],
   ['test', 'Test'],
   ['files', 'Files'],
