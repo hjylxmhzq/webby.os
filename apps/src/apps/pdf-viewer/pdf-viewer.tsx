@@ -244,6 +244,17 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
     return h;
   }
 
+  function calPageIdx(scrollTop: number) {
+    let h = 0;
+    for (let i = 0; i < heights.length; i++) {
+      h += heights[i];
+      if (h > scrollTop) {
+        return i;
+      }
+    }
+    return heights.length - 1;
+  }
+
   const onClickOutline = useCallback(async (ol: Outline) => {
     if (!currentPdf) return;
     const d = ol.dest;

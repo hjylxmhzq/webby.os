@@ -73,7 +73,7 @@ export class WindowManager {
     });
     this.container = container;
     this.checkActiveTimer = window.setInterval(() => {
-      if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') {
+      if (document.activeElement) {
         let hasActive = false;
         this.openedApps.forEach((app) => {
           if (app.ctx.appWindow.window.contains(document.activeElement)) {

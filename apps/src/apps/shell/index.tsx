@@ -7,6 +7,7 @@ import { CanvasAddon } from 'xterm-addon-canvas';
 import 'xterm/css/xterm.css';
 import style from './index.module.less';
 import iconUrl from './icon.svg';
+import { Collection } from '@webby/core/kv-storage';
 
 function debounce<T extends Function>(fn: T, delay = 500, mw?: (...args: any[]) => any) {
   let timer: number | undefined;
@@ -21,7 +22,7 @@ function debounce<T extends Function>(fn: T, delay = 500, mw?: (...args: any[]) 
     }, delay);
   }
 }
-
+let store = new Collection('shell_cache');
 let shell: Shell;
 export async function mount(ctx: AppContext) {
 
@@ -72,6 +73,15 @@ export async function mount(ctx: AppContext) {
   });
   // const term = new Term(xterm);
 
+  let cache: string[] = [];
+
+  store.get('history').then(v => {
+    if (v) {
+      xterm.write(v);
+      xterm.write('\n\r已从上次会话恢复\n\r');
+    }
+  });
+
   xterm.onData(function (key) {
 
     // console.log(keyCode, JSON.stringify(key));
@@ -93,16 +103,34 @@ export async function mount(ctx: AppContext) {
     // }
   });
 
+  function writeHisotry(text: string) {
+    cache.push(text);
+    if (cache.length > 100) {
+      cache = cache.slice(-100);
+    }
+  }
+
+  function saveHistory() {
+    store.set('history', cache.join(''));
+  }
+
+  const debounceSave = debounce(saveHistory, 3000);
+
   shell.onStdOut(text => {
+    writeHisotry(text);
+    debounceSave();
     xterm.write(text);
   });
   shell.onStdErr(text => {
+    writeHisotry(text);
+    debounceSave();
     xterm.write(text);
   });
   (document as any)._fit = fitAddon;
 }
 
 export async function unmount(ctx: AppContext) {
+  store.remove('history');
   shell.close();
 }
 

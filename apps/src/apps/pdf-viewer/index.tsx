@@ -50,17 +50,16 @@ export async function mount(ctx: AppContext) {
     const [width, setWidth] = useState(600);
     useEffect(() => {
       eventBus.on("openfile", (file) => setFile(file));
-      eventBus.on("resize", (w) => {
-        setWidth(w);
-      });
+      // eventBus.on("resize", (w) => {
+      //   setWidth(w);
+      // });
       store.get('last_width').then((v: any) => {
         const w = parseFloat(v);
         if (!Number.isNaN(w)) {
-          setWidth(width);
+          setWidth(w);
         }
       });
     }, []);
-
     const onLoaded = async (el: HTMLDivElement) => {
       const st = await store.get('last_scroll_top');
       if (st) {
@@ -71,9 +70,9 @@ export async function mount(ctx: AppContext) {
       }
     }
 
-    const onScroll = async (st: number) => {
+    const onScroll = debounceThrottle(async (_: number, st: number) => {
       await store.set('last_scroll_top', st + '');
-    }
+    }, 3000, (st: number) => st);
 
     const onResize = async (w: number) => {
       await store.set('last_width', w + '');
