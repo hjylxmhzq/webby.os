@@ -50,9 +50,12 @@ export function create_download_link(dir: string, file: string, params: Record<s
   return url.toString();
 }
 
-export function create_download_link_from_file_path(abs_file: string) {
+export function create_download_link_from_file_path(abs_file: string, expires?: number) {
   const url = new URL('/file/read', window.location.origin);
   url.searchParams.set('file', abs_file);
+  if (expires) {
+    url.searchParams.set('expires', expires + '');
+  }
   return url.toString();
 }
 

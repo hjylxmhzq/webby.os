@@ -4,6 +4,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import routers from './routers';
 import { useTheme } from './hooks/common';
 import { darkVars, lightVars } from './theme';
+import './icons/icons';
 
 const router = createBrowserRouter(routers);
 

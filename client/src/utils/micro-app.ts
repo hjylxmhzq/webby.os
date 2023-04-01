@@ -7,9 +7,13 @@ import EventEmitter from "events";
 import { http } from '@webby/core/tunnel';
 import { Collection } from "@webby/core/kv-storage";
 import path from "path-browserify";
+import style from './micro-app.module.less';
+import { transformScale, transformTranslate } from "./animation";
+import { systemSelectFile } from "src/pages/desktop";
 
 const store = new Collection('app_manager');
 const eventbus = new EventEmitter();
+const DOCK_HEIGHT = 25; // also defined in ./micro-app.module.css
 
 class ZIndexManager {
   public zIndex = 1;
@@ -42,38 +46,100 @@ class ZIndexManager {
 }
 const zIndexManager = new ZIndexManager();
 
+interface DockApp {
+  app: AppState,
+  el: HTMLElement
+}
+
 export class WindowManager {
   public openedApps: AppState[] = [];
   public checkActiveTimer?: number;
   public onResize?: () => void;
   public eventBus = eventbus;
   public activeApp: AppState | null = null;
-  public cacheWindowState: { [appName: string]: { width: number, height: number, left: number, top: number, open: boolean } } = {};
+  public cacheWindowState: { [appName: string]: { width: number, height: number, left: number, top: number, open: boolean, isMinimized: boolean } } = {};
   public container: HTMLElement = document.body;
   public isInited = false;
+  public dockEl = document.createElement('div');
+  public appsInDock: DockApp[] = [];
+  initDock() {
+    this.dockEl.className = style['app_dock_container'];
+    this.container.appendChild(this.dockEl);
+  }
+  async storeWindowStatus() {
+    await store.set('cacheWindowState', JSON.stringify(this.cacheWindowState));
+  }
+  appendToDock(app: AppState) {
+    if (this.appsInDock.findIndex(dockApp => dockApp.app === app) !== -1) return;
+    app.ctx.appWindow.isMinimized = true;
+    this.cacheWindowState[app.name].isMinimized = true;
+    const appEl = document.createElement('div');
+    appEl.className = style['app_dock_app'].trim();
+    appEl.innerHTML = `
+    <img src="${app.app.getAppInfo().iconUrl}">
+    <span>${app.name}</span>
+    `;
+    console.log(appEl);
+    appEl.addEventListener('click', () => {
+      this.removeFromDock(app);
+    });
+    this.appsInDock.push({ app, el: appEl });
+    this.dockEl.appendChild(appEl);
+    this.appendToDockAnimation(app);
+    this.dockEl.classList.remove(style['hide'].trim());
+  }
+  appendToDockAnimation(app: AppState) {
+    const w = app.ctx.appWindow.window;
+    const dockRect = this.dockEl.getBoundingClientRect();
+    const wRect = w.getBoundingClientRect();
+    const wRatio = dockRect.width / wRect.width;
+    const hRatio = dockRect.height / wRect.height;
+    const wCenterX = wRect.left + (wRect.width / 2);
+    const wCenterY = wRect.top + (wRect.height / 2);
+    const dockCenterX = dockRect.left + (dockRect.width / 2);
+    const dockCenterY = dockRect.top + (dockRect.height / 2);
+    const xMove = dockCenterX - wCenterX;
+    const yMove = dockCenterY - wCenterY;
+    transformTranslate(w, xMove, yMove);
+    transformScale(w, wRatio, hRatio);
+    w.style.transform = `translate(${xMove}px, ${yMove}px) scale(${wRatio}, ${hRatio})`;
+    w.style.opacity = '0';
+    w.style.pointerEvents = 'none';
+  }
+  restoreFromDockAnimation(app: AppState) {
+    console.log('restore');
+    const w = app.ctx.appWindow.window;
+    transformTranslate(w, 0, 0);
+    transformScale(w, 1, 1);
+    w.style.opacity = '1';
+    setTimeout(() => {
+      w.style.pointerEvents = 'all';
+    }, 200);
+  }
+  removeFromDock(app: AppState) {
+    const idx = this.appsInDock.findIndex(dockApp => dockApp.app === app);
+    this.cacheWindowState[app.name].isMinimized = false;
+    this.restoreFromDockAnimation(app);
+    app.ctx.appWindow.isMinimized = false;
+    if (idx !== -1) {
+      const [dockApp] = this.appsInDock.splice(idx, 1);
+      dockApp.el.remove();
+    }
+    if (this.appsInDock.length === 0) {
+      this.dockEl.classList.add(style['hide'].trim());
+    }
+  }
   init(container: HTMLElement) {
     if (this.isInited) {
       throw new Error('window manager is already inited');
     }
-    this.isInited = true;
-    store.get('cacheWindowState').then(async (v) => {
-      if (v) {
-        this.cacheWindowState = JSON.parse(v);
-        await appManager.ready();
-        Object.keys(this.cacheWindowState).forEach(appName => {
-          if (!appManager.apps[appName]) {
-            delete this.cacheWindowState[appName];
-          } else if (this.cacheWindowState[appName].open) {
-            console.log('cache', appName, this.cacheWindowState);
-            this.startApp(appName, true);
-          }
-        });
-        await store.set('cacheWindowState', JSON.stringify(this.cacheWindowState));
-      }
-    });
     this.container = container;
+    this.initDock();
+    
+    this.isInited = true;
+
     this.checkActiveTimer = window.setInterval(() => {
-      if (document.activeElement) {
+      if (document.activeElement && this.container.contains(document.activeElement)) {
         let hasActive = false;
         this.openedApps.forEach((app) => {
           if (app.ctx.appWindow.window.contains(document.activeElement)) {
@@ -100,6 +166,31 @@ export class WindowManager {
       });
     }, 200);
     window.addEventListener('resize', this.onResize);
+    store.get('cacheWindowState').then(async (v) => {
+      let toDockApp: AppState[] = [];
+      if (v) {
+        this.cacheWindowState = JSON.parse(v);
+        await appManager.ready();
+        let tasks = Object.keys(this.cacheWindowState).map(async appName => {
+          if (!appManager.apps[appName]) {
+            delete this.cacheWindowState[appName];
+          } else if (this.cacheWindowState[appName].open) {
+            console.log('cache', appName, this.cacheWindowState);
+            const app = await this.startApp(appName, true);
+            if (app && this.cacheWindowState[appName].isMinimized) {
+              toDockApp.push(app);
+            }
+          }
+        });
+        await Promise.all(tasks);
+        await this.storeWindowStatus();
+      }
+      setTimeout(() => {
+        toDockApp.forEach(app => {
+          this.appendToDock(app);
+        })
+      }, 200);
+    });
   }
   async openFile(file: string) {
     const ext = path.parse(file).ext;
@@ -155,6 +246,10 @@ export class WindowManager {
     let existApp = this.getAppByName(appName);
     if (existApp) {
       this.updateActiveApp(existApp);
+      const dockApp = this.appsInDock.find(dockApp => dockApp.app === existApp);
+      if (dockApp) {
+        this.removeFromDock(dockApp.app);
+      }
       return;
     }
     let app = await startApp(this.container, appName, resume, params);
@@ -163,8 +258,14 @@ export class WindowManager {
     const beforeClose = (force = false) => {
       if (isClose) return;
       isClose = true;
+
+      // 从dock栏删除
+      this.removeFromDock(app!);
+
+      // 从将窗口缓存状态改为已关闭
       this.cacheWindowState[appName].open = false;
       store.set('cacheWindowState', JSON.stringify(this.cacheWindowState));
+
       app!.app.unmount(app!.ctx);
       let idx = this.openedApps.findIndex(app => app.name === appName);
       if (idx > -1) {
@@ -178,12 +279,17 @@ export class WindowManager {
       this.activeApp = null;
       unbindMove();
       unbindResize();
+      unbindMin();
       this.eventBus.emit('active_app_change', null, oldApp);
     };
-    this.eventBus.once('destroy', () => beforeClose(true));
     const onActive = () => {
       this.updateActiveApp(app!);
     }
+    const onWindowMin = () => {
+      this.appendToDock(app!);
+      this.storeWindowStatus();
+    }
+    const unbindMin = app.ctx.appWindow.onWindowMinimize(onWindowMin);
     app.ctx.appWindow.onBeforeClose(beforeClose);
     app.ctx.appWindow.onActive(onActive);
     if (this.cacheWindowState[appName]) {
@@ -194,26 +300,27 @@ export class WindowManager {
       const s = app!.ctx.appWindow.getSize();
       const p = app!.ctx.appWindow.getPos();
       this.cacheWindowState[appName] = {
-        width: s.width, height: s.height, left: p.left, top: p.top, open: true,
+        width: s.width, height: s.height, left: p.left, top: p.top, open: true, isMinimized: false,
       }
     }
     this.cacheWindowState[appName].open = true;
-    store.set('cacheWindowState', JSON.stringify(this.cacheWindowState));
-
+    this.storeWindowStatus();
+    
     let unbindMove = app.ctx.appWindow.onWindowMove(debounce((left: number, top: number) => {
       this.cacheWindowState[appName].left = left;
       this.cacheWindowState[appName].top = top;
-      store.set('cacheWindowState', JSON.stringify(this.cacheWindowState));
+      this.storeWindowStatus();
     }, 1000));
     let unbindResize = app.ctx.appWindow.onWindowResize(debounce((w: number, h: number) => {
       this.cacheWindowState[appName].width = w;
       this.cacheWindowState[appName].height = h;
-      store.set('cacheWindowState', JSON.stringify(this.cacheWindowState));
+      this.storeWindowStatus();
     }, 1000));
     app.ctx.appWindow.setActive(true);
     app.ctx.appWindow.focus();
     this.openedApps.push(app);
     this.updateActiveApp(app);
+    return app;
   }
   async close(appName: string) {
     const app = this.openedApps.find(app => app.name === appName);
@@ -267,7 +374,15 @@ export async function startApp(container: HTMLElement, appName: string, resume: 
 }
 
 let nextWindowOffset = 0;
+
+enum WindowEventType {
+  BeforeClose = 'BeforeClose',
+  WindowMin = 'WindowMin',
+}
+
 export function createAppWindow(appName: string, appContainer: HTMLElement): AppWindow {
+  const windowEventBus = new EventEmitter();
+
   const clientWidth = document.documentElement.clientWidth;
   const clientHeight = document.documentElement.clientHeight;
 
@@ -324,13 +439,27 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
     background-image: linear-gradient(0deg, #00000042, transparent);
     line-height: 22px;
     user-select: none;
-  `)}"><span class="app_window_close_btn" style="cursor: pointer;">X</span><span class="title_text" style="flex-grow: 1;">${appName}</span></span>`
+    align-items: center;
+  `)}">
+  <span class="app_window_close_btn" style="cursor: pointer;">
+  <svg class="icon" aria-hidden="true">
+    <use xlink:href="#icon-cross"></use>
+  </svg>
+  </span>
+  <span class="app_window_minimize_btn" style="cursor: pointer;">
+  <svg class="icon" aria-hidden="true">
+    <use xlink:href="#icon-minus"></use>
+  </svg>
+  </span>
+  <span class="title_text" style="flex-grow: 1;">${appName}</span></span>`
+  
   const closeBtn = titleBar.querySelector('.app_window_close_btn') as HTMLSpanElement;
-  let beforeCloseCbs: (() => void)[] = [];
+  const minBtn = titleBar.querySelector('.app_window_minimize_btn') as HTMLSpanElement;
+  closeBtn.classList.add(style['titlebar_btn'].trim());
+  minBtn.classList.add(style['titlebar_btn'].trim());
+
   closeBtn.addEventListener('click', (e) => {
-    for (let cb of beforeCloseCbs) {
-      cb();
-    }
+    windowEventBus.emit(WindowEventType.BeforeClose);
     setVisible(false);
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', onMouseUp);
@@ -340,8 +469,17 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
   });
   closeBtn.addEventListener('mousedown', (e) => {
     e.stopPropagation();
+  });
+  minBtn.addEventListener('click', (e) => {
+    windowEventBus.emit(WindowEventType.WindowMin);
+  });
+  minBtn.addEventListener('mousedown', (e) => {
+    e.stopPropagation();
   })
-
+  const onMinimize = (cb: () => void) => {
+    windowEventBus.on(WindowEventType.WindowMin, cb);
+    return () => windowEventBus.off(WindowEventType.WindowMin, cb);
+  };
   const resizeHandler = document.createElement('div');
   resizeHandler.innerHTML = `
   <div class="resize_handler resize_handler_left"></div>
@@ -386,11 +524,11 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
   const checkPos = () => {
     const width = document.documentElement.clientWidth;
     const height = document.documentElement.clientHeight;
-    const rect = appEl.getBoundingClientRect();
+    const rect = getRectByElementStyle(appEl);
     if (rect.top < 25) {
       appEl.style.top = '25px';
     }
-    if (rect.right < 20) {
+    if (rect.left + rect.width < 20) {
       appEl.style.left = (20 - rect.width) + 'px';
     }
     if (rect.left > width - 20) {
@@ -412,6 +550,7 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
   let startElPos = [0, 0];
   let startElSize = [0, 0];
   titleBar.addEventListener('mousedown', (e) => {
+    console.log('titlebarrr');
     appContainer.style.pointerEvents = 'none';
     isMouseDown = true;
     startCursorPos = [e.clientX, e.clientY];
@@ -494,10 +633,11 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
 
   titleBar.addEventListener('dblclick', () => {
     const rect = getRect();
+    const dockHeight = windowManager.appsInDock.length ? DOCK_HEIGHT : 0;
     let tleft = 0;
     let ttop = 25;
     let twidth = document.documentElement.clientWidth;
-    let theight = document.documentElement.clientHeight - 25;
+    let theight = document.documentElement.clientHeight - 25 - dockHeight;
     if (rect.width === twidth && theight === rect.height) {
       twidth = lastRect.width;
       theight = lastRect.height;
@@ -572,7 +712,8 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
     }
   };
   const getRect = () => {
-    return appEl.getBoundingClientRect();
+    const rect = appEl.getBoundingClientRect();
+    return rect;
   }
   let lastRect = getRect();
   const setSize = (w: number, h: number) => {
@@ -594,15 +735,11 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
     };
   }
   const onBeforeClose = (cb: () => void) => {
-    beforeCloseCbs.push(cb);
-    return () => {
-      const idx = beforeCloseCbs.findIndex(c => c === cb);
-      if (idx > -1) {
-        beforeCloseCbs.splice(idx, 1);
-      }
-    }
+    windowEventBus.on(WindowEventType.BeforeClose, cb);
+    return () => windowEventBus.off(WindowEventType.BeforeClose, cb);
   }
   let appWindow: AppWindow = {
+    isMinimized: false,
     minWidth: 200,
     minHeight: 200,
     window: appEl,
@@ -622,6 +759,7 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
     onWindowResize,
     getRect,
     getPos,
+    onWindowMinimize: onMinimize,
   };
   return appWindow;
 }
@@ -757,6 +895,7 @@ export function createContext(appWindow: AppWindow, theme: Theme) {
     isResume: false,
     channel: channel.port2,
     systemMenu: [],
+    selectFile: systemSelectFile,
     onOpenFile(cb) {
       eventBus.on('open_file', cb);
       return () => {
@@ -971,6 +1110,21 @@ function createScopeConsole(scope: string) {
     }
   });
   return proxy
+}
+
+function getRectByElementStyle(el: HTMLElement) {
+  const style = getComputedStyle(el);
+  const { left, top, width, height } = style;
+  if (!left || !top || !width || !height) {
+    throw new Error('not position element');
+  }
+  const rect = {
+    left: parseFloat(left),
+    top: parseFloat(top),
+    width: parseFloat(width),
+    height: parseFloat(height),
+  };
+  return rect;
 }
 (window as any).__createFakeWindow = createFakeWindow;
 (window as any).__createFakeDocument = createFakeDocument;

@@ -1,4 +1,4 @@
-use actix_web::HttpResponse;
+use actix_web::{HttpResponse, http::header};
 use percent_encoding::{AsciiSet, CONTROLS};
 use serde::Serialize;
 use tokio::{fs::File, io::AsyncRead};
@@ -79,6 +79,7 @@ pub fn create_stream_resp(
   range: (u64, u64),
   total_size: u64,
   is_range: bool,
+  expires: Option<u32>,
 ) -> HttpResponse {
   let mut resp = if is_range {
     HttpResponse::PartialContent()
@@ -105,6 +106,10 @@ pub fn create_stream_resp(
   } else {
     "".to_owned()
   });
+  if let Some(expires) = expires {
+    let cache_header = header::CacheControl(vec![header::CacheDirective::MaxAge(expires)]);
+    resp.insert_header(cache_header);
+  }
   resp.body(stream)
 }
 

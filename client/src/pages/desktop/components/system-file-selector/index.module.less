@@ -1,0 +1,132 @@
+.file-page {
+  width: 600px;
+  height: 400px;
+  text-align: left;
+  overflow: auto;
+  background-color: var(--bg-medium);
+  box-shadow: var(--box-shadow);
+  border-radius: 10px;
+  font-size: 14px;
+  animation: pop-out 0.2s forwards;
+}
+.file-selector {
+  z-index: 9999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  width: 100%;
+  top: 25px;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  backdrop-filter: blur(3px);
+  animation: mask-bg 0.2s forwards;
+}
+
+@keyframes mask-bg {
+  from {
+    background-color: transparent;
+  }
+  to {
+    background-color: #aaaaaa84;
+  }
+}
+
+@keyframes pop-out {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+}
+.file-item {
+  cursor: pointer;
+  padding: 5px 20px;
+  margin: 3px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--bg-medium);
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: var(--bg-medium-hover);
+  }
+
+  &>.left {
+    color: var(--font-color);
+    color: var(--font-color);
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    flex: 0 0 330px;
+    overflow: hidden;
+
+    &>* {
+      margin: 0 5px;
+    }
+
+    &>input[type="checkbox"] {
+      &::before {
+        background-color: #aaa;
+      }
+    }
+
+    &>.filename {
+      flex: 0 0 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+  }
+
+  &>.right {
+    color: var(--font-color);
+    font-size: 12px;
+    opacity: 0.8;
+    width: 240px;
+    text-align: right;
+
+    &>span {
+      display: inline-block;
+      &:first-child {
+        width: 120px;
+        text-align: left;
+      }
+      &:last-child {
+        width: 80px;
+        text-align: right;
+      }
+    }
+  }
+}
+
+.file-page-title-bar {
+  padding: 9px 10px 5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  &>.left {
+    padding-left: 20px;
+  }
+
+  &>.right {
+    &>* {
+      margin: 0 5px;
+    }
+  }
+}
+
+.btn {
+  border: 1px solid var(--border-color);
+}
+
+.disabled {
+  opacity: 0.5;
+}

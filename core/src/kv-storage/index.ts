@@ -1,12 +1,15 @@
 import { post } from "../utils/http";
+import EventEmitter from 'events';
 
 export class Collection {
+  private eventBus = new EventEmitter();
   constructor(public collection: string) {
   }
   async set(key: string, value: string): Promise<void> {
     const r = await post('/kv_storage/set', {
       key, value, collection: this.collection
     }, Math.random().toString());
+    this.eventBus.emit(key, value, key);
     return r.data;
   }
   async get(key: string): Promise<string | null> {
@@ -63,4 +66,14 @@ export class Collection {
     });
     return r.data;
   }
+  subscribe<T extends string>(key: T, cb: (value: string | null, key: T) => void): () => void {
+    this.eventBus.on(key, cb);
+    return () => {
+      this.eventBus.off(key, cb);
+    }
+  }
+}
+
+export const commonCollection = {
+  desktop: new Collection('desktop_config'),
 }

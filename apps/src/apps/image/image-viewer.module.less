@@ -1,4 +1,3 @@
-
 .image-thumbnails {
   position: absolute;
   white-space: nowrap;
@@ -47,7 +46,8 @@
 .scrollbar::-webkit-scrollbar {
   width: 3px;
   height: 3px;
-  background-color: var(--bg-medium-hover); /* or add it to the track */
+  background-color: var(--bg-medium-hover);
+  /* or add it to the track */
 }
 
 /* Add a thumb */
@@ -58,4 +58,22 @@
 
 .scrollbar::-webkit-scrollbar-track {
   background-color: var(--bg-medium-hover);
+}
+
+.open-btn {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 10px;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  width: 110px;
+  transition: background-color 0.2s;
+  background-color: var(--bg-medium-hover);
+
+  &:hover {
+    background-color: var(--bg-medium);
+  }
 }

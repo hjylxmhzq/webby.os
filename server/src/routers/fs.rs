@@ -5,7 +5,8 @@ use crate::utils::response::{
 };
 use crate::utils::session::SessionUtils;
 use crate::utils::vfs::{
-  ensure_parent_dir_sync, read_file_stream, read_to_zip_stream, FileStatWithName, FS_HOOK, FSHookType, FSHookPayload, rel_join,
+  ensure_parent_dir_sync, read_file_stream, read_to_zip_stream, rel_join, FSHookPayload,
+  FSHookType, FileStatWithName, FS_HOOK,
 };
 use crate::utils::{response::create_resp, vfs};
 use crate::AppData;
@@ -19,6 +20,7 @@ use tokio_util::io::ReaderStream;
 #[derive(Deserialize)]
 pub struct GetFilesOfDirReq {
   file: Option<String>,
+  expires: Option<u32>, // 要求返回的响应带上[expires]s时长的cache-control header
 }
 
 #[derive(Serialize)]
@@ -38,7 +40,8 @@ pub async fn fs_actions_get(
     .file
     .clone()
     .ok_or(AppError::new("query params error").with_status(StatusCode::BAD_REQUEST))?;
-  fs_actions(path, &file, true, req_raw, state, sess).await
+  let expires = query.borrow().expires;
+  fs_actions(path, &file, true, req_raw, state, sess, expires).await
 }
 
 pub async fn fs_actions_post(
@@ -53,7 +56,8 @@ pub async fn fs_actions_post(
     .file
     .clone()
     .ok_or(AppError::new("query params error").with_status(StatusCode::BAD_REQUEST))?;
-  fs_actions(path, &file, false, req_raw, state, sess).await
+
+  fs_actions(path, &file, false, req_raw, state, sess, None).await
 }
 
 pub async fn fs_actions(
@@ -63,6 +67,7 @@ pub async fn fs_actions(
   req_raw: HttpRequest,
   state: web::Data<AppData>,
   sess: Session,
+  expires: Option<u32>,
 ) -> Result<HttpResponse, AppError> {
   let file_root = &state.read().unwrap().config.file_root;
   let user_root = &sess.get_user_root()?;
@@ -117,6 +122,7 @@ pub async fn fs_actions(
           (range_start, range_end),
           file_stat.size,
           is_range,
+          expires,
         )
       } else {
         create_stream_resp(
@@ -126,6 +132,7 @@ pub async fn fs_actions(
           (range_start, range_end),
           file_stat.size,
           is_range,
+          expires,
         )
       };
       Ok(resp)
@@ -189,7 +196,10 @@ pub async fn upload(
         }
       }
     }
-    FS_HOOK.lock().unwrap().emit(FSHookType::AddFile, FSHookPayload(flist));
+    FS_HOOK
+      .lock()
+      .unwrap()
+      .emit(FSHookType::AddFile, FSHookPayload(flist));
     Ok(())
   })
   .await??;
@@ -219,7 +229,10 @@ pub async fn read_image_get(
   state: web::Data<AppData>,
   sess: Session,
 ) -> Result<HttpResponse, AppError> {
-  let file = query.file.clone().ok_or(AppError::new("params error").with_status(StatusCode::BAD_REQUEST))?;
+  let file = query
+    .file
+    .clone()
+    .ok_or(AppError::new("params error").with_status(StatusCode::BAD_REQUEST))?;
   let resize = query.resize;
   read_image(&file, resize, state, sess).await
 }
@@ -229,7 +242,10 @@ pub async fn read_image_post(
   state: web::Data<AppData>,
   sess: Session,
 ) -> Result<HttpResponse, AppError> {
-  let file = query.file.clone().ok_or(AppError::new("params error").with_status(StatusCode::BAD_REQUEST))?;
+  let file = query
+    .file
+    .clone()
+    .ok_or(AppError::new("params error").with_status(StatusCode::BAD_REQUEST))?;
   let resize = query.resize;
   read_image(&file, resize, state, sess).await
 }
@@ -263,7 +279,10 @@ pub async fn read_video_transcode_get(
   state: web::Data<AppData>,
   sess: Session,
 ) -> Result<HttpResponse, AppError> {
-  let file = query.file.clone().ok_or(AppError::new("params error").with_status(StatusCode::BAD_REQUEST))?;
+  let file = query
+    .file
+    .clone()
+    .ok_or(AppError::new("params error").with_status(StatusCode::BAD_REQUEST))?;
   let resize = query.resize.clone();
   let bitrate = query.bitrate.clone();
   let file_root = &state.read().unwrap().config.file_root;

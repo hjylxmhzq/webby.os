@@ -1,6 +1,13 @@
 import { Theme } from "../types/theme";
 import type EventEmitter from 'events';
 
+export interface SelectFileOptions {
+  allowFile?: boolean;
+  allowDirectory?: boolean;
+  allowedExts?: string[];
+  multiple?: boolean;
+}
+
 export interface AppContext {
   theme: Theme;
   appRoot: string;
@@ -10,6 +17,7 @@ export interface AppContext {
   systemMenu: AppMenu[],
   isResume: boolean, // 是否从未unmount的状态恢复
   params: Record<string, string>,
+  selectFile(options: SelectFileOptions): Promise<string[] | null>
   setWindowSize: (w: number, h: number) => void;
   onOpenFile(cb: (file: string) => void): () => void;
   openFile(file: string): Promise<boolean>;
@@ -52,6 +60,8 @@ export interface AppWindow {
   onActive(cb: () => void): () => void;
   onWindowMove(cb: (left: number, top: number) => void): () => void;
   onWindowResize(cb: (w: number, h: number) => void): () => void;
+  onWindowMinimize(cb: () => void): () => void;
+  isMinimized: boolean;
 }
 export interface AppState {
   el: HTMLElement,
