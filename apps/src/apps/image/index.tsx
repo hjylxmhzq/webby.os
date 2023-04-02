@@ -19,6 +19,7 @@ export async function mount(ctx: AppContext) {
         async onClick() {
           const files = await ctx.selectFile({ allowedExts });
           if (files && files.length) {
+            ctx.systemMessage({ title: `打开文件`, content: files[0], timeout: 2000, type: 'info' });
             eventBus.emit('openfile', files[0]);
           }
         }

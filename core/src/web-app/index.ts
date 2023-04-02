@@ -23,6 +23,7 @@ export interface AppContext {
   openFile(file: string): Promise<boolean>;
   openFileBy(appName: string, file: string): Promise<void>;
   registerExt(ext: string[]): void;
+  systemMessage(message: SystemMessage): Promise<void>;
 }
 
 export interface AppDefinition {
@@ -86,4 +87,11 @@ export interface AppControlMenu {
   onClick?(name: string): void;
   children?: AppMenu[];
   shortcut?: string[];
+}
+
+export interface SystemMessage {
+  type: 'info' | 'error',
+  title: string,
+  content: string,
+  timeout: number,
 }

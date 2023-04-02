@@ -1,0 +1,72 @@
+.message-line {
+  position: fixed;
+  right: 10px;
+  top: 30px;
+  width: 275px;
+  text-align: left;
+  font-size: 12px;
+  max-height: 90vh;
+  box-sizing: border-box;
+  overflow: auto;
+  padding: 10px;
+  padding-bottom: 50px;
+}
+
+.message {
+  padding: 10px;
+  white-space: break-spaces;
+  word-break: break-all;
+  background-color: var(--bg-light);
+  border-radius: 10px;
+  overflow: hidden;
+  backdrop-filter: blur(6px);
+  transition: all 0.3s;
+  transform: translateY(20px);
+  opacity: 0;
+  margin-bottom: 5px;
+  box-shadow: var(--box-shadow);
+  &:global(.enter-active) {
+    transform: translateY(0px);
+    opacity: 1;
+  }
+  &:global(.enter-done) {
+    transform: translateY(0px);
+    opacity: 1;
+  }
+  &:global(.exit-active) {
+    transform: translateY(0px);
+    opacity: 1;
+  }
+  &:global(.exit-done) {
+    transform: translateY(0px);
+    opacity: 1;
+  }
+}
+
+.title {
+  font-weight: 900;
+  font-size: 14px;
+  margin-bottom: 3px;
+  padding-right: 50px;
+}
+
+.content {
+  margin-bottom: 3px;
+  padding-right: 50px;
+}
+
+.control {
+  position: absolute;
+  display: flex;
+  justify-content: flex-end;
+  top: 10px;
+  right: 10px;
+  bottom: 10px;
+  & > .btn {
+    background-color: var(--bg-light);
+    border: 1px solid var(--border-color);
+    &:hover {
+      background-color: var(--bg-light-hover);
+    }
+  }
+}

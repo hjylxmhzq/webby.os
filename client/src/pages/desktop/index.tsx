@@ -3,12 +3,13 @@ import style from './index.module.less';
 import { AppDefinition, appManager, windowManager } from "src/utils/micro-app";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { http } from '@webby/core/tunnel';
-import { AppMenu, AppState } from "@webby/core/web-app";
+import { AppMenu, AppState, SystemMessage } from "@webby/core/web-app";
 import { Collection, commonCollection } from '@webby/core/kv-storage'
 import { debounce } from "src/utils/common";
 import SystemFileSelector, { SelectFileProps } from "./components/system-file-selector";
 import EventEmitter from "events";
 import { create_download_link_from_file_path } from "@webby/core/fs";
+import MessageLine from "./components/message";
 
 (window as any)._http = http;
 (window as any)._Collection = Collection;
@@ -16,6 +17,7 @@ import { create_download_link_from_file_path } from "@webby/core/fs";
 export enum DeskTopEventType {
   SelectFile = 'selectFile',
   SelectFileFinished = 'selectFileFinished',
+  SystemMessage = 'systemMessage',
 }
 export const desktopEventBus = new EventEmitter();
 
@@ -28,6 +30,13 @@ export function systemSelectFile(options: SelectFileProps): Promise<string[] | n
   });
 }
 
+export function systemMessage(msg: SystemMessage): Promise<void> {
+  return new Promise((resolve) => {
+    desktopEventBus.emit(DeskTopEventType.SystemMessage, msg);
+    resolve();
+  });
+}
+
 export function HomePage() {
 
   const mountPoint = useRef<HTMLDivElement>(null);
@@ -37,6 +46,9 @@ export function HomePage() {
   const [showFileSelector, setShowFileSelector] = useState(false);
   const [fileSelectorOptioins, setFileSelectorOptioins] = useState<SelectFileProps>({});
   const [wallpaper, setWallpaper] = useState('');
+  const [messages, setMessages] = useState<({ id: string } & SystemMessage)[]>([]);
+  const msgsRef = useRef(messages);
+  msgsRef.current = messages;
 
   useEffect(() => {
     (async () => {
@@ -55,16 +67,37 @@ export function HomePage() {
     desktopEventBus.emit(DeskTopEventType.SelectFileFinished, files);
   }, []);
 
+  const onCloseMsg = (id: string) => {
+    const idx = msgsRef.current.findIndex(m => m.id === id);
+    if (idx !== -1) {
+      msgsRef.current.splice(idx, 1);
+      setMessages([...msgsRef.current]);
+    }
+  }
+
   useEffect(() => {
 
     const selectFiles = (options: SelectFileProps) => {
       setFileSelectorOptioins(options);
       setShowFileSelector(true);
     };
+    const onSystemMessage = (msg: SystemMessage) => {
+      const id = Math.random().toString().substring(2);
+      const msgs = [...msgsRef.current, { ...msg, id }];
+      setMessages(msgs);
+      if (msg.timeout) {
+        setTimeout(() => {
+          onCloseMsg(id);
+        }, msg.timeout);
+      }
+    };
+
     desktopEventBus.on(DeskTopEventType.SelectFile, selectFiles);
+    desktopEventBus.on(DeskTopEventType.SystemMessage, onSystemMessage);
 
     return () => {
-      desktopEventBus.off(DeskTopEventType.SelectFile, selectFiles)
+      desktopEventBus.off(DeskTopEventType.SelectFile, selectFiles);
+      desktopEventBus.off(DeskTopEventType.SystemMessage, onSystemMessage);
     };
 
   }, []);
@@ -125,5 +158,6 @@ export function HomePage() {
       showFileSelector &&
       <SystemFileSelector onSelection={onSelection} options={fileSelectorOptioins} />
     }
+    <MessageLine messages={messages} onClose={onCloseMsg} />
   </div>
 }

@@ -1,4 +1,4 @@
-link=https://at.alicdn.com/t/c/font_3901890_h5ejvp4pp0e.js
+link=https://at.alicdn.com/t/c/font_3901890_bskheb2wlb4.js
 
 curl ${link} -o ./src/icons/icons.js
 echo -e "// eslint-disable-next-line\n$(cat ./src/icons/icons.js)" > ./src/icons/icons.js

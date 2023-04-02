@@ -65,12 +65,12 @@ export default function Header(props: { menu: AppMenu[], activeApp?: AppState | 
         const elem = document.documentElement as any;
         fullscreen(elem);
       }}>
-        M
+        <Icon name="fullscreen" size={16} className={style.icon} />
       </span>
       <span onClick={() => toggleTheme(theme === 'light' ? 'dark' : 'light')}>
         <Icon name="dark" size={18} className={style.icon} />
       </span>
       <span>{time}</span>
     </span>
-  </div >
+  </div>
 }

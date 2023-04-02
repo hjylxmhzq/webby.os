@@ -14,10 +14,10 @@ export async function mount(ctx: AppContext) {
     const is_open = await ctx.openFile(file);
     if (!is_open) {
       const ext = path.parse(file).ext;
-      alert(`未找到可打开${ext}后缀文件的App`)
+      ctx.systemMessage({ title: '无法打开文件', content: `未找到可打开${ext}后缀文件的App`, timeout: 3000, type: 'error' });
     }
   };
-  root.render(<FilePage openFile={openFile}/>)
+  root.render(<FilePage openFile={openFile} />)
 }
 
 export async function unmount(ctx: AppContext) {

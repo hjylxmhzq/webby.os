@@ -9,7 +9,7 @@ import { Collection } from "@webby/core/kv-storage";
 import path from "path-browserify";
 import style from './micro-app.module.less';
 import { transformScale, transformTranslate } from "./animation";
-import { systemSelectFile } from "src/pages/desktop";
+import { systemMessage, systemSelectFile } from "src/pages/desktop";
 
 const store = new Collection('app_manager');
 const eventbus = new EventEmitter();
@@ -896,6 +896,7 @@ export function createContext(appWindow: AppWindow, theme: Theme) {
     channel: channel.port2,
     systemMenu: [],
     selectFile: systemSelectFile,
+    systemMessage: systemMessage,
     onOpenFile(cb) {
       eventBus.on('open_file', cb);
       return () => {
