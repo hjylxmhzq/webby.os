@@ -9,6 +9,10 @@ let root: ReactDom.Root;
 export async function mount(ctx: AppContext) {
   ctx.appWindow.setSize(800, 600);
   ctx.appWindow.setPos(100, 200);
+  const rootEl = ctx.appRootEl;
+  rootEl.style.position = 'absolute';
+  rootEl.style.inset = '0';
+
   root = ReactDom.createRoot(ctx.appRootEl);
   const openFile = async (file: string) => {
     const is_open = await ctx.openFile(file);

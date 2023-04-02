@@ -17,7 +17,7 @@ export default function FilePage(props: { openFile: (file: string) => void }) {
       console.log('click file: ', file);
     }
   }
-  return <div>
+  return <div style={{ height: '100%', overflow: 'auto' }}>
     <FileList dir={dir} onClick={onClick} />
   </div>
 }
