@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReactDom from 'react-dom/client';
 import { AppContext, AppInfo } from '@webby/core/web-app';
-import { create_download_link_from_file_path } from '@webby/core/fs';
 import Chat from './chat';
 import iconUrl from './icon.svg';
 import { Collection } from '@webby/core/kv-storage';
