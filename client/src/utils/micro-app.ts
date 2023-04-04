@@ -440,6 +440,7 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
     line-height: 22px;
     user-select: none;
     align-items: center;
+    position: relative;
   `)}">
   <span class="app_window_close_btn" style="cursor: pointer;">
   <svg class="icon" aria-hidden="true">
@@ -451,7 +452,13 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
     <use xlink:href="#icon-minus"></use>
   </svg>
   </span>
-  <span class="title_text" style="flex-grow: 1;">${appName}</span></span>`
+  <span class="title_text" style="flex-grow: 1;
+  position: absolute;
+  inset: 0;
+  padding: 0 50px;
+  overflow: hidden;
+  z-index: -1;
+  text-overflow: ellipsis;">${appName}</span></span>`
   
   const closeBtn = titleBar.querySelector('.app_window_close_btn') as HTMLSpanElement;
   const minBtn = titleBar.querySelector('.app_window_minimize_btn') as HTMLSpanElement;
