@@ -19,7 +19,7 @@ export default function MessageLine(props: { messages: Message[], onClose: (id: 
     </CSSTransition>
   });
 
-  return <div className={classNames(style['message-line'], 'scrollbar')}>
+  return <div className={classNames(style['message-line'], 'scrollbar')} style={{ display: props.messages.length ? 'block' : 'none' }}>
     <TransitionGroup>
       {msgEls}
     </TransitionGroup>

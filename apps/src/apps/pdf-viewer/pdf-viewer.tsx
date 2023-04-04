@@ -178,7 +178,7 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
       const page = pages[i]; // 需要渲染的页面索引
       if (!page) return;
 
-      const viewport = page.getViewport({ scale: 1 });
+      const viewport = page.getViewport({ scale: 1.5 });
       // Support HiDPI-screens.
       const outputScale = window.devicePixelRatio || 1;
 
@@ -189,7 +189,7 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
       textDiv.style.width = clientWidth + 'px';
       textDiv.style.height = heights[i] + 'px';
       const scaleFactor = clientWidth / viewport.width;
-      textDiv.style.setProperty('--scale-factor', scaleFactor + '');
+      textDiv.style.setProperty('--scale-factor', scaleFactor * 1.5 + '');
 
       const transform = outputScale !== 1
         ? [outputScale, 0, 0, outputScale, 0, 0]

@@ -90,45 +90,47 @@ function FileList(props: { dir: string, onClick: (file: FileStat) => void, onSel
           }}>取消</Button>
       </span>
     </div>
-    {
-      props.dir !== '' && props.dir !== '.' &&
-      <div onClick={() => props.onClick(parent)} key='..' className={style['file-item']}>..</div>
-    }
-    {
-      files.map((file, idx) => {
+    <div className={classNames(style['file-list'], 'scrollbar')}>
+      {
+        props.dir !== '' && props.dir !== '.' &&
+        <div onClick={() => props.onClick(parent)} key='..' className={style['file-item']}>..</div>
+      }
+      {
+        files.map((file, idx) => {
 
-        const canSelect = checkList.has(file.name) ||
-          (props.options.multiple && allowedFiles.includes(file.name)) ||
-          (!props.options.multiple && checkList.size === 0 && allowedFiles.includes(file.name));
+          const canSelect = checkList.has(file.name) ||
+            (props.options.multiple && allowedFiles.includes(file.name)) ||
+            (!props.options.multiple && checkList.size === 0 && allowedFiles.includes(file.name));
 
-        const canClick = canSelect || file.is_dir;
+          const canClick = canSelect || file.is_dir;
 
-        return <div key={file.name} className={style['file-item']}>
-          <span className={style.left}>
-            <Checkbox disabled={!canSelect} checked={checkList.has(file.name)} onChange={checked => {
-              if (checked) {
-                checkList.add(file.name);
-              } else {
-                checkList.delete(file.name);
-              }
-              setCheckList(new Set(checkList));
-            }} />
-            <span className={classNames(style.filename, { [style.disabled]: !canClick })} onClick={() => {
-              props.onClick(file)
-            }} title={file.name}>
-              {file.name}
+          return <div key={file.name} className={style['file-item']}>
+            <span className={style.left}>
+              <Checkbox disabled={!canSelect} checked={checkList.has(file.name)} onChange={checked => {
+                if (checked) {
+                  checkList.add(file.name);
+                } else {
+                  checkList.delete(file.name);
+                }
+                setCheckList(new Set(checkList));
+              }} />
+              <span className={classNames(style.filename, { [style.disabled]: !canClick })} onClick={() => {
+                props.onClick(file)
+              }} title={file.name}>
+                {file.name}
+              </span>
             </span>
-          </span>
-          <span className={style.right}>
-            <span>
-              {formatTime(file.modified)}
+            <span className={style.right}>
+              <span>
+                {formatTime(file.modified)}
+              </span>
+              <span>
+                {formatFileSize(file.size)}
+              </span>
             </span>
-            <span>
-              {formatFileSize(file.size)}
-            </span>
-          </span>
-        </div>
-      })
-    }
+          </div>
+        })
+      }
+    </div>
   </div>
 }
