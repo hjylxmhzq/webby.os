@@ -176,5 +176,5 @@ async fn shell(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, E
 }
 
 pub fn shell_routers() -> Scope {
-  web::scope("/shell").route("/start", web::get().to(shell))
+  web::scope("/websocket/shell").route("/start", web::get().to(shell))
 }

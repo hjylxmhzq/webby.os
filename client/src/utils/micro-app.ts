@@ -67,7 +67,7 @@ export class WindowManager {
     this.container.appendChild(this.dockEl);
   }
   async storeWindowStatus() {
-    await store.set('cacheWindowState', JSON.stringify(this.cacheWindowState));
+    await store.set('cacheWindowState', this.cacheWindowState);
   }
   appendToDock(app: AppState) {
     if (this.appsInDock.findIndex(dockApp => dockApp.app === app) !== -1) return;
@@ -166,10 +166,10 @@ export class WindowManager {
       });
     }, 200);
     window.addEventListener('resize', this.onResize);
-    store.get('cacheWindowState').then(async (v) => {
+    store.get<typeof this['cacheWindowState']>('cacheWindowState').then(async (v) => {
       let toDockApp: AppState[] = [];
       if (v) {
-        this.cacheWindowState = JSON.parse(v);
+        this.cacheWindowState = v;
         await appManager.ready();
         let tasks = Object.keys(this.cacheWindowState).map(async appName => {
           if (!appManager.apps[appName]) {
@@ -264,7 +264,7 @@ export class WindowManager {
 
       // 从将窗口缓存状态改为已关闭
       this.cacheWindowState[appName].open = false;
-      store.set('cacheWindowState', JSON.stringify(this.cacheWindowState));
+      store.set('cacheWindowState', this.cacheWindowState);
 
       app!.app.unmount(app!.ctx);
       let idx = this.openedApps.findIndex(app => app.name === appName);
@@ -557,7 +557,6 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
   let startElPos = [0, 0];
   let startElSize = [0, 0];
   titleBar.addEventListener('mousedown', (e) => {
-    console.log('titlebarrr');
     appContainer.style.pointerEvents = 'none';
     isMouseDown = true;
     startCursorPos = [e.clientX, e.clientY];
@@ -1082,11 +1081,17 @@ function createFakeDocument(scope: HTMLElement, scopeHead: HTMLElement, mountPoi
   return proxy
 }
 
+let sharedScope = {};
+(window as any).sharedScope = sharedScope;
+
 function createFakeWindow(fakeDocument: Document) {
   const fakeWindow = Object.create(null);
   const cacheFn = Object.create(null);
   const proxy = new Proxy(window, {
     get(target, key: any) {
+      if (key === 'sharedScope') {
+        return sharedScope;
+      }
       if (cacheFn[key]) return cacheFn[key];
       if (key === 'document') {
         return fakeDocument;

@@ -11,7 +11,7 @@ export class Shell {
     let protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     let host = window.location.host;
     if (!url) {
-      url = `${protocol}://${host}/shell/start`;
+      url = `${protocol}://${host}/websocket/shell/start`;
     }
     this.ws = new WebSocket(url);
     this.readyPromise = new Promise((resolve, reject) => {

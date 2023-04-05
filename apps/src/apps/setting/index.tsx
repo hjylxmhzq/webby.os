@@ -121,14 +121,15 @@ export async function mount(ctx: AppContext) {
 
     useEffect(() => {
       (async () => {
-        const wp = await commonCollection.desktop.get('wallpaper');
+        const wp = await commonCollection.desktop.get<string>('wallpaper');
         if (wp) {
           setWallpaper(wp);
         }
-        commonCollection.desktop.subscribe('wallpaper', (v) => {
-          setWallpaper(v || '');
-        });
       })();
+      const unsubscribe = commonCollection.desktop.subscribe<string>('wallpaper', (v) => {
+        setWallpaper(v || '');
+      });
+      return unsubscribe;
     }, []);
 
     return <div>

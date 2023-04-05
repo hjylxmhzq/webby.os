@@ -75,7 +75,7 @@ export async function mount(ctx: AppContext) {
 
   let cache: string[] = [];
 
-  store.get('history').then(v => {
+  store.get<string>('history').then(v => {
     if (v) {
       xterm.write(v);
       xterm.write('\n\r已从上次会话恢复\n\r');

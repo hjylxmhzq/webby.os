@@ -52,7 +52,7 @@ export function HomePage() {
 
   useEffect(() => {
     (async () => {
-      const wp = await commonCollection.desktop.get('wallpaper');
+      const wp = await commonCollection.desktop.get<string>('wallpaper');
       if (wp) {
         setWallpaper(wp);
       }

@@ -34,7 +34,7 @@ function Index() {
   const [msgs, setMsgs] = useState<string[]>([]);
 
   useEffect(() => {
-    store.get('api_token').then(v => {
+    store.get<string>('api_token').then(v => {
       if (v) {
         setapiToken(v);
       }

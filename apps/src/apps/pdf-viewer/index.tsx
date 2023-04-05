@@ -61,7 +61,7 @@ export async function mount(ctx: AppContext) {
       });
     }, []);
     const onLoaded = async (el: HTMLDivElement) => {
-      const st = await store.get('last_scroll_top');
+      const st = await store.get<string>('last_scroll_top');
       if (st) {
         const scrollTop = parseFloat(st);
         if (!Number.isNaN(scrollTop)) {

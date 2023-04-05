@@ -111,6 +111,16 @@ module.exports = {
         changeOrigin: true,
         ws: true,
       },
+      '/kv_storage/subscribe': {
+        target: 'ws://127.0.0.1:7001',
+        changeOrigin: true,
+        ws: true,
+      },
+      '/websocket/*': {
+        target: 'ws://127.0.0.1:7001',
+        changeOrigin: true,
+        ws: true,
+      },
       '/file': {
         target: 'http://127.0.0.1:7001',
         changeOrigin: true,

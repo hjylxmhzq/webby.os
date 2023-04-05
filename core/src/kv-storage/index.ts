@@ -5,24 +5,25 @@ export class Collection {
   private eventBus = new EventEmitter();
   constructor(public collection: string) {
   }
-  async set(key: string, value: string): Promise<void> {
+  async set(key: string, value: any): Promise<void> {
+    const v = JSON.stringify(value);
     const r = await post('/kv_storage/set', {
-      key, value, collection: this.collection
+      key, value: v, collection: this.collection
     }, Math.random().toString());
-    this.eventBus.emit(key, value, key);
+    this.eventBus.emit(key, v, key);
     return r.data;
   }
-  async get(key: string): Promise<string | null> {
+  async get<V = any>(key: string): Promise<V | null> {
     const r = await post('/kv_storage/get', {
       key, collection: this.collection
     }, 'collection_get' + '_' + key + '_' + this.collection);
     let d = r.data;
     if (d.length > 0) {
-      return d[0].value;
+      return JSON.parse(d[0].value);
     }
     return null;
   }
-  async has(key: string): Promise<string | null> {
+  async has(key: string): Promise<boolean> {
     const r = await post('/kv_storage/has', {
       key, collection: this.collection
     }, 'collection_has' + '_' + key + '_' + this.collection);
@@ -56,7 +57,7 @@ export class Collection {
       key, collection: this.collection
     });
     if (r.data.length) {
-      return r.data;
+      return r.data.map((v: string) => JSON.parse(v));
     }
     return [];
   }
@@ -66,12 +67,44 @@ export class Collection {
     });
     return r.data;
   }
-  subscribe<T extends string>(key: T, cb: (value: string | null, key: T) => void): () => void {
-    this.eventBus.on(key, cb);
+  subscribe<V = any, T extends string = string>(key: T, cb: (value: V | null) => void): () => void {
+    let sc = (window as any).sharedScope;
+    let ws = sc.__kv_subsribe_ws as WebSocket | undefined;
+    if (!ws || (ws && !(ws.readyState === ws.CONNECTING || ws.readyState === ws.OPEN))) {
+      let protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+      let host = window.location.host;
+      let url = `${protocol}://${host}/websocket/kv_storage/subscribe`;
+      ws = new WebSocket(url);
+      sc.__kv_subsribe_ws = ws;
+    }
+    waitForWs(ws).then(ws => {
+      ws.send(JSON.stringify({ type: 'subscribe', collections: { [this.collection]: [key] } }));
+    });
+    const listener = (e: MessageEvent) => {
+      const d = e.data;
+      if (d) {
+        const json = JSON.parse(d);
+        if (json.collection === this.collection && json.key === key) {
+          cb(JSON.parse(json.value));
+        }
+      }
+    };
+    ws.addEventListener('message', listener);
     return () => {
-      this.eventBus.off(key, cb);
+      ws?.removeEventListener('message', listener);
     }
   }
+}
+
+async function waitForWs(ws: WebSocket): Promise<WebSocket> {
+  if (ws.readyState === ws.OPEN) {
+    return ws;
+  }
+  return new Promise((resolve, reject) => {
+    ws.addEventListener('open', () => {
+      resolve(ws);
+    });
+  });
 }
 
 export const commonCollection = {
