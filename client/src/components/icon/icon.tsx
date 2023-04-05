@@ -47,6 +47,10 @@ export function FileThumbnailIcon(props: { className?: string, file: IconFile, d
     name = 'tupian';
   } else if (guess?.includes('text')) {
     name = 'file-b-1';
+  } else if (guess?.includes('pdf')) {
+    name = 'file-b-7';
+  } else if (guess?.includes('audio')) {
+    name = 'file-b-6';
   }
   return <Icon {...props} name={name} />;
 }

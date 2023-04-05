@@ -46,6 +46,7 @@ function FileList(props: { dir: string, onClick: (file: FileStat) => void, onSel
   const [allowedFiles, setAllowFiles] = useState<string[]>([]);
   const [checkList, setCheckList] = useState<Set<string>>(new Set());
   const [listType, setListType] = useState<'list' | 'card'>('list');
+  const [dir, setDir] = useState<string>(props.dir);
   const gotoDir = useCallback(async (dir: string) => {
     const _files = await readdir(props.dir);
     setCheckList(new Set());
@@ -64,6 +65,7 @@ function FileList(props: { dir: string, onClick: (file: FileStat) => void, onSel
     }).map(f => f.name);
     setAllowFiles(_allowedFiles);
     setFiles(_files);
+    setDir(props.dir);
   }, [props.dir, props.options.allowDirectory, props.options.allowFile, props.options.allowedExts]);
   useEffect(() => {
     (async () => {
@@ -98,8 +100,8 @@ function FileList(props: { dir: string, onClick: (file: FileStat) => void, onSel
     }
     {
       listType === 'list' ?
-        <FileRowList files={files} allowedFiles={allowedFiles} checkList={checkList} setCheckList={setCheckList} dir={props.dir} onClick={props.onClick} options={props.options} />
-        : <FileCardList files={files} allowedFiles={allowedFiles} checkList={checkList} setCheckList={setCheckList} dir={props.dir} onClick={props.onClick} options={props.options} />
+        <FileRowList files={files} allowedFiles={allowedFiles} checkList={checkList} setCheckList={setCheckList} dir={dir} onClick={props.onClick} options={props.options} />
+        : <FileCardList files={files} allowedFiles={allowedFiles} checkList={checkList} setCheckList={setCheckList} dir={dir} onClick={props.onClick} options={props.options} />
     }
   </div>
 }
