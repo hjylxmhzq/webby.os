@@ -8,10 +8,12 @@
   font-size: 14px;
   animation: pop-out 0.2s forwards;
 }
+
 .file-list {
   height: 400px;
   overflow: auto;
 }
+
 .file-selector {
   z-index: 9999999;
   display: flex;
@@ -31,6 +33,7 @@
   from {
     background-color: transparent;
   }
+
   to {
     background-color: #aaaaaa84;
   }
@@ -41,11 +44,13 @@
     opacity: 0;
     transform: translateY(50px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0px);
   }
 }
+
 .file-item {
   cursor: pointer;
   padding: 5px 20px;
@@ -97,10 +102,12 @@
 
     &>span {
       display: inline-block;
+
       &:first-child {
         width: 120px;
         text-align: left;
       }
+
       &:last-child {
         width: 80px;
         text-align: right;
@@ -120,6 +127,23 @@
   }
 
   &>.right {
+    display: flex;
+    align-items: center;
+
+    &>.icon {
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      font-size: 18px;
+      padding: 6px;
+      transition: background-color 0.2s;
+      cursor: pointer;
+      color: #aaa;
+
+      &:hover {
+        background-color: var(--bg-medium-hover);
+      }
+    }
+
     &>* {
       margin: 0 5px;
     }
@@ -132,4 +156,66 @@
 
 .disabled {
   opacity: 0.5;
+  pointer-events: none;
+}
+
+.file-card-list {
+  height: 400px;
+  overflow: auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+  align-content: flex-start;
+  position: relative;
+
+  & .file-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 3px;
+  }
+
+  & .file-card-botton {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  & .file-card-checkbox {
+    margin-right: 3px;
+    position: absolute;
+    left: 5px;
+    top: 5px;
+    background-color: var(--bg-light);
+    border-color: var(--border-color-strong);
+  }
+
+  & .img-icon {
+    object-fit: contain;
+    border-radius: 5px;
+  }
+
+  & .file-card-item {
+    position: relative;
+    width: 108px;
+    height: 108px;
+    padding: 10px;
+    box-sizing: border-box;
+    background-color: var(--bg-medium-hover);
+    margin: 5px;
+    overflow: hidden;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: var(--bg-heavy-hover);
+    }
+  }
 }

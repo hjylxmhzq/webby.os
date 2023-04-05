@@ -1,11 +1,22 @@
 import style from './index.module.less';
 import classnames from 'classnames';
 import Icon from '../icon/icon';
+import { MouseEvent } from 'react';
 
-export interface IProps { className?: string, size?: number, onChange?: (checked: boolean) => void, checked?: boolean, disabled?: boolean }
-export default function Checkbox({ size = 14, checked, onChange, className, disabled }: IProps) {
+export interface IProps {
+  className?: string,
+  size?: number,
+  onChange?: (checked: boolean) => void,
+  checked?: boolean,
+  disabled?: boolean
+  onClick?: (e: MouseEvent) => void;
+}
+export default function Checkbox({ onClick, size = 14, checked, onChange, className, disabled }: IProps) {
   return <div
-    onClick={() => !disabled && onChange?.(!checked)}
+    onClick={(e) => {
+      !disabled && onChange?.(!checked);
+      onClick?.(e);
+    }}
     style={{ width: size, height: size }}
     className={classnames(className, style['checkbox'], { [style['disabled']]: disabled })}
   >
