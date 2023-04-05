@@ -1,4 +1,4 @@
-### FileGo-rust
+### Webby.os
 
 ![ci status](https://github.com/hjylxmhzq/webby.os/actions/workflows/build.yml/badge.svg)
 
