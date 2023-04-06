@@ -4893,6 +4893,7 @@ __metadata:
     xterm: ^5.1.0
     xterm-addon-canvas: ^0.3.0
     xterm-addon-fit: ^0.7.0
+    xterm-addon-web-links: ^0.8.0
     xterm-addon-webgl: ^0.14.0
   languageName: unknown
   linkType: soft
@@ -19076,6 +19077,15 @@ __metadata:
   peerDependencies:
     xterm: ^5.0.0
   checksum: 512d41f80d6f9427ba02dab4e6fd642e94775a9cf7ef72ae4b55eab2a36856b5c67069bfc66b4af412fdce29a0842f9c6382af3672f0b514c4352dfd47defe8f
+  languageName: node
+  linkType: hard
+
+"xterm-addon-web-links@npm:^0.8.0":
+  version: 0.8.0
+  resolution: "xterm-addon-web-links@npm:0.8.0"
+  peerDependencies:
+    xterm: ^5.0.0
+  checksum: fe07572adfaa84ceeb961db3ae577aeb2342ea5dcd4948170d1b733ae8045693fab8808f9c63cc43a532b033ae95e63e62ac14bc2e34def764e68f6362ccae2b
   languageName: node
   linkType: hard
 

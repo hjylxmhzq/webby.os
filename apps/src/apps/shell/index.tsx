@@ -8,6 +8,7 @@ import 'xterm/css/xterm.css';
 import style from './index.module.less';
 import iconUrl from './icon.svg';
 import { Collection } from '@webby/core/kv-storage';
+import { WebLinksAddon } from 'xterm-addon-web-links';
 
 function debounce<T extends Function>(fn: T, delay = 500, mw?: (...args: any[]) => any) {
   let timer: number | undefined;
@@ -24,7 +25,32 @@ function debounce<T extends Function>(fn: T, delay = 500, mw?: (...args: any[]) 
 }
 let store = new Collection('shell_cache');
 let shell: Shell;
+const DefaultFontSize = 14;
+
 export async function mount(ctx: AppContext) {
+  ctx.systemMenu = [
+    {
+      name: '字体',
+      children: [
+        {
+          name: '放大',
+          async onClick() {
+            xterm.options.fontSize = (xterm.options.fontSize || DefaultFontSize) + 2;
+            fitAddon.fit();
+            await store.set('fontSize', xterm.options.fontSize);
+          }
+        },
+        {
+          name: '缩小',
+          async onClick() {
+            xterm.options.fontSize = (xterm.options.fontSize || DefaultFontSize) - 2;
+            fitAddon.fit();
+            await store.set('fontSize', xterm.options.fontSize);
+          }
+        }
+      ]
+    }
+  ]
 
   const root = ctx.appRootEl;
   root.style.position = 'absolute';
@@ -42,19 +68,22 @@ export async function mount(ctx: AppContext) {
   root.appendChild(xtermEl);
 
   const xterm = new Terminal({
-    fontSize: 14,
+    fontSize: DefaultFontSize,
     fontFamily: 'Ubuntu Mono, courier-new, courier, monospace',
     // lineHeight: 1.2,
   });
   const fitAddon = new FitAddon();
 
-  setTimeout(() => {
+  setTimeout(async () => {
     xterm.open(xtermEl);
+    const fontSize = (await store.get('fontSize') || DefaultFontSize);
+    xterm.options.fontSize = fontSize;
     fitAddon.fit();
   }, 300);
 
   xterm.loadAddon(new CanvasAddon());
   xterm.loadAddon(fitAddon);
+  xterm.loadAddon(new WebLinksAddon());
 
 
   fitAddon.fit();
