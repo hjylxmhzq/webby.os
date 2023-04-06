@@ -128,6 +128,7 @@ export class WindowManager {
     if (this.appsInDock.length === 0) {
       this.dockEl.classList.add(style['hide'].trim());
     }
+    app.ctx.appWindow.setActive(true);
   }
   init(container: HTMLElement) {
     if (this.isInited) {
