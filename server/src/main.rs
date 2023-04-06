@@ -101,6 +101,7 @@ async fn main() -> Result<(), AppError> {
       .service(routers::tunnel::tunnel_routers())
       .service(routers::kv_storage::kv_storage_routers())
       .service(routers::kv_storage::kv_storage_ws_routers())
+      .service(routers::message_queue::message_queue_routers())
       .service(routers::shell::shell_routers())
       .service(routers::fs::file_routers())
       .service(routers::auth::auth_routers())

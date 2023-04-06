@@ -10,9 +10,12 @@ import SystemFileSelector, { SelectFileProps } from "./components/system-file-se
 import EventEmitter from "events";
 import { create_download_link_from_file_path } from "@webby/core/fs";
 import MessageLine from "./components/message";
+import { MessageQueue } from '@webby/core/message-queue';
+
 
 (window as any)._http = http;
 (window as any)._Collection = Collection;
+(window as any)._MessageQueue = MessageQueue;
 
 export enum DeskTopEventType {
   SelectFile = 'selectFile',
