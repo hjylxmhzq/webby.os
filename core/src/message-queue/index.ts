@@ -13,6 +13,9 @@ export class MessageQueue {
       ws.addEventListener('open', () => resolve(undefined));
     });
   }
+  close() {
+    this.ws.close();
+  }
   subscribe(cb: (msg: string | Blob) => void) {
     const listener = (ev: MessageEvent) => {
       if (typeof ev.data === 'string') {
