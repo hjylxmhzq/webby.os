@@ -80,6 +80,7 @@ module.exports = {
       patterns: [
         { from: "../node_modules/pdfjs-dist/build/pdf.worker.min.js", to: path.join(outputDir, 'pdf-viewer') },
         { from: "../node_modules/pdfjs-dist/cmaps", to: path.join(outputDir, 'pdf-viewer', 'cmaps') },
+        { from: "./src/apps/3d-editor/editor", to: path.join(outputDir, '3d-editor') },
       ],
     }),
   ],

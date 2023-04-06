@@ -943,6 +943,7 @@ const builtinApps = [
   ['video-player', 'VideoPlayer'],
   ['shell', 'Shell'],
   ['pdf-viewer', 'PdfViewer'],
+  ['3d-editor', '3DEditor'],
 ];
 
 export class AppsRegister {
