@@ -13,11 +13,15 @@ export class MessageQueue {
       ws.addEventListener('open', () => resolve(undefined));
     });
   }
-  subscribe(cb: (msg: String) => void) {
+  subscribe(cb: (msg: string | Blob) => void) {
     const listener = (ev: MessageEvent) => {
-      const d = JSON.parse(ev.data);
-      if (d.type === 'message') {
-        cb(d.content);
+      if (typeof ev.data === 'string') {
+        const d = JSON.parse(ev.data);
+        if (d.type === 'message') {
+          cb(d.content);
+        }
+      } else {
+        cb(ev.data);
       }
     };
     this.ws.addEventListener('message', listener);
@@ -25,8 +29,12 @@ export class MessageQueue {
       this.ws.removeEventListener('message', listener);
     }
   }
-  async send(message: string) {
+  async send(message: string | ArrayBufferLike | Blob) {
     await this.ready;
-    this.ws.send(JSON.stringify({ type: 'message', content: message }));
+    if (message instanceof ArrayBuffer || message instanceof Blob) {
+      this.ws.send(message);
+    } else {
+      this.ws.send(JSON.stringify({ type: 'message', content: message }));
+    }
   }
 }

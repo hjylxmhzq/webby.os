@@ -5,7 +5,10 @@ use std::{
 };
 
 use actix::{Actor, Addr, AsyncContext, Handler, StreamHandler};
-use actix_web::{web, HttpRequest, HttpResponse, Scope};
+use actix_web::{
+  web::{self, Bytes},
+  HttpRequest, HttpResponse, Scope,
+};
 use actix_web_actors::ws;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -72,7 +75,7 @@ impl MyWs {
 
 #[derive(actix::Message)]
 #[rtype(result = "String")] // result = your type T
-pub struct WsMessage(Vec<u8>);
+pub struct WsMessage(Bytes);
 
 impl Handler<WsMessage> for MyWs {
   type Result = String; // This type is T
@@ -143,16 +146,26 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
             let mut conn = WS_CONNS.lock().unwrap();
             let conn_info = conn.get_mut(&self.key);
             if let Some(conn_info) = conn_info {
-              for (_id, addr) in conn_info.iter() {
-                addr.addr.do_send(ws_msg("message", &info.content));
+              for (id, addr) in conn_info.iter() {
+                if &self.id != id {
+                  addr.addr.do_send(ws_msg("message", &info.content));
+                }
               }
             }
           }
         }
         ctx.text("{}");
       }
-      Ok(ws::Message::Binary(_)) => {
-        ctx.text("{}");
+      Ok(ws::Message::Binary(bin)) => {
+        let mut conn = WS_CONNS.lock().unwrap();
+        let conn_info = conn.get_mut(&self.key);
+        if let Some(conn_info) = conn_info {
+          for (id, addr) in conn_info.iter() {
+            if &self.id != id {
+              addr.addr.do_send(WsMessage(bin.clone()));
+            }
+          }
+        }
       }
       _ => (),
     }
