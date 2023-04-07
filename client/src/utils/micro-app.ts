@@ -933,6 +933,7 @@ export interface AppDefinition {
 }
 
 const builtinApps = [
+  ['video-call', 'VideoCall'],
   ['paint', 'Paint'],
   ['file-browser', 'Cloud'],
   ['test', 'Test'],
