@@ -18,6 +18,8 @@ const LoginPage: React.FC = () => {
       } else {
         window.location.href = '/';
       }
+    } else {
+      window.alert('用户名不存在或密码错误');
     }
   }
 

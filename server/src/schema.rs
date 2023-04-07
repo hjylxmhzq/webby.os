@@ -15,6 +15,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    groups (name) {
+        name -> Text,
+        desc -> Text,
+        permissions -> Text,
+    }
+}
+
+diesel::table! {
     kv_storage (username, collection, key) {
         username -> Text,
         collection -> Text,
@@ -31,11 +39,15 @@ diesel::table! {
         email -> Text,
         user_type -> Integer,
         user_root -> Text,
+        group_name -> Text,
     }
 }
 
+diesel::joinable!(users -> groups (group_name));
+
 diesel::allow_tables_to_appear_in_same_query!(
     file_index,
+    groups,
     kv_storage,
     users,
 );

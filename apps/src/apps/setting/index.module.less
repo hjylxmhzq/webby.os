@@ -26,6 +26,7 @@
   background-color: var(--bg-medium);
   box-shadow: var(--box-shadow);
   border-radius: 5px;
+  overflow: auto;
 }
 
 .setting-page {
@@ -33,6 +34,24 @@
   padding: 10px;
   height: 100%;
   box-sizing: border-box;
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+    background-color: var(--bg-medium-hover);
+    /* or add it to the track */
+  }
+
+  /* Add a thumb */
+  *::-webkit-scrollbar-thumb {
+    background: var(--bg-heavy);
+    border-radius: 2px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background-color: var(--bg-medium-hover);
+  }
+
 }
 
 .checkbox {
@@ -45,6 +64,8 @@
   font-size: 12px;
   padding: 3px;
   margin: 2px;
+  background-color: var(--bg-light);
+  color: var(--font-color);
 }
 
 .setting-item {
@@ -60,4 +81,27 @@
 .setting-section {
   padding-left: 10px;
   border-left: 1px solid var(--border-color-strong);
+}
+
+.user-list {
+  margin-top: 10px;
+  border: 1px solid var(--border-color);
+  padding: 10px;
+}
+
+.user-list-item {
+  &.head {
+    font-weight: 900;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 12px;
+    margin-bottom: 10px;
+  }
+
+  white-space: nowrap;
+  padding: 5px 0;
+
+  &>span {
+    display: inline-block;
+    width: 160px;
+  }
 }

@@ -12,7 +12,7 @@ use std::{
 };
 use tokio::sync::Mutex;
 use tracing::log::info;
-use utils::auth::auto_create_user;
+use utils::auth::{auto_create_user, auto_create_user_group};
 mod middlewares;
 pub mod models;
 mod routers;
@@ -137,6 +137,7 @@ fn init() -> AppState {
   let mut conn = connect_db();
   run_migrations(&mut conn);
 
+  auto_create_user_group(&mut conn);
   auto_create_user(&mut conn);
 
   let state = AppState {

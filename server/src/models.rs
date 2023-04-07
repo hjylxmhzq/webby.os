@@ -3,7 +3,7 @@ use diesel::prelude::*;
 use serde::Serialize;
 
 
-#[derive(Queryable)]
+#[derive(Serialize, Queryable)]
 #[diesel(table_name = users)]
 pub struct User {
   pub username: String,
@@ -11,6 +11,23 @@ pub struct User {
   pub email: String,
   pub user_type: i32,
   pub user_root: String,
+  pub group_name: String,
+}
+
+#[derive(Serialize, Queryable)]
+#[diesel(table_name = groups)]
+pub struct Group {
+  pub name: String,
+  pub desc: String,
+  pub permissions: String,
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = groups)]
+pub struct NewGroup {
+  pub name: String,
+  pub desc: String,
+  pub permissions: String,
 }
 
 #[derive(Insertable)]
@@ -21,6 +38,7 @@ pub struct NewUser<'a> {
   pub email: &'a str,
   pub user_type: i32,
   pub user_root: &'a str,
+  pub group_name: &'a str,
 }
 
 #[derive(Insertable, Debug)]

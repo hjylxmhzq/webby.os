@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { auth } from "@webby/core/api";
 import Button from "./components/button";
 import { Popover } from "./components/popover";
 import { formatTime } from "./utils";
@@ -10,6 +9,8 @@ import { AppContext, AppInfo, SelectFileOptions } from '@webby/core/web-app';
 import iconUrl from './icon.svg';
 import { commonCollection } from "@webby/core/kv-storage";
 import { create_download_link_from_file_path } from "@webby/core/fs";
+import { auth } from "@webby/core/api";
+import classNames from 'classnames';
 
 let reactRoot: ReactDom.Root;
 
@@ -24,23 +25,22 @@ export async function mount(ctx: AppContext) {
   type menuKey = keyof typeof menu;
 
   const menu = {
-    Files: <DownloadSetting />,
-    Authentication: <UserSetting />,
-    Desktop: <DesktopSetting selectFile={ctx.selectFile} />
+    '桌面与个性化': <DesktopSetting selectFile={ctx.selectFile} />,
+    '用户与安全性': <UserSetting />,
   }
 
   function SettingPage() {
     const [tabName, setTabName] = useState<menuKey>(Object.keys(menu)[0] as menuKey);
     return <div className={style['setting-page']}>
       <div className={style['left-bar']}>
-        <div style={{ lineHeight: '40px' }}>Settings</div>
+        <div style={{ lineHeight: '40px' }}>设置</div>
         {
           Object.keys(menu).map((name: any) => {
             return <div key={name} className={style['menu-item']} onClick={() => setTabName(name)}>{name}</div>
           })
         }
       </div>
-      <div className={style['info-page']}>
+      <div className={classNames(style['info-page'])}>
         {menu[tabName]}
       </div>
     </div>
@@ -90,11 +90,37 @@ export async function mount(ctx: AppContext) {
   function UserSetting() {
 
     const [pwds, setPwds] = useState(['', ''] as [string, string]); // [old_password, new_password]
+    const [users, setUsers] = useState<auth.UserInfo[]>([]);
+    const [groups, setGroups] = useState<auth.GroupInfo[]>([]);
+    const [adding, setAdding] = useState(false);
+    const [newUser, setNewUser] = useState({ username: '', password: '', email: '', group: '' });
+    const [lastAdmin, setLastAdmin] = useState(true);
+
+    async function refresh() {
+      const users = await auth.getAllUsers();
+      const groups = await auth.getAllGroups();
+      const admins = users.filter(u => u.group_name === 'admin').length;
+      console.log('last admin', users);
+      if (admins > 1) {
+        setLastAdmin(false);
+      } else {
+        setLastAdmin(true);
+      }
+      if (groups.length > 0) {
+        setNewUser({ ...newUser, group: groups[0].name });
+      }
+      setUsers(users);
+      setGroups(groups);
+    }
+    useEffect(() => {
+      refresh();
+    }, []);
+
     return <div>
-      <div>Secure</div>
+      <div>权限</div>
       <div className={style['setting-section']}>
         <div className={style['setting-item']}>
-          <span>Change Password: </span>
+          <span>重置密码</span>
           <input className={style.input} type="text" placeholder="old password" value={pwds[0]} onChange={e => setPwds([e.target.value, pwds[1]])} />
           <input className={style.input} type="text" placeholder="new password" value={pwds[1]} onChange={e => setPwds([pwds[0], e.target.value])} />
           <Popover inline auto content={
@@ -110,6 +136,95 @@ export async function mount(ctx: AppContext) {
           }>
             <Button style={{ fontSize: 12 }}>Confirm</Button>
           </Popover>
+        </div>
+      </div>
+      <div>用户管理</div>
+      <div className={style['setting-section']}>
+        <div className={style['setting-item']}>
+          <div>
+            用户列表
+            <Button style={{ fontSize: 12 }} onClick={() => setAdding(true)}>添加用户</Button>
+          </div>
+          <div className={style['user-list']}>
+            <div className={classNames(style['user-list-item'], style.head)}>
+              <span>用户名</span>
+              <span>用户组</span>
+              <span>用户根目录</span>
+            </div>
+            {
+              users.map(user => {
+                return <div key={user.username} className={style['user-list-item']}>
+                  <span>{user.username}</span>
+                  <span>{user.group_name}</span>
+                  <span>{user.user_root}</span>
+                  {
+                    (!lastAdmin || user.group_name !== 'admin') &&
+                    <Popover inline auto content={
+                      <div style={{ lineHeight: '35px', fontSize: 12, padding: '0 10px' }}>
+                        确认删除用户 {user.username} 吗
+                        <Button type="danger" onClick={async () => {
+                          await auth.deleteUser({ username: user.username });
+                          await refresh();
+                        }} style={{ fontSize: 12 }}>确认</Button>
+                      </div>
+                    }>
+                      <Button style={{ fontSize: 12 }}>删除</Button>
+                    </Popover>
+                  }
+                </div>
+              })
+            }
+            {
+              adding && <div className={style['user-list-item']}>
+                <input className={style.input} type="text" placeholder="用户名" value={newUser.username} onChange={e => setNewUser({ ...newUser, username: e.target.value })} />
+                <input className={style.input} type="text" placeholder="密码" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} />
+                <input className={style.input} type="text" placeholder="邮箱" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} />
+                <select className={style.input} placeholder="用户组" value={newUser.group} onChange={e => { setNewUser({ ...newUser, group: e.target.value }) }}>
+                  {
+                    groups.map(g => {
+                      return <option key={g.name} value={g.name}>{g.name}</option>
+                    })
+                  }
+                </select>
+                <Button style={{ fontSize: 12 }} onClick={() => setAdding(false)}>取消</Button>
+                <Button style={{ fontSize: 12 }} onClick={async () => {
+
+                  for (let k in newUser) {
+                    if (!(newUser as any)[k]) {
+                      ctx.systemMessage({ type: 'error', title: '信息错误', content: `${k} 不能为空`, timeout: 5000 });
+                      return;
+                    }
+                  }
+                  await auth.addUser(newUser)
+                  await refresh();
+                  setAdding(false);
+
+                }}>确定</Button>
+              </div>
+            }
+          </div>
+        </div>
+      </div><div className={style['setting-section']}>
+        <div className={style['setting-item']}>
+          <div>
+            用户组列表
+          </div>
+          <div className={style['user-list']}>
+            <div className={classNames(style['user-list-item'], style.head)}>
+              <span>组名</span>
+              <span>描述</span>
+              <span>权限</span>
+            </div>
+            {
+              groups.map(group => {
+                return <div className={style['user-list-item']}>
+                  <span>{group.name}</span>
+                  <span>{group.desc}</span>
+                  <span>{group.permissions}</span>
+                </div>
+              })
+            }
+          </div>
         </div>
       </div>
     </div>
