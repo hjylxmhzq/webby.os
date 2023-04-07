@@ -1,4 +1,4 @@
-import { create_download_link_from_file_path, delete_files, FileStat, readdir, upload } from "@webby/core/fs"
+import { create_compression_download_link, create_download_link, create_download_link_from_file_path, delete_files, FileStat, readdir, upload } from "@webby/core/fs"
 import { useEffect, useState } from "react";
 import style from './file-page.module.less';
 import path from 'path-browserify';
@@ -69,6 +69,9 @@ function FileList(props: { dir: string, onClick: (name: FileStat) => void }) {
     }
     {
       files.map((file, idx) => {
+        const create_link = file.is_dir ? create_compression_download_link : create_download_link;
+        const downloadName = file.is_dir ? file.name + '.zip' : file.name;
+        const link = create_link(props.dir, file.name);
         return <div key={file.name} className={style['file-item']}>
           <span className={style.left}>
             <Checkbox checked={!!checkList[idx]} onChange={checked => {
@@ -87,6 +90,7 @@ function FileList(props: { dir: string, onClick: (name: FileStat) => void }) {
               {formatFileSize(file.size)}
             </span>
           </span>
+          <a className={style.download} href={link} download={downloadName}>下载</a>
         </div>
       })
     }

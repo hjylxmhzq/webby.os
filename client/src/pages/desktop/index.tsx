@@ -3,7 +3,7 @@ import style from './index.module.less';
 import { AppDefinition, appManager, windowManager } from "src/utils/micro-app";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { http } from '@webby/core/tunnel';
-import { AppMenu, AppState, SystemMessage } from "@webby/core/web-app";
+import { AppMenu, AppState, SystemMessage, SystemMessageHandle } from "@webby/core/web-app";
 import { Collection, commonCollection } from '@webby/core/kv-storage'
 import { debounce } from "src/utils/common";
 import SystemFileSelector, { SelectFileProps } from "./components/system-file-selector";
@@ -16,11 +16,14 @@ import { MessageQueue } from '@webby/core/message-queue';
 (window as any)._http = http;
 (window as any)._Collection = Collection;
 (window as any)._MessageQueue = MessageQueue;
+(window as any)._systemMessage = systemMessage;
 
 export enum DeskTopEventType {
   SelectFile = 'selectFile',
   SelectFileFinished = 'selectFileFinished',
   SystemMessage = 'systemMessage',
+  CloseSystemMessage = 'closeSystemMessage',
+  SystemMessageClosed = 'systemMessageClosed',
 }
 export const desktopEventBus = new EventEmitter();
 
@@ -33,12 +36,28 @@ export function systemSelectFile(options: SelectFileProps): Promise<string[] | n
   });
 }
 
-export function systemMessage(msg: SystemMessage): Promise<void> {
-  return new Promise((resolve) => {
-    desktopEventBus.emit(DeskTopEventType.SystemMessage, msg);
-    resolve();
-  });
+export function systemMessage(msg: SystemMessage, onClose?: () => void): SystemMessageHandle {
+
+  const id = Math.random().toString();
+  desktopEventBus.emit(DeskTopEventType.SystemMessage, { ...msg, id });
+  const onClosed = (_id: string) => {
+    if (_id === id) {
+      onClose?.();
+      handle.isClosed = true;
+      desktopEventBus.off(DeskTopEventType.SystemMessageClosed, onClosed);
+    }
+  };
+  desktopEventBus.on(DeskTopEventType.SystemMessageClosed, onClosed);
+  const handle = {
+    isClosed: false,
+    close() {
+      desktopEventBus.emit(DeskTopEventType.CloseSystemMessage, id);
+    }
+  };
+  return handle;
 }
+
+type IdMessage = { id: string } & SystemMessage;
 
 export function HomePage() {
 
@@ -74,9 +93,10 @@ export function HomePage() {
     const idx = msgsRef.current.findIndex(m => m.id === id);
     if (idx !== -1) {
       msgsRef.current.splice(idx, 1);
+      desktopEventBus.emit(DeskTopEventType.SystemMessageClosed, id);
       setMessages([...msgsRef.current]);
     }
-  }
+  };
 
   useEffect(() => {
 
@@ -84,23 +104,24 @@ export function HomePage() {
       setFileSelectorOptioins(options);
       setShowFileSelector(true);
     };
-    const onSystemMessage = (msg: SystemMessage) => {
-      const id = Math.random().toString().substring(2);
-      const msgs = [...msgsRef.current, { ...msg, id }];
+    const onSystemMessage = (msg: IdMessage) => {
+      const msgs = [...msgsRef.current, msg];
       setMessages(msgs);
       if (msg.timeout) {
         setTimeout(() => {
-          onCloseMsg(id);
+          onCloseMsg(msg.id);
         }, msg.timeout);
       }
     };
 
     desktopEventBus.on(DeskTopEventType.SelectFile, selectFiles);
     desktopEventBus.on(DeskTopEventType.SystemMessage, onSystemMessage);
+    desktopEventBus.on(DeskTopEventType.CloseSystemMessage, onCloseMsg);
 
     return () => {
       desktopEventBus.off(DeskTopEventType.SelectFile, selectFiles);
       desktopEventBus.off(DeskTopEventType.SystemMessage, onSystemMessage);
+      desktopEventBus.off(DeskTopEventType.CloseSystemMessage, onCloseMsg);
     };
 
   }, []);

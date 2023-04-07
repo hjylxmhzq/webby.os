@@ -3,10 +3,21 @@ import { SystemMessage } from "@webby/core/web-app"
 import style from './index.module.less';
 import { CSSTransition, TransitionGroup } from 'react-transition-group' // ES6
 import classNames from "classnames";
+import { useEffect, useState } from "react";
 
 type Message = { id: string } & SystemMessage;
 
 export default function MessageLine(props: { messages: Message[], onClose: (id: string) => void }) {
+
+  const [padding, setPadding] = useState(false);
+
+  useEffect(() => {
+    setPadding(true);
+    setTimeout(() => {
+      setPadding(false);
+    }, 300);
+  }, [props.messages]);
+
   const msgEls = props.messages.map(msg => {
     return <CSSTransition key={msg.id} timeout={{ enter: 300, exit: 300 }}>
       <div className={style.message}>
@@ -19,9 +30,9 @@ export default function MessageLine(props: { messages: Message[], onClose: (id: 
     </CSSTransition>
   });
 
-  return <div className={classNames(style['message-line'], 'scrollbar')} style={{ display: props.messages.length ? 'block' : 'none' }}>
+  return <div className={classNames(style['message-line'], 'scrollbar')} style={{ display: props.messages.length ? 'block' : 'none', paddingBottom: padding ? 50 : 10 }}>
     <TransitionGroup>
       {msgEls}
     </TransitionGroup>
-  </div>
+  </div >
 }

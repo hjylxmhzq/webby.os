@@ -23,7 +23,12 @@ export interface AppContext {
   openFile(file: string): Promise<boolean>;
   openFileBy(appName: string, file: string): Promise<void>;
   registerExt(ext: string[]): void;
-  systemMessage(message: SystemMessage): Promise<void>;
+  systemMessage(message: SystemMessage, onClose?: () => void): SystemMessageHandle;
+}
+
+export interface SystemMessageHandle {
+  isClosed: boolean;
+  close(): void;
 }
 
 export interface AppDefinition {
