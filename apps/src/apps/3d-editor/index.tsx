@@ -7,6 +7,11 @@ let mq: MessageQueue;
 export async function mount(ctx: AppContext) {
   let key = Math.random().toString(16).substring(2);
   mq = new MessageQueue(key);
+
+  mq.on_participant((msg) => {
+    ctx.systemMessage({ type: 'info', title: '当前会话加入新用户', content: `当前会话用户数: ${msg.count}`, timeout: 5000 });
+  });
+  
   ctx.systemMessage({ type: 'info', title: '当前场景共享密钥', content: key, timeout: 0 });
   ctx.systemMenu = [{
     name: '共享',
@@ -28,6 +33,9 @@ export async function mount(ctx: AppContext) {
             key = _key;
             mq.close();
             mq = new MessageQueue(key);
+            mq.on_participant((msg) => {
+              ctx.systemMessage({ type: 'info', title: '当前会话加入新用户', content: `当前会话用户数: ${msg.count}`, timeout: 5000 });
+            });
             mq.subscribe(onEditorChange);
             ctx.systemMessage({ type: 'info', title: '已切换场景共享会话', content: key, timeout: 0 });
           }

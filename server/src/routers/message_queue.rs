@@ -39,14 +39,21 @@ impl Handler<WsTextMessage> for MyWs {
 }
 
 #[derive(Serialize)]
-struct WsMsg {
+struct WsMsg<T: Serialize> {
   r#type: String,
-  content: String,
+  content: T,
 }
-fn ws_msg(r#type: &str, content: &str) -> WsTextMessage {
+
+#[derive(Serialize)]
+struct WsMsgNewParticipant {
+  participant_id: String,
+  count: u64,
+}
+
+fn ws_msg<T: Serialize>(r#type: &str, content: T) -> WsTextMessage {
   let msg = WsMsg {
     r#type: r#type.to_owned(),
-    content: content.to_owned(),
+    content,
   };
   let json = serde_json::to_string(&msg).unwrap();
   WsTextMessage(json)
@@ -115,6 +122,20 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
     let addr = ctx.address();
     let info = ConnInfo { addr };
     let mut conn = WS_CONNS.lock().unwrap();
+
+    let conn_info = conn.get_mut(&self.key);
+    if let Some(conn_info) = conn_info {
+      for (_id, addr) in conn_info.iter() {
+        addr.addr.do_send(ws_msg(
+          "new_participant",
+          WsMsgNewParticipant {
+            participant_id: "".to_owned(),
+            count: (conn_info.len() + 1) as u64,
+          },
+        ));
+      }
+    }
+
     let entry = conn.entry(self.key.clone()).or_insert(HashMap::new());
     entry.insert(self.id.clone(), info);
   }

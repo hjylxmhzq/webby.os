@@ -6,5 +6,5 @@ upload_temp_dir = "./files/upload_temp"
 use_ffmpeg_trancode = false
 ffmpeg_bin_path = "ffmpeg"
 indexing_follow_link = true
-authentication = "all"
+authentication = "none"
 shell = "zsh"
