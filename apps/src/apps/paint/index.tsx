@@ -11,7 +11,7 @@ export async function mount(ctx: AppContext) {
   iframe.style.boxSizing = 'border-box';
   iframe.style.border = '0';
   root.appendChild(iframe);
-  iframe.src = 'https://jspaint.app';
+  iframe.src = '/apps/paint/index.html';
   ctx.onOpenFile((file) => {
     iframe.src = file;
     console.log('open: ', file);
