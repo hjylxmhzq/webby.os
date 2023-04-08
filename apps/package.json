@@ -10,6 +10,8 @@
   "dependencies": {
     "@webby/core": "*",
     "client": "*",
+    "highlight.js": "^11.7.0",
+    "marked": "^4.3.0",
     "path-browserify": "^1.0.1",
     "pdfjs-dist": "^3.4.120",
     "plyr-react": "^5.1.2",
@@ -22,6 +24,7 @@
     "xterm-addon-webgl": "^0.14.0"
   },
   "devDependencies": {
+    "@types/marked": "^4.0.8",
     "copy-webpack-plugin": "^11.0.0",
     "css-loader": "^6.7.3",
     "less": "^4.1.3",

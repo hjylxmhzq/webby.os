@@ -18,6 +18,7 @@
   "packageManager": "yarn@3.5.0",
   "dependencies": {
     "cherry-markdown": "^0.8.17",
+    "highlight.js": "^11.7.0",
     "tinymce": "^6.4.1"
   }
 }

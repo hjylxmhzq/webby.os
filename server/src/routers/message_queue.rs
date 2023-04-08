@@ -5,10 +5,7 @@ use std::{
 };
 
 use actix::{Actor, Addr, AsyncContext, Handler, StreamHandler};
-use actix_web::{
-  web::{self, Bytes},
-  HttpRequest, HttpResponse, Scope,
-};
+use actix_web::{web, HttpRequest, HttpResponse, Scope};
 use actix_web_actors::ws;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -42,6 +39,7 @@ impl Handler<WsTextMessage> for MyWs {
 struct WsMsg<T: Serialize> {
   r#type: String,
   content: T,
+  participant_id: String,
 }
 
 #[derive(Serialize)]
@@ -50,10 +48,11 @@ struct WsMsgNewParticipant {
   count: u64,
 }
 
-fn ws_msg<T: Serialize>(r#type: &str, content: T) -> WsTextMessage {
+fn ws_msg<T: Serialize>(r#type: &str, content: T, participant_id: &str) -> WsTextMessage {
   let msg = WsMsg {
     r#type: r#type.to_owned(),
     content,
+    participant_id: participant_id.to_owned(),
   };
   let json = serde_json::to_string(&msg).unwrap();
   WsTextMessage(json)
@@ -82,7 +81,7 @@ impl MyWs {
 
 #[derive(actix::Message)]
 #[rtype(result = "String")] // result = your type T
-pub struct WsMessage(Bytes);
+pub struct WsMessage(Vec<u8>);
 
 impl Handler<WsMessage> for MyWs {
   type Result = String; // This type is T
@@ -125,13 +124,15 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
 
     let conn_info = conn.get_mut(&self.key);
     if let Some(conn_info) = conn_info {
+      let self_id = self.id.to_string();
       for (_id, addr) in conn_info.iter() {
         addr.addr.do_send(ws_msg(
           "new_participant",
           WsMsgNewParticipant {
-            participant_id: "".to_owned(),
+            participant_id: self.id.to_string(),
             count: (conn_info.len() + 1) as u64,
           },
+          &self_id,
         ));
       }
     }
@@ -139,20 +140,39 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
     let entry = conn.entry(self.key.clone()).or_insert(HashMap::new());
     entry.insert(self.id.clone(), info);
   }
+
   fn finished(&mut self, ctx: &mut Self::Context) {
     let mut conn = WS_CONNS.lock().unwrap();
     let queue_list = conn.get_mut(&self.key);
     if let Some(queue_list) = queue_list {
       queue_list.remove(&self.id);
+
       if queue_list.len() == 0 {
         conn.remove(&self.key);
+      } else {
+        let remain_participant_count = queue_list.len();
+        let self_id = self.id.to_string();
+        for (_id, addr) in queue_list.iter() {
+          addr.addr.do_send(ws_msg(
+            "participant_leave",
+            WsMsgNewParticipant {
+              participant_id: self_id.clone(),
+              count: remain_participant_count as u64,
+            },
+            &self_id,
+          ));
+        }
       }
     }
+
     ctx.close(None);
   }
 
   fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
     match msg {
+      Ok(ws::Message::Close(_reason)) => {
+        ctx.close(None);
+      }
       Ok(ws::Message::Ping(msg)) => {
         self.hb = Instant::now();
         ctx.pong(&msg)
@@ -167,9 +187,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
             let mut conn = WS_CONNS.lock().unwrap();
             let conn_info = conn.get_mut(&self.key);
             if let Some(conn_info) = conn_info {
+              let self_id = self.id.to_string();
               for (id, addr) in conn_info.iter() {
                 if &self.id != id {
-                  addr.addr.do_send(ws_msg("message", &info.content));
+                  addr
+                    .addr
+                    .do_send(ws_msg("message", &info.content, &self_id));
                 }
               }
             }
@@ -181,9 +204,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
         let mut conn = WS_CONNS.lock().unwrap();
         let conn_info = conn.get_mut(&self.key);
         if let Some(conn_info) = conn_info {
+          let self_id = self.id.as_bytes().to_vec();
           for (id, addr) in conn_info.iter() {
             if &self.id != id {
-              addr.addr.do_send(WsMessage(bin.clone()));
+              let mut u8_bin = bin.to_vec();
+              u8_bin.append(&mut self_id.clone());
+              addr.addr.do_send(WsMessage(u8_bin));
             }
           }
         }

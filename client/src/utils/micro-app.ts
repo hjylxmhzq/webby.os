@@ -933,7 +933,7 @@ export interface AppDefinition {
 }
 
 const builtinApps = [
-  ['video-call', 'VideoCall'],
+  ['chat-gpt', 'ChatGPT'],
   ['paint', 'Paint'],
   ['file-browser', 'Cloud'],
   ['test', 'Test'],
