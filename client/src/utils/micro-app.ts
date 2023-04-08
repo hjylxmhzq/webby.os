@@ -130,14 +130,28 @@ export class WindowManager {
     }
     app.ctx.appWindow.setActive(true);
   }
-  init(container: HTMLElement) {
+  async init(container: HTMLElement) {
     if (this.isInited) {
       throw new Error('window manager is already inited');
     }
     this.container = container;
     this.initDock();
-    
+
     this.isInited = true;
+
+    if (window.location.hash.includes('app=')) {
+      const appNameMatch = window.location.hash.match(/app=(.+)($|,)/);
+      if (appNameMatch && appNameMatch[1]) {
+        const appName = appNameMatch[1];
+        await appManager.ready();
+        if (appManager.apps[appName]) {
+          const app = await this.startApp(appName, true);
+          app?.ctx.appWindow.showTitleBar(false);
+          app?.ctx.appWindow.forceFullscreen();
+          return;
+        }
+      }
+    }
 
     this.checkActiveTimer = window.setInterval(() => {
       if (document.activeElement && this.container.contains(document.activeElement)) {
@@ -306,7 +320,7 @@ export class WindowManager {
     }
     this.cacheWindowState[appName].open = true;
     this.storeWindowStatus();
-    
+
     let unbindMove = app.ctx.appWindow.onWindowMove(debounce((left: number, top: number) => {
       this.cacheWindowState[appName].left = left;
       this.cacheWindowState[appName].top = top;
@@ -442,29 +456,46 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
     user-select: none;
     align-items: center;
     position: relative;
+    overflow: hidden;
   `)}">
-  <span class="app_window_close_btn" style="cursor: pointer;">
-  <svg class="icon" aria-hidden="true">
-    <use xlink:href="#icon-cross"></use>
-  </svg>
-  </span>
-  <span class="app_window_minimize_btn" style="cursor: pointer;">
-  <svg class="icon" aria-hidden="true">
-    <use xlink:href="#icon-minus"></use>
-  </svg>
-  </span>
-  <span class="title_text" style="flex-grow: 1;
-  position: absolute;
-  inset: 0;
-  padding: 0 50px;
-  overflow: hidden;
-  z-index: -1;
-  text-overflow: ellipsis;">${appName}</span></span>`
-  
+    <span class="app_window_close_btn" style="cursor: pointer;">
+      <svg class="icon" aria-hidden="true">
+        <use xlink:href="#icon-cross"></use>
+      </svg>
+    </span>
+    <span class="app_window_minimize_btn" style="cursor: pointer;">
+      <svg class="icon" aria-hidden="true">
+        <use xlink:href="#icon-minus"></use>
+      </svg>
+    </span>
+    <span class="title_text" style="flex-grow: 1;
+    position: absolute;
+    inset: 0;
+    padding: 0 50px;
+    overflow: hidden;
+    z-index: -1;
+    text-overflow: ellipsis;"
+    >${appName}</span>
+    <span class="app_window_new_window_btn" style="cursor: pointer;">
+      <svg class="icon" aria-hidden="true">
+        <use xlink:href="#icon-windows"></use>
+      </svg>
+    </span>
+  </span>`
+
   const closeBtn = titleBar.querySelector('.app_window_close_btn') as HTMLSpanElement;
   const minBtn = titleBar.querySelector('.app_window_minimize_btn') as HTMLSpanElement;
+  const newWindowBtn = titleBar.querySelector('.app_window_new_window_btn') as HTMLSpanElement;
   closeBtn.classList.add(style['titlebar_btn'].trim());
   minBtn.classList.add(style['titlebar_btn'].trim());
+  newWindowBtn.classList.add(style['titlebar_btn_right'].trim());
+  newWindowBtn.addEventListener('click', () => {
+    const size = getSize();
+    const url = new URL(window.location.href);
+    url.hash = `#app=${appName}`;
+    let strWindowFeatures = `menubar=no,location=no,resizable=yes,scrollbars=no,status=no,width=${size.width},height=${size.height}`;
+    window.open(url.href, `${appName}_window`, strWindowFeatures)
+  });
 
   closeBtn.addEventListener('click', (e) => {
     windowEventBus.emit(WindowEventType.BeforeClose);
@@ -638,14 +669,30 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
   }
   window.addEventListener('mousemove', onMouseMove);
 
-  titleBar.addEventListener('dblclick', () => {
+  let isForceFullscreen = false;
+  function forceFullscreen(fullscreen = true) {
+    isForceFullscreen = fullscreen;
+    if (fullscreen) {
+      appEl.style.inset = '25px 0 0 0';
+      appEl.style.width = 'auto'
+      appEl.style.height = 'auto';
+      appEl.style.borderRadius = '0px';
+    } else {
+      appEl.style.inset = 'none';
+      appEl.style.width = '500px';
+      appEl.style.height = '500px';
+      appEl.style.borderRadius = '10px';
+    }
+  }
+
+  function toggleFullscreen(force: boolean = false) {
     const rect = getRect();
     const dockHeight = windowManager.appsInDock.length ? DOCK_HEIGHT : 0;
     let tleft = 0;
     let ttop = 25;
     let twidth = document.documentElement.clientWidth;
     let theight = document.documentElement.clientHeight - 25 - dockHeight;
-    if (rect.width === twidth && theight === rect.height) {
+    if (force || (rect.width === twidth && theight === rect.height)) {
       twidth = lastRect.width;
       theight = lastRect.height;
       tleft = lastRect.left;
@@ -679,6 +726,10 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
       onResizeCbs.forEach(cb => cb(twidth, theight));
       onMoveCbs.forEach(cb => cb(tleft, ttop));
     }
+  }
+
+  titleBar.addEventListener('dblclick', () => {
+    toggleFullscreen();
   });
 
   const mountPoint = document.createElement('div');
@@ -693,6 +744,16 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
   bottom: 0;
   left: 0;
   right: 0;`;
+
+  function showTitleBar(show: boolean = true) {
+    if (!show) {
+      (titleBar.firstElementChild as HTMLSpanElement).style.height = '0px';
+      appContainer.style.top = '0px'
+    } else {
+      (titleBar.firstElementChild as HTMLSpanElement).style.height = '22px';
+      appContainer.style.top = '22px'
+    }
+  }
 
   const titleText = titleBar.querySelector('.title_text') as HTMLSpanElement;
   const setTitle = (title: string) => {
@@ -724,12 +785,14 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
   }
   let lastRect = getRect();
   const setSize = (w: number, h: number) => {
+    if (isForceFullscreen) return;
     lastRect = getRect();
     appEl.style.width = w + 'px';
     appEl.style.height = h + 'px';
     onResizeCbs.forEach(cb => cb(w, h));
   };
   const setPos = (left: number, top: number) => {
+    if (isForceFullscreen) return;
     appEl.style.left = left + 'px';
     appEl.style.top = top + 'px';
     onMoveCbs.forEach(cb => cb(left, top));
@@ -767,6 +830,9 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
     getRect,
     getPos,
     onWindowMinimize: onMinimize,
+    toggleFullscreen,
+    showTitleBar,
+    forceFullscreen,
   };
   return appWindow;
 }

@@ -67,6 +67,9 @@ export interface AppWindow {
   onWindowMove(cb: (left: number, top: number) => void): () => void;
   onWindowResize(cb: (w: number, h: number) => void): () => void;
   onWindowMinimize(cb: () => void): () => void;
+  showTitleBar(show?: boolean): void;
+  toggleFullscreen(force?: boolean): void;
+  forceFullscreen(fullscreen?: boolean): void;
   isMinimized: boolean;
 }
 export interface AppState {
