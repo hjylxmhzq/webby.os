@@ -11,6 +11,7 @@
     "@webby/core": "*",
     "client": "*",
     "highlight.js": "^11.7.0",
+    "katex": "^0.16.4",
     "marked": "^4.3.0",
     "path-browserify": "^1.0.1",
     "pdfjs-dist": "^3.4.120",
@@ -24,6 +25,7 @@
     "xterm-addon-webgl": "^0.14.0"
   },
   "devDependencies": {
+    "@types/katex": "^0.16.0",
     "@types/marked": "^4.0.8",
     "copy-webpack-plugin": "^11.0.0",
     "css-loader": "^6.7.3",

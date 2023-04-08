@@ -112,7 +112,11 @@ export async function mount(ctx: AppContext) {
         model: 'gpt-3.5-turbo',
         messages: msgLine.map(m => m.msg),
         stream: true,
+        temperature: meta.temperature,
       };
+      if (meta.maxTokens > 0) {
+        body.max_tokens = meta.maxTokens;
+      }
       if (isLoading) {
         if (abort.current) {
           abort.current.abort();
@@ -163,7 +167,7 @@ export async function mount(ctx: AppContext) {
               }
             }
             const msg = chunks.map(msg => {
-              return msg.choices[0].delta.content || '';
+              return msg.choices[0]?.delta.content || '';
             }).join('');
             if (!v.done) {
               setPartialMsg(msg);
@@ -188,6 +192,7 @@ export async function mount(ctx: AppContext) {
         read();
 
       } catch (e: any) {
+        console.error(e);
         setError(e.toString());
       } finally {
         setLoading(false);
@@ -238,8 +243,18 @@ export async function mount(ctx: AppContext) {
       await ask(newMsgLine);
     };
 
+    const [meta, setMeta] = useState({ temperature: 1, maxTokens: 0 });
+
     return <div style={{ position: 'absolute', inset: 0 }}>
-      <Chat partialMsg={partialMsg} onChange={onChangeMsg} error={isError} loading={isLoading} msgLine={msgLine} onInput={onInput} />
+      <Chat
+        meta={meta}
+        onChangeMeta={(temp, tokens) => setMeta({ temperature: temp, maxTokens: tokens })}
+        partialMsg={partialMsg}
+        onChange={onChangeMsg}
+        error={isError}
+        loading={isLoading}
+        msgLine={msgLine}
+        onInput={onInput} />
     </div>
   }
 
@@ -263,6 +278,8 @@ interface RequestBody {
   model: "gpt-3.5-turbo";
   messages: ChatMessage[];
   stream: boolean,
+  temperature: number,
+  max_tokens?: number,
 }
 
 interface DeltaChoice {

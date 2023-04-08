@@ -34,10 +34,11 @@
 
 .msg-content {
   min-width: 30px;
+  min-height: 20px;
   word-break: break-all;
   z-index: 10;
   position: relative;
-  padding: 5px;
+  padding: 5px 10px;
   line-height: 1.5;
   border-radius: 5px;
   overflow: hidden;
@@ -47,15 +48,34 @@
     width: 100%;
   }
 
+
+  & :global(p) {
+    margin: 0;
+    padding: 5px 0;
+
+    &:first-child {
+      padding: 0;
+    }
+
+    &:last-child {
+      padding: 0;
+    }
+  }
+
   & :global(pre) {
     background-color: var(--bg-light);
     padding: 5px;
+  }
+
+  & :global(math) {
+    padding: 5px 0;
   }
 }
 
 .msg-item-wrapper {
   display: flex;
   padding: 5px 0;
+  position: relative;
 
   &.left {
     justify-content: flex-start;
@@ -83,6 +103,7 @@
   color: var(--font-color);
   box-sizing: border-box;
   padding: 10px;
+  padding-bottom: 35px;
   border-radius: 10px;
   outline: none;
 }
@@ -91,11 +112,6 @@
   font-size: 14px;
   position: absolute;
   inset: 0;
-
-  & :global(p) {
-    margin: 0;
-    padding: 0;
-  }
 
   & *::-webkit-scrollbar {
     width: 3px;
@@ -125,6 +141,26 @@
   animation: spin 1.5s infinite;
   border-bottom-color: transparent;
   margin: 3px;
+}
+
+.processing {
+  &::after {
+    content: '';
+    width: 8px;
+    opacity: 0.6;
+    height: 8px;
+    border: 2px solid #eee;
+    border-radius: 50%;
+    box-sizing: border-box;
+    transform-origin: center;
+    animation: Rv0ZxTXEv2p_Jhd4csWJ 1.5s infinite;
+    border-bottom-color: transparent;
+    margin: 3px;
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    animation: spin 1.5s infinite linear;
+  }
 }
 
 @keyframes spin {
@@ -162,4 +198,12 @@
   box-sizing: border-box;
   color: var(--font-color);
   background-color: var(--bg-light);
+}
+
+.setting-btn {
+  font-size: 12px;
+  position: absolute;
+  right: 17px;
+  top: 120px;
+  z-index: 10;
 }

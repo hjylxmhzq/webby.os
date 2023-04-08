@@ -4,7 +4,10 @@ import style from './chat.module.less';
 import classNames from 'classnames';
 import { marked } from 'marked';
 import 'highlight.js/styles/monokai-sublime.css';
+import { Popover } from "../../components/popover";
+import Button from "../../components/button";
 const hljs = require('highlight.js');
+import renderMathInElement from 'katex/contrib/auto-render';
 
 export interface IProps {
   msgLine: MsgLineItem[];
@@ -13,6 +16,11 @@ export interface IProps {
   error: string,
   partialMsg: string,
   onChange(idx: number, newMsg: string): void,
+  onChangeMeta(temp: number, maxTokens: number): void,
+  meta: {
+    temperature: number,
+    maxTokens: number,
+  }
 }
 
 export default function Chat(props: IProps) {
@@ -29,6 +37,7 @@ export default function Chat(props: IProps) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
     }
   }, [props.msgLine]);
+
   return <div className={style.container}>
     <div className={style['msg-list']} ref={listRef}>
       {
@@ -55,6 +64,40 @@ export default function Chat(props: IProps) {
     </div>
     <div className={style['msg-input-wrapper']}>
       <div className={style.error}>{props.error}</div>
+      <Popover position="top" inline auto content={
+        <div style={{ lineHeight: '35px', fontSize: 12, padding: '0 10px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>temperature</span>
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <input
+                onChange={e => props.onChangeMeta(+e.target.value, props.meta.maxTokens)}
+                type="range"
+                min={0}
+                max={2}
+                step={0.01}
+                value={props.meta.temperature}
+              ></input>
+              <span style={{ width: 40 }}>{props.meta.temperature.toFixed(2)}</span>
+            </span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>max tokens</span>
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <input
+                onChange={e => props.onChangeMeta(props.meta.temperature, +e.target.value)}
+                type="range"
+                min={1}
+                max={4096}
+                step={1}
+                value={props.meta.maxTokens}
+              ></input>
+              <span style={{ width: 40 }}>{props.meta.maxTokens}</span>
+            </span>
+          </label>
+        </div>
+      }>
+        <Button className={style['setting-btn']}>设置</Button>
+      </Popover>
       <textarea
         className={style['msg-input']}
         onChange={e => setInput(e.target.value)}
@@ -82,7 +125,7 @@ function MessageContent(props: {
 
   useEffect(() => {
     if (!textRef.current) return;
-    textRef.current.innerHTML = marked.parse(props.content, {
+    const md = marked.parse(props.content, {
       highlight(code, lang) {
         if (!lang || props.partial) {
           return code;
@@ -96,6 +139,24 @@ function MessageContent(props: {
         }
       }
     });
+    textRef.current.innerHTML = md;
+    renderMathInElement(textRef.current, {
+      // customised options
+      // • auto-render specific keys, e.g.:
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', display: false },
+        { left: '\\(', right: '\\)', display: false },
+        { left: '\\[', right: '\\]', display: true }
+      ],
+      // • rendering keys, e.g.:
+      throwOnError: false
+    });
+    return () => {
+      if (textRef.current) {
+        textRef.current.innerHTML = ''
+      }
+    }
   }, [props.content, editing]);
 
   return <div className={classNames(style['msg-item'], props.role === 'assistant' ? style['left'] : style['right'], { [style.editing]: editing })}>
@@ -126,7 +187,7 @@ function MessageContent(props: {
             props.onChange?.(editContent);
             setEditing(false);
           }} className={classNames(style.editor)} value={editContent} onChange={e => setEditContent(e.target.value)}></textarea>
-          : <div ref={textRef}></div>
+          : <div ref={textRef} className={classNames({ [style.processing]: props.partial })}></div>
       }
     </div>
   </div>
