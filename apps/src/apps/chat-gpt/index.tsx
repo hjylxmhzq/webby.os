@@ -76,6 +76,7 @@ export async function mount(ctx: AppContext) {
     const [isLoading, setLoading] = useState(false);
     const [isError, setError] = useState('');
     const [partialMsg, setPartialMsg] = useState('');
+    const [isStreaming, setIsStreaming] = useState(false);
     const abort = useRef<AbortController>()
     const [msgLine, setMsgLine] = useState<MsgLineItem[]>([
       {
@@ -117,12 +118,14 @@ export async function mount(ctx: AppContext) {
       if (meta.maxTokens > 0) {
         body.max_tokens = meta.maxTokens;
       }
-      if (isLoading) {
+      if (isLoading || isStreaming) {
+        setPartialMsg('');
         if (abort.current) {
           abort.current.abort();
         }
       }
       setLoading(true);
+      setIsStreaming(true);
       try {
         setError('');
         const ac = new AbortController();
@@ -184,6 +187,7 @@ export async function mount(ctx: AppContext) {
               });
               setPartialMsg('');
               setMsgLine(msgLine.slice());
+              setIsStreaming(false);
               store.set('messages', msgLine);
             }
           });
