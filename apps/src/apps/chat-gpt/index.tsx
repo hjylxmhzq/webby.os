@@ -75,6 +75,7 @@ export async function mount(ctx: AppContext) {
     const [apiToken, setApiToken] = useState('');
     const [isLoading, setLoading] = useState(false);
     const [isError, setError] = useState('');
+    const [partialMsg, setPartialMsg] = useState('');
     const abort = useRef<AbortController>()
     const [msgLine, setMsgLine] = useState<MsgLineItem[]>([
       {
@@ -110,6 +111,7 @@ export async function mount(ctx: AppContext) {
       const body: RequestBody = {
         model: 'gpt-3.5-turbo',
         messages: msgLine.map(m => m.msg),
+        stream: true,
       };
       if (isLoading) {
         if (abort.current) {
@@ -130,19 +132,61 @@ export async function mount(ctx: AppContext) {
           body: JSON.stringify(body),
           signal: ac.signal,
         });
-        const respBody: RespBody = await resp.json();
-        if (respBody.choices.length) {
-          const ans = respBody.choices[0].message;
-          const tokens = respBody.usage.total_tokens;
-          msgLine.push({
-            msg: ans,
-            usage: {
-              token: tokens,
+        const reader = resp.body?.pipeThrough(new TextDecoderStream()).getReader();
+
+        const chunks: DeltaResp[] = [];
+        let text = '';
+        let role: Role = 'user';
+        function read() {
+          reader?.read().then(v => {
+            const value = v.value?.trim();
+            if (value) {
+              text += value;
+              while (true) {
+                const dataIdx = text.indexOf('data: ');
+                if (dataIdx === -1) break;
+                if (dataIdx === 0) {
+                  text = text.substring(dataIdx + 6);
+                  continue;
+                }
+                const data = text.substring(0, dataIdx).trim();
+                if (data) {
+                  text = text.substring(dataIdx + 6);
+                  const json = JSON.parse(data) as DeltaResp;
+                  const _role = json.choices[0]?.delta.role
+                  if (_role) {
+                    role = _role;
+                  } else {
+                    chunks.push(json);
+                  }
+                }
+              }
+            }
+            const msg = chunks.map(msg => {
+              return msg.choices[0].delta.content || '';
+            }).join('');
+            if (!v.done) {
+              setPartialMsg(msg);
+              read();
+            } else {
+              msgLine.push({
+                msg: {
+                  role,
+                  content: msg
+                },
+                usage: {
+                  token: 0,
+                },
+              });
+              setPartialMsg('');
+              setMsgLine(msgLine.slice());
+              store.set('messages', msgLine);
             }
           });
-          setMsgLine([...msgLine]);
-          store.set('messages', msgLine);
         }
+
+        read();
+
       } catch (e: any) {
         setError(e.toString());
       } finally {
@@ -176,7 +220,6 @@ export async function mount(ctx: AppContext) {
       })
       const clear = () => setMsgLine(msgLine.slice(0, 1));
       const setPrompt = (prompt: string) => {
-        console.log('pppp', prompt);
         msgLine[0].msg.content = prompt;
         setMsgLine(msgLine.slice());
       };
@@ -196,7 +239,7 @@ export async function mount(ctx: AppContext) {
     };
 
     return <div style={{ position: 'absolute', inset: 0 }}>
-      <Chat onChange={onChangeMsg} error={isError} loading={isLoading} msgLine={msgLine} onInput={onInput} />
+      <Chat partialMsg={partialMsg} onChange={onChangeMsg} error={isError} loading={isLoading} msgLine={msgLine} onInput={onInput} />
     </div>
   }
 
@@ -219,6 +262,24 @@ export interface MsgLineItem {
 interface RequestBody {
   model: "gpt-3.5-turbo";
   messages: ChatMessage[];
+  stream: boolean,
+}
+
+interface DeltaChoice {
+  "delta": {
+    content?: string,
+    role?: Role,
+  },
+  "index": number,
+  "finish_reason": string | null
+}
+
+interface DeltaResp {
+  id: string,
+  object: string,
+  created: number,
+  model: string,
+  choices: DeltaChoice[],
 }
 
 interface RespBody {

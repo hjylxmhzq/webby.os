@@ -12,12 +12,13 @@ const ev = new events();
 
 let currentTheme: Theme = localStorage.getItem('theme') as Theme;
 if (!currentTheme) {
-  const mm = matchMedia('(prefers-color-scheme: dark)');
-  if (mm.matches) {
-    currentTheme = 'dark';
-  } else {
-    currentTheme = 'light';
-  }
+  // const mm = matchMedia('(prefers-color-scheme: dark)');
+  // if (mm.matches) {
+  //   currentTheme = 'dark';
+  // } else {
+  //   currentTheme = 'light';
+  // }
+  currentTheme = 'dark';
 }
 
 export function useTheme(): [Theme, (theme: Theme) => void, () => void] {

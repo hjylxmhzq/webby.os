@@ -11,30 +11,24 @@
     height: 130px;
   }
 
-  &.right::after {
+  &::after {
     content: '';
     position: absolute;
-    right: -5px;
     top: 9px;
     transform: rotate(45deg);
     z-index: 0;
     width: 10px;
     border: 1px solid var(--border-color);
     height: 10px;
-    background-color: var(--bg-heavy);
+    background-color: var(--bg-medium);
+  }
+
+  &.right::after {
+    right: -5px;
   }
 
   &.left::after {
-    content: '';
-    position: absolute;
     left: -5px;
-    top: 9px;
-    transform: rotate(45deg);
-    z-index: 0;
-    width: 10px;
-    border: 1px solid var(--border-color);
-    height: 10px;
-    background-color: var(--bg-heavy);
   }
 }
 
@@ -47,7 +41,7 @@
   line-height: 1.5;
   border-radius: 5px;
   overflow: hidden;
-  background-color: var(--bg-heavy);
+  background-color: var(--bg-medium);
 
   &.editing {
     width: 100%;

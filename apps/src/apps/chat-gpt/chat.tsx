@@ -3,15 +3,15 @@ import { MsgLineItem, Role } from ".";
 import style from './chat.module.less';
 import classNames from 'classnames';
 import { marked } from 'marked';
-import 'highlight.js/styles/github.css';
-// @ts-ignore
-import hljs from 'highlight.js';
+import 'highlight.js/styles/monokai-sublime.css';
+const hljs = require('highlight.js');
 
 export interface IProps {
   msgLine: MsgLineItem[];
   onInput(msg: string): void;
   loading: boolean,
   error: string,
+  partialMsg: string,
   onChange(idx: number, newMsg: string): void,
 }
 
@@ -47,6 +47,11 @@ export default function Chat(props: IProps) {
           </div>
         </div>
       }
+      {
+        !!props.partialMsg && <div className={classNames(style['msg-item-wrapper'], style['left'])}>
+          <MessageContent role={'assistant'} content={props.partialMsg} partial />
+        </div>
+      }
     </div>
     <div className={style['msg-input-wrapper']}>
       <div className={style.error}>{props.error}</div>
@@ -61,7 +66,7 @@ export default function Chat(props: IProps) {
 }
 
 function MessageContent(props: {
-  content: string, role: Role, onChange: (newMsg: string) => void
+  content: string, role: Role, onChange?: (newMsg: string) => void, partial?: boolean
 }) {
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState('');
@@ -79,8 +84,16 @@ function MessageContent(props: {
     if (!textRef.current) return;
     textRef.current.innerHTML = marked.parse(props.content, {
       highlight(code, lang) {
-        const hl = hljs.highlight(lang, code).value;
-        return hl;
+        if (!lang || props.partial) {
+          return code;
+        }
+        try {
+          const hl = hljs.highlight(code, { language: lang, ignoreIllegals: true }).value;
+          return hl;
+        } catch (e) {
+          console.error(e);
+          return code;
+        }
       }
     });
   }, [props.content, editing]);
@@ -89,6 +102,7 @@ function MessageContent(props: {
     <div
       className={classNames(style['msg-content'], { [style.editing]: editing })}
       onDoubleClick={() => {
+        if (props.partial) return;
         if (props.role === 'user') {
           setEditing(true);
           setEditContent(props.content);
@@ -100,15 +114,16 @@ function MessageContent(props: {
       {
         editing ? <textarea
           onKeyDown={e => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-              props.onChange(editContent);
-              setEditing(false);
-            }
+            if (props)
+              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                props.onChange?.(editContent);
+                setEditing(false);
+              }
           }}
           placeholder="input you question, and press Ctrl+Enter(Cmd+Enter) to submit"
           ref={editor}
           onBlur={() => {
-            props.onChange(editContent);
+            props.onChange?.(editContent);
             setEditing(false);
           }} className={classNames(style.editor)} value={editContent} onChange={e => setEditContent(e.target.value)}></textarea>
           : <div ref={textRef}></div>
