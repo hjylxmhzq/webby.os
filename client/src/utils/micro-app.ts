@@ -143,7 +143,7 @@ export class WindowManager {
       const appNameMatch = window.location.hash.match(/app=(.+)($|,)/);
       if (appNameMatch && appNameMatch[1]) {
         const appName = appNameMatch[1];
-        await appManager.ready();
+        await appManager.init([appName]);
         if (appManager.apps[appName]) {
           const app = await this.startApp(appName, true);
           app?.ctx.appWindow.showTitleBar(false);
@@ -152,6 +152,7 @@ export class WindowManager {
         }
       }
     }
+    await appManager.init();
 
     this.checkActiveTimer = window.setInterval(() => {
       if (document.activeElement && this.container.contains(document.activeElement)) {
@@ -185,7 +186,6 @@ export class WindowManager {
       let toDockApp: AppState[] = [];
       if (v) {
         this.cacheWindowState = v;
-        await appManager.ready();
         let tasks = Object.keys(this.cacheWindowState).map(async appName => {
           if (!appManager.apps[appName]) {
             delete this.cacheWindowState[appName];
@@ -671,14 +671,25 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
   window.addEventListener('mousemove', onMouseMove);
 
   let isForceFullscreen = false;
+  const forceFullscreenResizeCb = () => {
+    const rect = getRect();
+    onResizeCbs.forEach(cb => cb(rect.width, rect.height));
+  }
+  const foruceFullscreenBeforeClose = () => {
+    windowEventBus.emit(WindowEventType.BeforeClose);
+  }
   function forceFullscreen(fullscreen = true) {
     isForceFullscreen = fullscreen;
     if (fullscreen) {
+      window.addEventListener('resize', forceFullscreenResizeCb);
+      window.addEventListener('beforeunload', foruceFullscreenBeforeClose);
       appEl.style.inset = '25px 0 0 0';
       appEl.style.width = 'auto'
       appEl.style.height = 'auto';
       appEl.style.borderRadius = '0px';
     } else {
+      window.removeEventListener('resize', forceFullscreenResizeCb);
+      window.removeEventListener('beforeunload', foruceFullscreenBeforeClose);
       appEl.style.inset = 'none';
       appEl.style.width = '500px';
       appEl.style.height = '500px';
@@ -1019,15 +1030,21 @@ export class AppsRegister {
   downloadedApps: { [appName: string]: { scriptContent: string, scriptSrc: string } } = {};
   remote = new Collection('app_manager');
   eventBus = new EventEmitter();
-  private readyPromise: Promise<void>;
+  private readyPromise?: Promise<void>;
   constructor() {
     this.apps = {};
+  }
+  init(selectedApps?: string[]) {
     this.readyPromise = (async () => {
-      await this.installBuiltinApps();
+      await this.installBuiltinApps(selectedApps);
       this.eventBus.emit('app_installed');
-    })();
+    })();  
+    return this.readyPromise;
   }
   ready() {
+    if (!this.readyPromise) {
+      throw new Error('AppsManager must be inited before using');
+    }
     return this.readyPromise;
   }
   onAppInstalled(cb: (appName: string) => void): () => void {
@@ -1036,7 +1053,7 @@ export class AppsRegister {
       this.eventBus.off('app_installed', cb);
     }
   }
-  async installBuiltinApps() {
+  async installBuiltinApps(selectedApps?: string[]) {
     const install = async (appScriptName: string, appName: string) => {
       const appScriptSrc = '/apps/' + appScriptName + '.js';
       await this.download(appName, appScriptSrc);
@@ -1044,7 +1061,13 @@ export class AppsRegister {
     }
 
     for (let [appScriptName, appName] of builtinApps) {
-      await install(appScriptName, appName);
+      if (selectedApps) {
+        if (selectedApps.includes(appName)) {
+          await install(appScriptName, appName);
+        }
+      } else {
+        await install(appScriptName, appName);
+      }
     }
   }
   async download(name: string, src: string) {
