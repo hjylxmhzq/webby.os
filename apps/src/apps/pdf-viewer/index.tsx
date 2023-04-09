@@ -22,6 +22,23 @@ export async function mount(ctx: AppContext) {
 
   const eventBus = new CachedEventEmitter();
 
+  ctx.systemMenu = [
+    {
+      name: '文件',
+      children: [
+        {
+          name: '打开',
+          async onClick() {
+            const file = await ctx.selectFile({ allowedExts: ['pdf'] });
+            if (file && file.length) {
+              eventBus.emit('openfile', file[0]);
+            }
+          }
+        }
+      ]
+    }
+  ];
+
   ctx.onOpenFile(async (file) => {
     if (file) {
       console.log('openfile', file);
