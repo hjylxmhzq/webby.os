@@ -454,6 +454,7 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
     background-image: linear-gradient(0deg, #00000042, transparent);
     line-height: 22px;
     user-select: none;
+    -webkit-user-select: none;
     align-items: center;
     position: relative;
     overflow: hidden;
