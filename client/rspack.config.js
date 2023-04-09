@@ -44,8 +44,9 @@ const entries = {
 module.exports = {
   entry: entries,
   output: {
-    filename: '[name]_[hash].js',
+    filename: 'assets/[name]_[hash].js',
     path: outputDir,
+    publicPath: '/',
   },
   // externals: {
   //   react: 'React',
@@ -89,6 +90,16 @@ module.exports = {
     ],
   },
   builtins: {
+    copy: {
+      patterns: [
+        {
+          from: './public/favicon.ico',
+        },
+        {
+          from: './public/robots.txt',
+        },
+      ],
+    },
     html: htmlWithChuncks,
     define: {
       'import.meta.env': "{}",
