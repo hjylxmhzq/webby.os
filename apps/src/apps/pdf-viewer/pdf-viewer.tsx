@@ -80,6 +80,10 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
       setOutline(outline?.[0]);
       setPages(pages);
     })();
+
+    return () => {
+      loadingTask.destroy();
+    }
   }, [props.file]);
 
   useEffect(() => {
