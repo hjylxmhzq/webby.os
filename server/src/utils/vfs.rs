@@ -22,10 +22,10 @@ use tokio::fs::{self, File};
 use tokio::io::{duplex, AsyncRead, AsyncSeekExt, DuplexStream};
 use tokio_util::io::ReaderStream;
 
-use crate::{config, conv_err};
 use crate::db::SHARED_DB_CONN;
 use crate::models::{FileIndex, FileIndexSizeCount};
 use crate::schedulers::update_file_index::UpdateGalleryJob;
+use crate::{config, conv_err};
 
 use super::error::AppError;
 use super::eventbus::EventEmitter;
@@ -49,9 +49,7 @@ lazy_static! {
 
     ev.listen(FSHookType::AddFile, |payload| {
       let file_root = PathBuf::from_str(&config!(file_root)).unwrap();
-      thread::spawn(move || {
-        UpdateGalleryJob::update_file_indices(payload.0, &file_root).unwrap()
-      });
+      thread::spawn(move || UpdateGalleryJob::update_file_indices(payload.0, &file_root).unwrap());
     });
 
     ev.listen(FSHookType::DeleteFile, |payload| {
@@ -207,6 +205,70 @@ pub async fn search_in_index(kw: &str, limit: i64) -> Result<Vec<FileIndex>, App
 pub fn search_in_tantivy(kw: &str) -> Result<Vec<Document>, AppError> {
   let docs = search_docs(kw)?;
   Ok(docs)
+}
+
+#[derive(Serialize)]
+pub struct FileStatNameDir {
+  pub is_dir: bool,
+  pub is_file: bool,
+  pub file_type: String,
+  pub size: u64,
+  pub created: u128,
+  pub modified: u128,
+  pub accessed: u128,
+  pub name: String,
+  pub dir: String,
+}
+
+pub fn search_files(
+  file_root: &PathBuf,
+  user_root: &str,
+  dir: &str,
+  keyword: &str,
+) -> Result<Vec<FileStatNameDir>, AppError> {
+  let search_root = normailze_path(file_root, user_root, dir)?;
+  let root_str = search_root.canonicalize()?.to_string_lossy().to_string();
+  let files: Vec<String> = rust_search::SearchBuilder::default()
+    .location(search_root)
+    .search_input(keyword)
+    .limit(50)
+    .build()
+    .into_iter()
+    .collect();
+  let mut file_stats = vec![];
+
+  for f in files {
+    let meta = std::fs::metadata(&f).unwrap();
+    let rel_path = f.replace(&root_str, "");
+    let path = PathBuf::from(&f);
+    let dir = path
+      .parent()
+      .map_or(PathBuf::from("/"), |p| p.to_owned())
+      .strip_prefix(&root_str)
+      .map_or("".to_owned(), |p| p.to_string_lossy().to_string());
+
+    let file_name = path
+      .file_name()
+      .ok_or(AppError::new("file error"))?
+      .to_string_lossy()
+      .to_string();
+    let stat = FileStatNameDir {
+      is_dir: meta.is_dir(),
+      is_file: meta.is_file(),
+      file_type: mime_guess::from_path(&rel_path)
+        .first()
+        .map_or(String::new(), |m| m.to_string()),
+      size: meta.len(),
+      created: meta.created()?.duration_since(UNIX_EPOCH)?.as_millis(),
+      modified: meta.modified()?.duration_since(UNIX_EPOCH)?.as_millis(),
+      accessed: meta.accessed()?.duration_since(UNIX_EPOCH)?.as_millis(),
+      name: file_name,
+      dir,
+    };
+    file_stats.push(stat);
+  }
+
+  Ok(file_stats)
 }
 
 #[derive(Serialize)]

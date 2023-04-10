@@ -12,11 +12,30 @@ export interface FileStat {
   accessed: number;
 }
 
+export interface FileStatWithDir {
+  name: string;
+  dir: string;
+  size: number;
+  is_dir: boolean;
+  is_file: boolean;
+  created: number;
+  modified: number;
+  accessed: number;
+}
+
 export async function readdir(dir: string): Promise<FileStat[]> {
   let resp = await post('/file/read_dir', {
     file: dir
-  });
+  }, 'read_dir_'+dir);
   return resp.data.files;
+}
+
+export async function search_files(keyword: string, dir = ''): Promise<FileStatWithDir[]> {
+  let resp = await post('/file/search_files', {
+    keyword,
+    dir
+  });
+  return resp.data;
 }
 
 export async function delete_file(file: string): Promise<boolean> {
@@ -99,7 +118,7 @@ export async function read_zip_entries(dir: string, file: string) {
   return resp.data;
 }
 
-export async function search_files(keyword: string) {
+export async function _search_files(keyword: string) {
   const url = new URL('/file/search', window.location.origin);
   let resp = await post(url.toString(), { keyword }, 'search_files');
   return resp.data;

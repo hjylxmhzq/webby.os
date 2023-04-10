@@ -4,6 +4,7 @@ import React from 'react';
 import ReactDom from 'react-dom/client';
 import FilePage from './src/file-page';
 import iconUrl from './icon.ico';
+import { CachedEventEmitter } from '../../utils/events';
 
 let root: ReactDom.Root;
 export async function mount(ctx: AppContext) {
@@ -21,7 +22,11 @@ export async function mount(ctx: AppContext) {
       ctx.systemMessage({ title: '无法打开文件', content: `未找到可打开${ext}后缀文件的App`, timeout: 3000, type: 'error' });
     }
   };
-  root.render(<FilePage openFile={openFile} />)
+  ctx.onOpenFile((file) => {
+    eventBus.emit('open_dir', file);
+  });
+  const eventBus = new CachedEventEmitter();
+  root.render(<FilePage eventBus={eventBus} openFile={openFile} />)
 }
 
 export async function unmount(ctx: AppContext) {

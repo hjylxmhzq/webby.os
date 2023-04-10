@@ -250,6 +250,26 @@ pub async fn read_image_post(
   read_image(&file, resize, state, sess).await
 }
 
+#[derive(Deserialize)]
+pub struct SearchFilesInDirReq {
+  keyword: String,
+  dir: String
+}
+
+pub async fn search_files(
+  body: web::Json<SearchFilesInDirReq>,
+  state: web::Data<AppData>,
+  sess: Session,
+) -> Result<HttpResponse, AppError> {
+  let kw = &body.keyword;
+  let dir = &body.dir;
+  let file_root = &state.read().unwrap().config.file_root;
+  let user_root = &sess.get_user_root()?;
+
+  let files = vfs::search_files(file_root, user_root, dir, kw)?;
+  Ok(create_resp(true, files, "done"))
+}
+
 pub async fn read_image(
   file: &str,
   resize: Option<u32>,
@@ -339,6 +359,7 @@ pub fn file_routers() -> Scope {
   web::scope("/file")
     .route("/upload", web::post().to(upload))
     .route("/search", web::post().to(search))
+    .route("/search_files", web::post().to(search_files))
     .route("/search_content", web::post().to(search_content))
     .route("/delete_batch", web::post().to(delete_batch))
     .route("/read_image", web::post().to(read_image_post))

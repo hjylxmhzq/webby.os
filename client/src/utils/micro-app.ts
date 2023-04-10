@@ -360,7 +360,7 @@ export async function startApp(container: HTMLElement, appName: string, resume: 
 
   const app = appManager.get(appName);
   if (!app) {
-    console.error('app not installed');
+    console.error(`app not installed: ${appName}`);
     return;
   }
 

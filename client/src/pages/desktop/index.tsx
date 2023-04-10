@@ -11,6 +11,7 @@ import EventEmitter from "events";
 import { create_download_link_from_file_path } from "@webby/core/fs";
 import MessageLine from "./components/message";
 import { MessageQueue } from '@webby/core/message-queue';
+import { GlobalSearch } from "./components/global-search";
 
 
 (window as any)._http = http;
@@ -66,6 +67,7 @@ export function HomePage() {
   const [currentMenu, setCurrentMenu] = useState<AppMenu[]>([]);
   const [activeApp, setActiveApp] = useState<AppState | null>(null);
   const [showFileSelector, setShowFileSelector] = useState(false);
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [fileSelectorOptioins, setFileSelectorOptioins] = useState<SelectFileProps>({});
   const [wallpaper, setWallpaper] = useState('');
   const [messages, setMessages] = useState<({ id: string } & SystemMessage)[]>([]);
@@ -114,11 +116,25 @@ export function HomePage() {
       }
     };
 
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        setShowGlobalSearch(!showGlobalSearch);
+      }
+    };
+    const onMouseDown = () => {
+      setShowGlobalSearch(false);
+    }
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('mousedown', onMouseDown)
+
     desktopEventBus.on(DeskTopEventType.SelectFile, selectFiles);
     desktopEventBus.on(DeskTopEventType.SystemMessage, onSystemMessage);
     desktopEventBus.on(DeskTopEventType.CloseSystemMessage, onCloseMsg);
 
     return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('mousedown', onMouseDown)
       desktopEventBus.off(DeskTopEventType.SelectFile, selectFiles);
       desktopEventBus.off(DeskTopEventType.SystemMessage, onSystemMessage);
       desktopEventBus.off(DeskTopEventType.CloseSystemMessage, onCloseMsg);
@@ -183,5 +199,10 @@ export function HomePage() {
       <SystemFileSelector onSelection={onSelection} options={fileSelectorOptioins} />
     }
     <MessageLine messages={messages} onClose={onCloseMsg} />
+    {
+      showGlobalSearch && <div className={style['global-search']}>
+        <GlobalSearch onClose={() => setShowGlobalSearch(false)} />
+      </div>
+    }
   </div>
 }

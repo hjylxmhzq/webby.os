@@ -18,6 +18,7 @@ pub fn secure_join(root: &PathBuf, unsafe_path: &PathBuf) -> Result<PathBuf, App
     }
   }
   let new_path = root.join(unsafe_path);
+  let new_path = new_path.canonicalize()?;
   Ok(new_path)
 }
 

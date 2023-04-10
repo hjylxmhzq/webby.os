@@ -1,12 +1,13 @@
 import { create_compression_download_link, create_download_link, create_download_link_from_file_path, delete_files, FileStat, readdir, upload } from "@webby/core/fs"
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import style from './file-page.module.less';
 import path from 'path-browserify';
 import { formatFileSize, formatTime } from "./utils";
 import Button from "./components/button";
 import Checkbox from "./components/checkbox";
+import { CachedEventEmitter } from "src/utils/events";
 
-export default function FilePage(props: { openFile: (file: string) => void }) {
+export default function FilePage(props: { openFile: (file: string) => void, eventBus: CachedEventEmitter }) {
   const [dir, setDir] = useState('');
   const onClick = (file: FileStat) => {
     if (file.is_dir) {
@@ -17,6 +18,16 @@ export default function FilePage(props: { openFile: (file: string) => void }) {
       console.log('click file: ', file);
     }
   }
+  useEffect(() => {
+    const setDirCb = (dir: string) => {
+      setDir(dir);
+    }
+    props.eventBus.on('open_dir', setDirCb);
+    return () => {
+      props.eventBus.off('open_dir', setDirCb);
+    };
+  }, []);
+
   return <div style={{ height: '100%', overflow: 'auto' }}>
     <FileList dir={dir} onClick={onClick} />
   </div>
@@ -25,8 +36,13 @@ export default function FilePage(props: { openFile: (file: string) => void }) {
 function FileList(props: { dir: string, onClick: (name: FileStat) => void }) {
   const [files, setFiles] = useState<FileStat[]>([]);
   const [checkList, setCheckList] = useState<boolean[]>([]);
+  const seqRef = useRef(0);
   const gotoDir = async (dir: string) => {
-    const _files = await readdir(props.dir);
+    seqRef.current += 1;
+    let seq = seqRef.current;
+    const _files = await readdir(dir);
+    // 如果在等待期间gotoDir再次被执行，则放弃这次结果，直接采用最后一次请求的结果
+    if (seq !== seqRef.current) return;
     setCheckList([]);
     setFiles(_files);
   }

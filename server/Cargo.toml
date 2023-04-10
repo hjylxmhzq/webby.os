@@ -50,6 +50,7 @@ url = "2.3.1"
 actix-web-actors = "4.2.0"
 actix = "0.13.0"
 ptyprocess = "0.4.1"
+rust_search = "2.1.0"
 
 [dependencies.ffmpeg_cli_utils]
 git = "https://github.com/hjylxmhzq/ffmpeg-cli-utils.git"
