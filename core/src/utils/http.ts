@@ -48,5 +48,14 @@ export async function post_formdata(api: string, body: FormData, onUploadProgres
   return resp.data;
 }
 
+export async function inner_fetch(input: RequestInfo | URL, init?: RequestInit): Promise<globalThis.Response> {
+  let innerInit = init || {};
+
+  innerInit.headers = innerInit.headers || {};
+  (innerInit.headers as any)['csrf-token'] = getCsrfToken() || ''
+
+  let p = fetch(input, init);
+  return p;
+}
 
 (window as any).__post = post;

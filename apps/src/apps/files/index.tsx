@@ -26,7 +26,7 @@ export async function mount(ctx: AppContext) {
     eventBus.emit('open_dir', file);
   });
   const eventBus = new CachedEventEmitter();
-  root.render(<FilePage eventBus={eventBus} openFile={openFile} />)
+  root.render(<FilePage ctx={ctx} eventBus={eventBus} openFile={openFile} />)
 }
 
 export async function unmount(ctx: AppContext) {

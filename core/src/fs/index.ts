@@ -106,7 +106,7 @@ export async function read_text_file(dir: string, file: string) {
 export async function read_file(file: string): Promise<Blob> {
   const url = new URL('/file/read', window.location.origin);
   const file_path = path.join(file);
-  let resp = await post_raw(url.toString(), { file: file_path });
+  let resp = await post_raw(url.toString(), { file: file_path }, file);
   let content = await resp.blob();
   return content;
 }

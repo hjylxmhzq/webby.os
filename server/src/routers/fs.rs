@@ -5,8 +5,8 @@ use crate::utils::response::{
 };
 use crate::utils::session::SessionUtils;
 use crate::utils::vfs::{
-  ensure_parent_dir_sync, read_file_stream, read_to_zip_stream, rel_join, FSHookPayload,
-  FSHookType, FileStatWithName, FS_HOOK,
+  ensure_parent_dir_sync, normailze_path, read_file_stream, read_to_zip_stream,
+  FileStatWithName,
 };
 use crate::utils::{response::create_resp, vfs};
 use crate::AppData;
@@ -184,22 +184,17 @@ pub async fn upload(
   let user_root = user_root.clone();
   web::block(move || -> Result<(), AppError> {
     let files = parts.files.into_inner();
-    let mut flist = vec![];
     for (filename, file) in files {
       if let Ok(file) = file {
-        let file_path = file_root.join(&user_root).join(&filename);
+        let file_path = normailze_path(&file_root, &user_root, &filename)?;
+        println!("{file_path:#?}");
         ensure_parent_dir_sync(&file_path)?;
         let parent_dir = file_path.parent();
         if let Some(parent_dir) = parent_dir {
-          file.persist_in(parent_dir)?;
-          flist.push(rel_join(&user_root, &filename)?);
+          file.persist_in(parent_dir).unwrap();
         }
       }
     }
-    FS_HOOK
-      .lock()
-      .unwrap()
-      .emit(FSHookType::AddFile, FSHookPayload(flist));
     Ok(())
   })
   .await??;
@@ -253,7 +248,7 @@ pub async fn read_image_post(
 #[derive(Deserialize)]
 pub struct SearchFilesInDirReq {
   keyword: String,
-  dir: String
+  dir: String,
 }
 
 pub async fn search_files(

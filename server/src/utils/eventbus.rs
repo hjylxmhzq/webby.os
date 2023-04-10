@@ -15,6 +15,7 @@ impl<ET: PartialEq + Eq + Hash + Clone + Debug, P: Clone> EventEmitter<ET, P> {
       events: Mutex::new(HashMap::new()),
     }
   }
+  #[allow(unused)]
   pub fn emit(&mut self, event: ET, payload: P) {
     let mut v = self.events.lock().unwrap();
     println!("emit: {:?}", v.keys());

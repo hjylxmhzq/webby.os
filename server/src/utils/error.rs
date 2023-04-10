@@ -57,6 +57,7 @@ conv_err!(std::io::Error);
 
 impl ResponseError for AppError {
   fn error_response(&self) -> actix_web::HttpResponse<actix_web::body::BoxBody> {
+    println!("Error: {:#?}", self);
     let mut resp = create_resp(false, EmptyResponseData::new(), &self.msg);
     let status = resp.status_mut();
     *status = self.status_code;

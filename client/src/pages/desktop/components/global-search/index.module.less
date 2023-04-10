@@ -18,7 +18,6 @@
 }
 
 .list {
-  padding: 5px;
   background-color: var(--bg-light);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
@@ -39,22 +38,27 @@
     display: block;
     transform: translateY(10px);
   }
+
   &:global(.exit) {
     display: block;
   }
+
   &:global(.enter-active) {
     opacity: 1;
     transform: translateY(0px);
   }
+
   &:global(.enter-done) {
     opacity: 1;
     display: block;
     transform: translateY(0px);
   }
+
   &:global(.exit-active) {
     opacity: 0;
     transform: translateY(10px);
   }
+
   &:global(.exit-done) {
     transform: translateY(10px);
     opacity: 0;
@@ -62,23 +66,53 @@
   }
 }
 
+.list-box {
+  padding: 5px;
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 5px;
+  display: inline-block;
+}
+
+.list-item-left {
+  white-space: nowrap;
+  max-width: 50%;
+  line-height: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.title {
+  position: sticky;
+  top: 0;
+  padding: 5px;
+  padding-bottom: 0;
+  background-color: var(--bg-heavy);
+}
+
 .list-item {
   display: flex;
   justify-content: space-between;
-  padding: 3px 10px;
+  padding: 5px 10px;
   font-size: 14px;
   transition: background-color 0.2s;
   border-radius: 5px;
   cursor: pointer;
+
   &:hover {
     background-color: var(--bg-transparent);
   }
+
   &>span {
     white-space: nowrap;
-    display: block;
     max-width: 50%;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 16px;
+    height: 16px;
   }
 }
 

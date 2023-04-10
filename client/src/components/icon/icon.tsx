@@ -3,8 +3,10 @@ import '@icons/icons';
 import './icon.less';
 import classnames from 'classnames';
 import mime from 'mime';
-import { MouseEvent } from 'react';
-import { create_download_link } from '@webby/core/fs';
+import { MouseEvent, useEffect, useState } from 'react';
+import { http } from '@webby/core/utils';
+import path from 'path-browserify';
+import { create_download_link_from_file_path } from '@webby/core/fs';
 
 export default function Icon({ name, size, className, onClick }: { className?: string, name: string, size?: number | string, onClick?: (e: MouseEvent) => void }) {
   return <svg onClick={onClick} className={classnames('icon', className)} aria-hidden="true" style={size ? { fontSize: size } : {}}>
@@ -33,14 +35,43 @@ export function FileIcon(props: { className?: string, file: IconFile, size?: num
   return <Icon {...props} name={name} />;
 }
 
-export function FileThumbnailIcon(props: { className?: string, file: IconFile, dir: string, size?: number | string, imgHeight?: number, imgWidth?: number }) {
+export function FileThumbnailIcon(props: { imgStyle?: React.CSSProperties, noThumbnail?: boolean, className?: string, file: IconFile, dir: string, size?: number | string, imgHeight?: number, imgWidth?: number }) {
   let filename = props.file.name;
   let guess = mime.getType(filename);
   let name = 'file-b-2';
-  if (guess?.includes('image')) {
-    const link = create_download_link(props.dir, filename);
-    return <img className={props.className} style={{ width: props.imgWidth || 16, height: props.imgHeight || 16, }} src={link} alt={filename}></img>
+  let [imgReady, setImgReady] = useState('');
+
+  useEffect(() => {
+    let src = '';
+    let abort: AbortController;
+    if (!props.noThumbnail && guess?.includes('image')) {
+      abort = new AbortController();
+      const file = path.join(props.dir, filename);
+      http.inner_fetch(create_download_link_from_file_path(file, 3600),
+        {
+          method: 'get',
+          headers: { 'content-type': 'application/json' },
+          signal: abort.signal,
+        }).then(async resp => {
+          const blob = await resp.blob();
+          src = URL.createObjectURL(blob);
+          setImgReady(src);
+        });
+    }
+    return () => {
+      if (abort) {
+        abort.abort();
+      }
+      if (src) {
+        URL.revokeObjectURL(src);
+      }
+    }
+  }, [props.dir, filename, guess, props.noThumbnail]);
+
+  if (imgReady) {
+    return <img className={props.className} style={{ width: props.imgWidth || 16, height: props.imgHeight || 16, ...props.imgStyle || {} }} src={imgReady} alt={filename}></img>
   }
+
   if (props.file.is_dir) {
     name = 'file-b-';
   } else if (guess?.includes('image')) {

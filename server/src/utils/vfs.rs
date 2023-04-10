@@ -135,10 +135,6 @@ pub async fn delete(file_root: &PathBuf, user_root: &str, file: &str) -> Result<
   } else {
     fs::remove_file(&dir).await?;
   }
-  FS_HOOK.lock().unwrap().emit(
-    FSHookType::DeleteFile,
-    FSHookPayload(vec![rel_join(user_root, file)?]),
-  );
   Ok(())
 }
 
@@ -147,7 +143,6 @@ pub async fn delete_batch(
   user_root: &str,
   files: Vec<String>,
 ) -> Result<(), AppError> {
-  let mut flist = vec![];
   for file in files {
     let dir = normailze_path(&file_root, &user_root, &file)?;
     let path_stat = stat(file_root, user_root, &file).await?;
@@ -156,12 +151,7 @@ pub async fn delete_batch(
     } else {
       fs::remove_file(&dir).await?;
     }
-    flist.push(rel_join(user_root, &file)?);
   }
-  FS_HOOK
-    .lock()
-    .unwrap()
-    .emit(FSHookType::DeleteFile, FSHookPayload(flist));
   Ok(())
 }
 
@@ -182,10 +172,6 @@ pub async fn read_video_transform_stream(
 pub async fn create_dir(file_root: &PathBuf, user_root: &str, file: &str) -> Result<(), AppError> {
   let dir = normailze_path(&file_root, &user_root, &file)?;
   let result = fs::create_dir(&dir).await?;
-  FS_HOOK.lock().unwrap().emit(
-    FSHookType::AddFile,
-    FSHookPayload(vec![rel_join(user_root, file)?]),
-  );
   Ok(result)
 }
 
@@ -232,6 +218,7 @@ pub fn search_files(
     .location(search_root)
     .search_input(keyword)
     .limit(50)
+    .ignore_case()
     .build()
     .into_iter()
     .collect();
@@ -382,7 +369,7 @@ pub fn ensure_parent_dir_sync(file: &PathBuf) -> Result<(), AppError> {
   Ok(())
 }
 
-fn normailze_path(file_root: &PathBuf, user_root: &str, file: &str) -> Result<PathBuf, AppError> {
+pub fn normailze_path(file_root: &PathBuf, user_root: &str, file: &str) -> Result<PathBuf, AppError> {
   let user_abs_root = file_root.join(user_root);
   Ok(secure_join(&user_abs_root, &PathBuf::from(file))?)
 }
@@ -529,7 +516,3 @@ pub async fn read_entries_in_zip(
   Ok(root)
 }
 
-pub fn rel_join(p1: &str, p2: &str) -> Result<String, AppError> {
-  let p = secure_join(&PathBuf::from_str(p1)?, &PathBuf::from_str(p2)?)?;
-  Ok(p.to_string_lossy().to_string())
-}
