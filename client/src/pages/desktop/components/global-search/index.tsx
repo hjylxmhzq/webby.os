@@ -7,12 +7,6 @@ import LoadingBar from "src/pages/file/components/loading-bar";
 import { windowManager } from "src/utils/micro-app";
 import { CSSTransition, TransitionGroup } from "react-transition-group";
 
-interface SearchResult {
-  title: string,
-  subtitle: string,
-  onClick(): void,
-}
-
 export function GlobalSearch(props: { onClose?(): void }) {
   const [search, setSearch] = useState('');
   const [files, setFiles] = useState<FileStatWithDir[]>([]);
@@ -40,10 +34,6 @@ export function GlobalSearch(props: { onClose?(): void }) {
     search_files(search);
     // eslint-disable-next-line
   }, [search]);
-
-  const nameMap = {
-    files: '文件'
-  };
 
   useEffect(() => {
     if (inputRef.current) {
