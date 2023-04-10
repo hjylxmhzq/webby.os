@@ -6,6 +6,7 @@ import iconUrl from './icon.svg';
 import { Collection } from '@webby/core/kv-storage';
 import { http } from '@webby/core/tunnel';
 import { CachedEventEmitter } from '../../utils/events';
+import { systemMessage } from '@webby/core/system';
 
 let reactRoot: ReactDom.Root;
 
@@ -42,7 +43,7 @@ export async function mount(ctx: AppContext) {
           name: '加入全局搜索',
           onClick() {
             store.set('enable_global_search', true);
-            ctx.systemMessage({ type: 'info', title: '消息', content: '已将ChatGPT加入全局搜索结果', timeout: 3000 });
+            systemMessage({ type: 'info', title: '消息', content: '已将ChatGPT加入全局搜索结果', timeout: 3000 });
             enabledGlobalSearch = true;
           }
         },
@@ -50,7 +51,7 @@ export async function mount(ctx: AppContext) {
           name: '取消全局搜索',
           onClick() {
             store.set('enable_global_search', false);
-            ctx.systemMessage({ type: 'info', title: '消息', content: '已将ChatGPT在全局搜索结果中移除', timeout: 3000 })
+            systemMessage({ type: 'info', title: '消息', content: '已将ChatGPT在全局搜索结果中移除', timeout: 3000 })
             enabledGlobalSearch = false;
           }
         },

@@ -26,4 +26,7 @@ export class CachedEventEmitter {
       this.eventBus.emit(type, ...args);
     }
   }
+  removeAllListeners() {
+    this.eventBus.removeAllListeners();
+  }
 }

@@ -1,4 +1,4 @@
-import { AppContext, AppInfo } from '@webby/core/web-app';
+import { AppContext, AppInfo, AppInstallContext } from '@webby/core/web-app';
 import { Shell } from '@webby/core/shell';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
@@ -9,6 +9,7 @@ import style from './index.module.less';
 import iconUrl from './icon.svg';
 import { Collection } from '@webby/core/kv-storage';
 import { WebLinksAddon } from 'xterm-addon-web-links';
+import { CachedEventEmitter } from '../../utils/events';
 
 function debounce<T extends Function>(fn: T, delay = 500, mw?: (...args: any[]) => any) {
   let timer: number | undefined;
@@ -27,6 +28,7 @@ let store = new Collection('shell_cache');
 let shell: Shell;
 const DefaultFontSize = 14;
 
+let eventBus = new CachedEventEmitter();
 export async function mount(ctx: AppContext) {
   ctx.systemMenu = [
     {
@@ -111,6 +113,14 @@ export async function mount(ctx: AppContext) {
     }
   });
 
+  ctx.onOpenFile((cmd) => {
+    eventBus.emit('exec', cmd);
+  });
+
+  eventBus.on('exec', cmd => {
+    shell.write(cmd + '\n');
+  });
+
   xterm.onData(function (key) {
 
     // console.log(keyCode, JSON.stringify(key));
@@ -160,6 +170,7 @@ export async function mount(ctx: AppContext) {
 
 export async function unmount(ctx: AppContext) {
   store.remove('history');
+  eventBus.removeAllListeners();
   shell.close();
 }
 
@@ -171,6 +182,18 @@ export function getAppInfo(): AppInfo {
     height: 500,
     supportExts: ['txt', 'json', 'md', 'toml', 'js', 'py', 'ts'],
   }
+}
+
+export async function installed(ctx: AppInstallContext) {
+  ctx.hooks.onGlobalSearch(async (keyword) => {
+    return [{
+      title: `执行shell命令`,
+      pre: `> ${keyword}`,
+      onClick() {
+        ctx.openFileBy('Shell', keyword);  
+      }
+    }]
+  });
 }
 
 

@@ -1211,8 +1211,15 @@ function createFakeDocument(scope: HTMLElement, scopeHead: HTMLElement, mountPoi
   });
   return proxy
 }
-
-let sharedScope = {};
+export const windowManager = new WindowManager();
+let sharedScope = {
+  system: {
+    systemSelectFile: systemSelectFile,
+    systemMessage: systemMessage,
+    windowManager,
+    appManager,
+  }
+};
 (window as any).sharedScope = sharedScope;
 
 function createFakeWindow(fakeDocument: Document) {
@@ -1274,4 +1281,3 @@ function getRectByElementStyle(el: HTMLElement) {
 (window as any).__createFakeDocument = createFakeDocument;
 (window as any).__createScopeConsole = createScopeConsole;
 
-export const windowManager = new WindowManager();
