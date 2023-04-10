@@ -1,6 +1,6 @@
 import Header from "./components/header/header";
 import style from './index.module.less';
-import { AppDefinition, appManager, windowManager } from "src/utils/micro-app";
+import { AppDefinitionWithContainer, appManager, windowManager } from "src/utils/micro-app";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { http } from '@webby/core/tunnel';
 import { AppMenu, AppState, SystemMessage, SystemMessageHandle } from "@webby/core/web-app";
@@ -68,7 +68,7 @@ type IdMessage = { id: string } & SystemMessage;
 export function HomePage() {
 
   const mountPoint = useRef<HTMLDivElement>(null);
-  const [apps, setApps] = useState<{ [appName: string]: AppDefinition }>({});
+  const [apps, setApps] = useState<{ [appName: string]: AppDefinitionWithContainer }>({});
   const [currentMenu, setCurrentMenu] = useState<AppMenu[]>([]);
   const [activeApp, setActiveApp] = useState<AppState | null>(null);
   const [showFileSelector, setShowFileSelector] = useState(false);

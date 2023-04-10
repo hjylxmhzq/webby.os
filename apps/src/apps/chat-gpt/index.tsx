@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ReactDom from 'react-dom/client';
-import { AppContext, AppInfo } from '@webby/core/web-app';
+import { AppContext, AppInfo, AppInstallContext } from '@webby/core/web-app';
 import Chat from './chat';
 import iconUrl from './icon.svg';
 import { Collection } from '@webby/core/kv-storage';
@@ -11,6 +11,7 @@ let reactRoot: ReactDom.Root;
 
 const store = new Collection('built_in_app_chat');
 
+let enabledGlobalSearch = false;
 export async function mount(ctx: AppContext) {
   let token = '';
   ctx.systemMenu = [
@@ -38,6 +39,22 @@ export async function mount(ctx: AppContext) {
       name: '设置',
       children: [
         {
+          name: '加入全局搜索',
+          onClick() {
+            store.set('enable_global_search', true);
+            ctx.systemMessage({ type: 'info', title: '消息', content: '已将ChatGPT加入全局搜索结果', timeout: 3000 });
+            enabledGlobalSearch = true;
+          }
+        },
+        {
+          name: '取消全局搜索',
+          onClick() {
+            store.set('enable_global_search', false);
+            ctx.systemMessage({ type: 'info', title: '消息', content: '已将ChatGPT在全局搜索结果中移除', timeout: 3000 })
+            enabledGlobalSearch = false;
+          }
+        },
+        {
           name: '配置API Token',
           onClick() {
             const _token = prompt('设置openapi API Token');
@@ -61,6 +78,10 @@ export async function mount(ctx: AppContext) {
         }
       ]
     }];
+
+  store.get('enable_global_search').then(v => {
+    enabledGlobalSearch = !!v;
+  });
   const root = ctx.appRootEl;
   root.style.position = 'absolute';
   root.style.inset = '0';
@@ -261,7 +282,59 @@ export async function mount(ctx: AppContext) {
         onInput={onInput} />
     </div>
   }
+}
 
+export async function installed(ctx: AppInstallContext) {
+  const enabled = await store.get('enable_global_search');
+  if (enabled === true) {
+    let timer: number;
+    let abort: AbortController | undefined;
+    ctx.hooks.onGlobalSearch(async (search: string) => {
+      if (abort) {
+        abort.abort();
+      }
+      const apiToken = await store.get<string>('api_token');
+      abort = new AbortController();
+      window.clearTimeout(timer);
+      const body: RequestBody = {
+        model: 'gpt-3.5-turbo',
+        messages: [{
+          role: 'system',
+          content: 'You are a helpful assistant.',
+        }, {
+          role: 'user',
+          content: search,
+        }],
+        stream: false,
+        temperature: 1,
+      };
+
+      const ans = await new Promise<string>((resolve, reject) => {
+
+        timer = window.setTimeout(async () => {
+          console.log('chat start');
+
+          const resp = await http.fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'post',
+            headers: {
+              Authorization: `Bearer ${apiToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+            signal: abort?.signal,
+          });
+          abort = undefined;
+          const ans = await resp.json() as RespBody;
+          resolve(ans.choices[0]?.message.content || '没有回复');
+        }, 3000);
+      });
+
+      return [{
+        title: search + ' 的回答',
+        pre: ans,
+      }];
+    });
+  }
 }
 
 export type Role = 'user' | 'assistant' | 'system';

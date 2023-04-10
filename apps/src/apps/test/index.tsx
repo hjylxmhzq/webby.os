@@ -1,4 +1,4 @@
-import { AppContext, AppInfo } from '@webby/core/web-app';
+import { AppContext, AppInfo, AppInstallContext } from '@webby/core/web-app';
 
 const iconUrl = 'https://v1.vuepress.vuejs.org/hero.png';
 
@@ -56,3 +56,4 @@ export function getAppInfo(): AppInfo {
     supportExts: [],
   }
 }
+

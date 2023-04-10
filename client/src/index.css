@@ -33,3 +33,7 @@ code {
 .scrollbar::-webkit-scrollbar-track {
   background-color: var(--bg-medium-hover);
 }
+
+.noscrollbar::-webkit-scrollbar {
+  display: none;
+}

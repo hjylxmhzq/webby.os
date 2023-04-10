@@ -1,4 +1,4 @@
-import { AppContext, AppInfo } from '@webby/core/web-app';
+import { AppContext, AppInfo, AppInstallContext } from '@webby/core/web-app';
 import ReactDom from 'react-dom/client';
 import PdfViewer from './pdf-viewer';
 import iconUrl from './icon.svg';
@@ -12,11 +12,18 @@ let reactRoot: ReactDom.Root;
 let root: HTMLElement;
 
 const store = new Collection('pdf-viewer-store');
+let recentOpenFiles: string[] = [];
 export async function mount(ctx: AppContext) {
   root = ctx.appRootEl;
   root.style.position = 'absolute';
   root.style.inset = '0';
   root.style.overflow = 'auto';
+
+  store.get<string[]>('recent_files').then(files => {
+    if (files) {
+      recentOpenFiles = files;
+    }
+  });
 
   reactRoot = ReactDom.createRoot(root);
 
@@ -66,10 +73,12 @@ export async function mount(ctx: AppContext) {
     const [pageIdx, setPageIdx] = useState(0);
     const [width, setWidth] = useState(600);
     useEffect(() => {
-      eventBus.on("openfile", (file) => setFile(file));
-      // eventBus.on("resize", (w) => {
-      //   setWidth(w);
-      // });
+      eventBus.on("openfile", (file) => {
+        recentOpenFiles.push(file);
+        recentOpenFiles = [...new Set(recentOpenFiles)];
+        store.set('recent_files', recentOpenFiles);
+        setFile(file)
+      });
       store.get('last_width').then((v: any) => {
         const w = parseFloat(v);
         if (!Number.isNaN(w)) {
@@ -113,4 +122,16 @@ export function getAppInfo(): AppInfo {
     height: 500,
     supportExts: ['pdf'],
   }
+}
+
+export async function installed(ctx: AppInstallContext) {
+  recentOpenFiles = await store.get('recent_files') || [];
+  ctx.hooks.onGlobalSearch(async (search) => {
+    const files = recentOpenFiles.filter(f => f.toLocaleLowerCase().includes(search));
+    return files.map(f => ({
+      title: f,
+      content: '最近打开的文件',
+      onClick: () => ctx.openFileBy('PdfViewer', f),
+    }))
+  });
 }

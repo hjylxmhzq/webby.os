@@ -1,6 +1,6 @@
 import { makeAutoObservable } from "mobx";
 import { Theme } from "src/hooks/common";
-import { AppContext, AppInfo, AppState, AppWindow } from '@webby/core/web-app';
+import { AppContext, AppDefinition, AppInstallContext, AppState, AppWindow, GlobalSearchResult, SystemHooks } from '@webby/core/web-app';
 import './micro-app.less';
 import { debounce } from "src/utils/common";
 import EventEmitter from "events";
@@ -849,7 +849,7 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
   return appWindow;
 }
 
-export async function loadModule(appScript: { scriptContent: string, scriptSrc: string }, moduleName: string): Promise<AppDefinition> {
+export async function loadModule(appScript: { scriptContent: string, scriptSrc: string }, moduleName: string): Promise<AppDefinitionWithContainer> {
   const script = document.createElement('script');
   const escapedModuleName = JSON.stringify(moduleName);
   const escapedScriptSrc = JSON.stringify(appScript.scriptSrc);
@@ -934,7 +934,7 @@ export async function loadModule(appScript: { scriptContent: string, scriptSrc: 
       })();
     `;
 
-  function loadScript(s: string): Promise<AppDefinition> {
+  function loadScript(s: string): Promise<AppDefinitionWithContainer> {
     return new Promise(async (resolve, reject) => {
       const blobSrc = URL.createObjectURL(new Blob([s], { type: 'application/javascript' }));
       script.src = blobSrc;
@@ -943,7 +943,7 @@ export async function loadModule(appScript: { scriptContent: string, scriptSrc: 
         document.body.removeChild(script);
         URL.revokeObjectURL(blobSrc);
         const __module = (window as any).__modules[moduleName];
-        const appDef = __module.exports as AppDefinition;
+        const appDef = __module.exports as AppDefinitionWithContainer;
         if (typeof appDef.mount !== 'function' || typeof appDef.getAppInfo !== 'function') {
           reject(`install app [${moduleName}] error`);
         }
@@ -969,6 +969,7 @@ export function createContext(appWindow: AppWindow, theme: Theme) {
   const registerExt = (ext: string[]) => {
     supportExts.push(...ext);
   }
+
   const ctx: AppContext = {
     registerExt,
     appRoot: appWindow.body.id,
@@ -1003,12 +1004,27 @@ export function createContext(appWindow: AppWindow, theme: Theme) {
   };
 }
 
-export interface AppDefinition {
-  mount(ctx: AppContext): Promise<void>;
-  unmount(ctx: AppContext): Promise<void>;
-  getAppInfo(): AppInfo;
-  container: HTMLElement;
+function createAppInstallContext(appName: string): AppInstallContext {
+  const ctx = {
+    hooks: {
+      onGlobalSearch(cb: (keyword: string) => Promise<GlobalSearchResult[]>) {
+        appManager.hooks.globalSearch.register(appName, cb);
+      }
+    },
+    systemMessage: systemMessage,
+    async openFile(file: string): Promise<boolean> {
+      return await windowManager.openFile(file);
+    },
+    async openFileBy(appName: string, file: string) {
+      windowManager.openFileBy(appName, file);
+    }
+  }
+  return ctx;
 }
+
+export type AppDefinitionWithContainer = AppDefinition & {
+  container: HTMLElement;
+};
 
 const builtinApps = [
   ['chat-gpt', 'ChatGPT'],
@@ -1025,11 +1041,29 @@ const builtinApps = [
   ['3d-editor', '3DEditor'],
 ];
 
-export class AppsRegister {
-  apps: { [appName: string]: AppDefinition };
+export class SystemHook<T extends (...args: any[]) => Promise<any>> {
+  callbacks: { [appName: string]: T[] } = {};
+  register(appName: string, cb: T) {
+    const cbs = this.callbacks[appName] || [];
+    this.callbacks[appName] = cbs;
+    cbs.push(cb);
+    return () => {
+      const idx = cbs.indexOf(cb);
+      if (idx !== -1) {
+        cbs.splice(idx, 1);
+      }
+    }
+  }
+}
+
+export class AppsManager {
+  apps: { [appName: string]: AppDefinitionWithContainer };
   downloadedApps: { [appName: string]: { scriptContent: string, scriptSrc: string } } = {};
   remote = new Collection('app_manager');
   eventBus = new EventEmitter();
+  hooks = {
+    globalSearch: new SystemHook<Parameters<SystemHooks['onGlobalSearch']>[0]>(),
+  }
   private readyPromise?: Promise<void>;
   constructor() {
     this.apps = {};
@@ -1038,7 +1072,7 @@ export class AppsRegister {
     this.readyPromise = (async () => {
       await this.installBuiltinApps(selectedApps);
       this.eventBus.emit('app_installed');
-    })();  
+    })();
     return this.readyPromise;
   }
   ready() {
@@ -1094,9 +1128,13 @@ export class AppsRegister {
       throw new Error(`app ${name} is not downloaded`);
     }
     const app = await loadModule(appScript, name);
+    if (app.installed) {
+      const installCtx = createAppInstallContext(name);
+      app.installed(installCtx);
+    }
     this.apps[name] = app;
   }
-  get(appName: string): undefined | AppDefinition {
+  get(appName: string): undefined | AppDefinitionWithContainer {
     return this.apps[appName];
   };
   getSupportedAppsByExt(ext: string): string[] {
@@ -1122,7 +1160,7 @@ export class AppsRegister {
   }
 }
 
-export const appManager = new AppsRegister();
+export const appManager = new AppsManager();
 
 (window as any)._apps = appManager;
 function stylus(s: string) {

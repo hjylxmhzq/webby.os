@@ -26,6 +26,13 @@ export interface AppContext {
   systemMessage(message: SystemMessage, onClose?: () => void): SystemMessageHandle;
 }
 
+export interface AppInstallContext {
+  hooks: SystemHooks,
+  openFile(file: string): Promise<boolean>;
+  openFileBy(appName: string, file: string): Promise<void>;
+  systemMessage(message: SystemMessage, onClose?: () => void): SystemMessageHandle;
+}
+
 export interface SystemMessageHandle {
   isClosed: boolean;
   close(): void;
@@ -35,6 +42,7 @@ export interface AppDefinition {
   mount(ctx: AppContext): Promise<void>;
   unmount(ctx: AppContext): Promise<void>;
   getAppInfo(): AppInfo;
+  installed?(ctx: AppInstallContext): Promise<void>;
 }
 
 export interface AppInfo {
@@ -45,6 +53,21 @@ export interface AppInfo {
   supportExts: string[],
   noSandbox?: boolean,
 }
+
+export interface GlobalSearchResult {
+  title: string,
+  subTitle?: string,
+  content?: string,
+  icon?: string,
+  pre?: string,
+  onClick?: () => void;
+}
+
+export interface SystemHooks {
+  onGlobalSearch(cb: (keyword: string) => Promise<GlobalSearchResult[]>): void;
+}
+
+export type SystemHookType = keyof SystemHooks;
 
 export interface AppWindow {
   minWidth: number,

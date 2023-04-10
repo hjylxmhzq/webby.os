@@ -25,7 +25,7 @@
   border-radius: 10px;
   border: 1px solid var(--border-color);
   box-shadow: var(--box-shadow-grow);
-  max-height: 450px;
+  max-height: 350px;
   overflow: auto;
   transition: transform 0.4s, opacity 0.4s;
   opacity: 1;
@@ -101,14 +101,21 @@
   transition: background-color 0.2s;
   border-radius: 5px;
   cursor: pointer;
+  flex-wrap: wrap;
 
   &:hover {
     background-color: var(--bg-transparent);
   }
 
+  &>.pre {
+    white-space: pre-wrap;
+    width: 100%;
+    text-align: left;
+  }
+
   &>span {
     white-space: nowrap;
-    max-width: 50%;
+    max-width: 260px;
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: 16px;
@@ -120,4 +127,11 @@
   text-align: left;
   padding: 0 10px 5px;
   border-bottom: 1px solid var(--border-color);
+}
+
+.search-result-box {
+  overflow: auto;
+  padding: 5px 25px 25px 25px;
+  margin: 0 -25px -25px -25px;
+  max-height: calc(80vh - 70px);
 }
