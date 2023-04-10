@@ -7,6 +7,7 @@ import { DropdownMenu } from "src/pages/desktop/components/header/dropdown-menu"
 import { AppMenu, AppState } from '@webby/core/web-app';
 import { logout } from 'src/apis/auth';
 import { windowManager } from 'src/utils/micro-app';
+import { showGlobalSearch } from '../..';
 
 const luanchMenu: AppMenu = {
   name: 'Desktop',
@@ -61,6 +62,11 @@ export default function Header(props: { menu: AppMenu[], activeApp?: AppState | 
       }
     </nav>
     <span className={style.right}>
+      <span onClick={() => {
+        showGlobalSearch();
+      }}>
+        <Icon name="search" size={14} className={style.icon} />
+      </span>
       <span onClick={() => {
         const elem = document.documentElement as any;
         fullscreen(elem);

@@ -5,6 +5,7 @@ import classNames from "classnames";
 import { debounce } from "src/utils/common";
 import LoadingBar from "src/pages/file/components/loading-bar";
 import { windowManager } from "src/utils/micro-app";
+import { CSSTransition, TransitionGroup } from "react-transition-group";
 
 interface SearchResult {
   title: string,
@@ -28,6 +29,8 @@ export function GlobalSearch(props: { onClose?(): void }) {
         } finally {
           setFileLoading(false);
         }
+      } else {
+        setFiles([]);
       }
     },
     100
@@ -42,20 +45,6 @@ export function GlobalSearch(props: { onClose?(): void }) {
     files: '文件'
   };
 
-  const lists = { files: [] as SearchResult[] };
-
-  type Keys = keyof typeof lists;
-
-  files.forEach(file => {
-    lists.files.push({
-      title: file.name,
-      subtitle: file.dir,
-      async onClick() {
-        await windowManager.openFileBy('Files', file.dir);
-      }
-    });
-  });
-
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus();
@@ -64,30 +53,35 @@ export function GlobalSearch(props: { onClose?(): void }) {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const els = search ? [
+    <CSSTransition key='files' timeout={{ enter: 300, exit: 300 }}>
+      <div className={classNames(style.list)}>
+        <LoadingBar loading={fileLoading} />
+        <div className={style.section}>文件</div>
+        {
+          files.map((l, idx) => {
+            return <div key={idx + l.name + '_' + l.dir} className={style['list-item']} onClick={async () => {
+              await windowManager.openFileBy('Files', l.dir);
+              props.onClose?.();
+            }}>
+              <span title={l.name}>{l.name}</span>
+              <span title={l.dir}>{l.dir}</span>
+            </div>
+          })
+        }
+        {
+          !files.length && <div>无搜索结果</div>
+        }
+      </div>
+    </CSSTransition>
+  ] : [];
+
   return <div tabIndex={0} onKeyDown={e => e.key === 'Escape' && props.onClose?.()} onMouseDown={e => e.stopPropagation()}>
     <input ref={inputRef} className={style['search-input']} onChange={(e) => setSearch(e.target.value)} value={search} placeholder="全局搜索"></input>
-    {
-      Object.keys(lists).map((key) => {
-        const list = lists[key as Keys]
-        return <div key={key} className={classNames(style.list, { [style.hide]: !search })}>
-          <LoadingBar loading={fileLoading} />
-          <div className={style.section}>{nameMap[key as Keys]}</div>
-          {
-            list.map((l, idx) => {
-              return <div key={idx + l.title + '_' + l.subtitle} className={style['list-item']} onClick={async () => {
-                l.onClick();
-                props.onClose?.();
-              }}>
-                <span title={l.title}>{l.title}</span>
-                <span title={l.subtitle}>{l.subtitle}</span>
-              </div>
-            })
-          }
-          {
-            !list.length && <div>无搜索结果</div>
-          }
-        </div>
-      })
-    }
+    <TransitionGroup>
+      {
+        els
+      }
+    </TransitionGroup>
   </div>
 }

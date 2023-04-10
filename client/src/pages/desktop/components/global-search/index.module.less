@@ -31,10 +31,34 @@
   transition: transform 0.4s, opacity 0.4s;
   opacity: 1;
   transform: translateY(0px);
+  display: none;
+  opacity: 0;
 
-  &.hide {
+  &:global(.enter) {
+    opacity: 0;
+    display: block;
+    transform: translateY(10px);
+  }
+  &:global(.exit) {
+    display: block;
+  }
+  &:global(.enter-active) {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+  &:global(.enter-done) {
+    opacity: 1;
+    display: block;
+    transform: translateY(0px);
+  }
+  &:global(.exit-active) {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  &:global(.exit-done) {
     transform: translateY(10px);
     opacity: 0;
+    display: none;
   }
 }
 

@@ -25,6 +25,7 @@ export enum DeskTopEventType {
   SystemMessage = 'systemMessage',
   CloseSystemMessage = 'closeSystemMessage',
   SystemMessageClosed = 'systemMessageClosed',
+  ShowGlobalSearch = 'showGlobalSearch',
 }
 export const desktopEventBus = new EventEmitter();
 
@@ -35,6 +36,10 @@ export function systemSelectFile(options: SelectFileProps): Promise<string[] | n
     })
     desktopEventBus.emit(DeskTopEventType.SelectFile, options);
   });
+}
+
+export function showGlobalSearch() {
+  desktopEventBus.emit(DeskTopEventType.ShowGlobalSearch);
 }
 
 export function systemMessage(msg: SystemMessage, onClose?: () => void): SystemMessageHandle {
@@ -116,10 +121,13 @@ export function HomePage() {
       }
     };
 
+    const showSearch = () => {
+      setShowGlobalSearch(true);
+    }
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
         e.preventDefault();
-        setShowGlobalSearch(!showGlobalSearch);
+        showSearch();
       }
     };
     const onMouseDown = () => {
@@ -131,6 +139,7 @@ export function HomePage() {
     desktopEventBus.on(DeskTopEventType.SelectFile, selectFiles);
     desktopEventBus.on(DeskTopEventType.SystemMessage, onSystemMessage);
     desktopEventBus.on(DeskTopEventType.CloseSystemMessage, onCloseMsg);
+    desktopEventBus.on(DeskTopEventType.ShowGlobalSearch, showSearch);
 
     return () => {
       window.removeEventListener('keydown', onKeyDown);
@@ -138,6 +147,7 @@ export function HomePage() {
       desktopEventBus.off(DeskTopEventType.SelectFile, selectFiles);
       desktopEventBus.off(DeskTopEventType.SystemMessage, onSystemMessage);
       desktopEventBus.off(DeskTopEventType.CloseSystemMessage, onCloseMsg);
+      desktopEventBus.off(DeskTopEventType.ShowGlobalSearch, showSearch);
     };
 
   }, []);
