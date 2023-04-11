@@ -6,7 +6,7 @@ import iconUrl from './icon.svg';
 import { Collection } from '@webby/core/kv-storage';
 import { http } from '@webby/core/tunnel';
 import { CachedEventEmitter } from '../../utils/events';
-import { systemMessage } from '@webby/core/system';
+import { openFileBy, systemMessage } from '@webby/core/system';
 
 let reactRoot: ReactDom.Root;
 
@@ -39,22 +39,6 @@ export async function mount(ctx: AppContext) {
     {
       name: '设置',
       children: [
-        {
-          name: '加入全局搜索',
-          onClick() {
-            store.set('enable_global_search', true);
-            systemMessage({ type: 'info', title: '消息', content: '已将ChatGPT加入全局搜索结果', timeout: 3000 });
-            enabledGlobalSearch = true;
-          }
-        },
-        {
-          name: '取消全局搜索',
-          onClick() {
-            store.set('enable_global_search', false);
-            systemMessage({ type: 'info', title: '消息', content: '已将ChatGPT在全局搜索结果中移除', timeout: 3000 })
-            enabledGlobalSearch = false;
-          }
-        },
         {
           name: '配置API Token',
           onClick() {
@@ -91,7 +75,9 @@ export async function mount(ctx: AppContext) {
   reactRoot.render(<Index />);
 
   const eventBus = new CachedEventEmitter();
-
+  ctx.onOpenFile(question => {
+    eventBus.emit('ask', question);
+  });
 
   function Index() {
     const [apiToken, setApiToken] = useState('');
@@ -111,12 +97,15 @@ export async function mount(ctx: AppContext) {
         }
       }
     ]);
+    const apiTokenRef = useRef(apiToken);
+    apiTokenRef.current = apiToken;
     const onInput = async (msg: string) => {
+      const apiToken = apiTokenRef.current;
       if (!apiToken) {
         ctx.systemMessage({
           type: 'error',
           title: '错误',
-          content: token ? token : '未设置API Token，请选择顶部菜单设置API Token',
+          content: '未设置API Token，请选择顶部菜单设置API Token',
           timeout: 5000
         });
         return;
@@ -131,6 +120,7 @@ export async function mount(ctx: AppContext) {
     };
 
     async function ask(msgLine: MsgLineItem[]) {
+      const apiToken = apiTokenRef.current;
       const body: RequestBody = {
         model: 'gpt-3.5-turbo',
         messages: msgLine.map(m => m.msg),
@@ -142,9 +132,9 @@ export async function mount(ctx: AppContext) {
       }
       if (isLoading || isStreaming) {
         setPartialMsg('');
-        if (abort.current) {
-          abort.current.abort();
-        }
+      }
+      if (abort.current) {
+        abort.current.abort();
       }
       setLoading(true);
       setIsStreaming(true);
@@ -207,6 +197,7 @@ export async function mount(ctx: AppContext) {
                   token: 0,
                 },
               });
+              abort.current = undefined;
               setPartialMsg('');
               setMsgLine(msgLine.slice());
               setIsStreaming(false);
@@ -230,6 +221,9 @@ export async function mount(ctx: AppContext) {
         if (v) {
           token = v;
           setApiToken(v);
+          setTimeout(() => {
+            eventBus.on('ask', onAsk);
+          });
         }
       });
       store.subscribe('api_token', (t) => {
@@ -254,9 +248,13 @@ export async function mount(ctx: AppContext) {
         msgLine[0].msg.content = prompt;
         setMsgLine(msgLine.slice());
       };
+      const onAsk = (question: string) => {
+        onInput(question);
+      }
       eventBus.on('clear', clear);
       eventBus.on('prompt', setPrompt);
       return () => {
+        eventBus.off('ask', onAsk);
         eventBus.off('clear', clear);
         eventBus.off('prompt', setPrompt);
       }
@@ -286,56 +284,15 @@ export async function mount(ctx: AppContext) {
 }
 
 export async function installed(ctx: AppInstallContext) {
-  const enabled = await store.get('enable_global_search');
-  if (enabled === true) {
-    let timer: number;
-    let abort: AbortController | undefined;
-    ctx.hooks.onGlobalSearch(async (search: string) => {
-      if (abort) {
-        abort.abort();
+  ctx.hooks.onGlobalSearch(async (search: string) => {
+    return [{
+      title: '发送以下问题',
+      pre: search,
+      onClick() {
+        openFileBy('ChatGPT', search);
       }
-      const apiToken = await store.get<string>('api_token');
-      abort = new AbortController();
-      window.clearTimeout(timer);
-      const body: RequestBody = {
-        model: 'gpt-3.5-turbo',
-        messages: [{
-          role: 'system',
-          content: 'You are a helpful assistant.',
-        }, {
-          role: 'user',
-          content: search,
-        }],
-        stream: false,
-        temperature: 1,
-      };
-
-      const ans = await new Promise<string>((resolve, reject) => {
-
-        timer = window.setTimeout(async () => {
-          console.log('chat start');
-
-          const resp = await http.fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'post',
-            headers: {
-              Authorization: `Bearer ${apiToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-            signal: abort?.signal,
-          });
-          abort = undefined;
-          const ans = await resp.json() as RespBody;
-          resolve(ans.choices[0]?.message.content || '没有回复');
-        }, 3000);
-      });
-
-      return [{
-        title: search + ' 的回答',
-        pre: ans,
-      }];
-    });
-  }
+    }];
+  });
 }
 
 export type Role = 'user' | 'assistant' | 'system';
