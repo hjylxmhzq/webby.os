@@ -43,9 +43,10 @@ export function GlobalSearch(props: { onClose?(): void }) {
   const searchByApps = useCallback(debounce(
     async function (search: string) {
       Object.keys(appManager.hooks.globalSearch.callbacks).forEach(async appName => {
-        const cbs = appManager.hooks.globalSearch.callbacks as any;
-        const cb = cbs[appName][0];
-        if (cb) {
+        const cbs = appManager.hooks.globalSearch.callbacks;
+        const hook = cbs[appName][0];
+        if (hook && appManager.hooks.globalSearch.isEnabled(appName)) {
+          const cb = hook;
           setAppsSearchResult((state) => ({
             ...state,
             [appName]: [],

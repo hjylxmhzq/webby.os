@@ -451,7 +451,7 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
     padding: 0 10px;
     height: 22px;
     font-size: 14px;
-    background-image: linear-gradient(0deg, #00000042, transparent);
+    background-image: var(--title-bar-bg-image);
     line-height: 22px;
     user-select: none;
     -webkit-user-select: none;
@@ -472,9 +472,8 @@ export function createAppWindow(appName: string, appContainer: HTMLElement): App
     <span class="title_text" style="flex-grow: 1;
     position: absolute;
     inset: 0;
-    padding: 0 50px;
+    margin: 0 50px;
     overflow: hidden;
-    z-index: -1;
     text-overflow: ellipsis;"
     >${appName}</span>
     <span class="app_window_new_window_btn" style="cursor: pointer;">
@@ -1042,7 +1041,30 @@ const builtinApps = [
 ];
 
 export class SystemHook<T extends (...args: any[]) => Promise<any>> {
+  constructor(public hookName: string) {
+    store.get<{ [appName: string]: boolean }>('hook_status_' + hookName).then(status => {
+      if (status) {
+        this.hookStatus = status;
+      }
+    });
+  }
+  hookStatus: { [appName: string]: boolean } = {};
   callbacks: { [appName: string]: T[] } = {};
+  eventBus = new EventEmitter();
+  setEnabled(appName: string, enabled: boolean) {
+    this.hookStatus[appName] = enabled;
+    store.set('hook_status_' + this.hookName, this.hookStatus);
+    this.eventBus.emit('enabled_change', appName);
+  }
+  isEnabled(appName: string): boolean {
+    return !!this.hookStatus[appName];
+  }
+  onEnabledChange(cb: (appName: string) => void) {
+    this.eventBus.on('enabled_change', cb);
+    return () => {
+      this.eventBus.off('enabled_change', cb);
+    }
+  }
   register(appName: string, cb: T) {
     const cbs = this.callbacks[appName] || [];
     this.callbacks[appName] = cbs;
@@ -1062,7 +1084,7 @@ export class AppsManager {
   remote = new Collection('app_manager');
   eventBus = new EventEmitter();
   hooks = {
-    globalSearch: new SystemHook<Parameters<SystemHooks['onGlobalSearch']>[0]>(),
+    globalSearch: new SystemHook<Parameters<SystemHooks['onGlobalSearch']>[0]>('globalSearch'),
   }
   private readyPromise?: Promise<void>;
   constructor() {

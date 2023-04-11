@@ -21,7 +21,8 @@
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    flex-grow: 1;
+    flex: 1 1;
+    overflow: hidden;
 
     &>* {
       margin: 0 5px;
@@ -32,9 +33,17 @@
         background-color: #aaa;
       }
     }
+    &>.checkbox {
+      flex: 0 0 14px;
+    }
 
     &>.filename {
       flex-grow: 1;
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 

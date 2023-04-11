@@ -29,6 +29,7 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
   const isWaiting = useRef(false);
   const [isShowOutline, setIsShowOutline] = useState(true);
   const [clientWidth, setClientWidth] = useState(props.width);
+  const [invertColor, setInvertColor] = useState(false);
 
   useEffect(() => {
     setClientWidth(props.width);
@@ -277,12 +278,13 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
     }
   }, [currentPdf, heights]);
 
-  return <div style={{ overflow: 'auto', height: '100%' }} >
+  return <div style={{ overflow: 'auto', height: '100%' }}>
     <div className={style['title-bar']}>
       <span className={style.left}>
         <Icon className={style['title-icon']} name="menu" onClick={() => setIsShowOutline(!isShowOutline)} />
       </span>
       <span className={style.right}>
+        <Icon className={style['title-icon']} name="dark" onClick={() => setInvertColor(!invertColor)} />
         <Icon className={style['title-icon']} name="zoom-in" onClick={zoomIn} />
         <Icon className={style['title-icon']} name="zoom-out" onClick={zoomOut} />
         <Icon className={style['title-icon']} name="column-width" onClick={zoomFit} />
@@ -292,7 +294,7 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
       {
         isShowOutline && <OutlineBar outline={outline?.items} onClick={onClickOutline} />
       }
-      <div className={style['pdf-page']} ref={box} style={{ overflow: 'auto', height: '100%', flexBasis: isShowOutline ? 'calc(100% - 200px)' : '100%' }} onScroll={onScroll}>
+      <div className={classNames(style['pdf-page'], { [style['invert-color']]: invertColor })} ref={box} style={{ overflow: 'auto', height: '100%', flexBasis: isShowOutline ? 'calc(100% - 200px)' : '100%' }} onScroll={onScroll}>
         <div className={style['pdf-viewer']} ref={canvasRef}>
           {
             Array.from({ length: canvasNum }).map((_, idx) => {
@@ -318,9 +320,10 @@ function OutlineTree(props: { outline: Outline, onClick: (ol: Outline) => void }
   return <div className={style['outline-tree']}>
     <div className={style['tree-title']}>
       {
-        !!props.outline?.items?.length && <Icon onClick={() => {
+        !!props.outline?.items?.length ? <Icon onClick={() => {
           setIsOpen(!isOpen)
         }} name='arrow-down' className={classNames(style.icon, { [style.open]: isOpen })} />
+          : <span style={{ display: 'inline-block', width: 13 }}></span>
       }
       <span onClick={() => props.onClick(props.outline)}>{props.outline.title}</span>
     </div>
@@ -334,8 +337,8 @@ function OutlineTree(props: { outline: Outline, onClick: (ol: Outline) => void }
   </div>
 }
 
-function OutlineBar(props: { outline?: Outline[], onClick: (ol: Outline) => void }) {
-  return <div className={style.outline}>
+function OutlineBar(props: { show?: boolean, outline?: Outline[], onClick: (ol: Outline) => void }) {
+  return <div className={classNames(style.outline)}>
     {
       props.outline &&
       props.outline.map((ol, idx) => {

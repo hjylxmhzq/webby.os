@@ -26,7 +26,7 @@ export interface FileStatWithDir {
 export async function readdir(dir: string): Promise<FileStat[]> {
   let resp = await post('/file/read_dir', {
     file: dir
-  }, 'read_dir_'+dir);
+  }, 'read_dir_' + dir);
   return resp.data.files;
 }
 
@@ -76,6 +76,22 @@ export function create_download_link_from_file_path(abs_file: string, expires?: 
     url.searchParams.set('expires', expires + '');
   }
   return url.toString();
+}
+
+export async function move_file(from_file: string, to_file: string): Promise<boolean> {
+  let resp = await post('/file/move', {
+    from_file,
+    to_file
+  });
+  return resp.status === 0;
+}
+
+export async function copy_file(from_file: string, to_file: string): Promise<boolean> {
+  let resp = await post('/file/copy', {
+    from_file,
+    to_file
+  });
+  return resp.status === 0;
 }
 
 export function create_thumbnail_link(dir: string, file: string) {

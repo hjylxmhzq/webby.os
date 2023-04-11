@@ -5,8 +5,7 @@ use crate::utils::response::{
 };
 use crate::utils::session::SessionUtils;
 use crate::utils::vfs::{
-  ensure_parent_dir_sync, normailze_path, read_file_stream, read_to_zip_stream,
-  FileStatWithName,
+  ensure_parent_dir_sync, normailze_path, read_file_stream, read_to_zip_stream, FileStatWithName,
 };
 use crate::utils::{response::create_resp, vfs};
 use crate::AppData;
@@ -172,6 +171,40 @@ pub async fn delete_batch(
   Ok(create_resp(true, EmptyResponseData::new(), ""))
 }
 
+#[derive(Deserialize)]
+pub struct MoveFileReq {
+  from_file: String,
+  to_file: String,
+}
+pub async fn move_file(
+  body: web::Json<MoveFileReq>,
+  state: web::Data<AppData>,
+  sess: Session,
+) -> Result<HttpResponse, AppError> {
+  let file_root = &state.read().unwrap().config.file_root;
+  let user_root = &sess.get_user_root()?;
+
+  let from_file = body.borrow().from_file.clone();
+  let to_file = body.borrow().to_file.clone();
+
+  vfs::move_file(file_root, user_root, &from_file, &to_file).await?;
+  Ok(create_resp(true, EmptyResponseData::new(), "done"))
+}
+
+pub async fn copy_file(
+  body: web::Json<MoveFileReq>,
+  state: web::Data<AppData>,
+  sess: Session,
+) -> Result<HttpResponse, AppError> {
+  let file_root = &state.read().unwrap().config.file_root;
+  let user_root = &sess.get_user_root()?;
+
+  let from_file = body.borrow().from_file.clone();
+  let to_file = body.borrow().to_file.clone();
+
+  vfs::copy_file(file_root, user_root, &from_file, &to_file).await?;
+  Ok(create_resp(true, EmptyResponseData::new(), "done"))
+}
 pub async fn upload(
   parts: awmp::Parts,
   state: web::Data<AppData>,
@@ -352,6 +385,8 @@ pub async fn index_updated_at() -> Result<HttpResponse, AppError> {
 
 pub fn file_routers() -> Scope {
   web::scope("/file")
+    .route("/move", web::post().to(move_file))
+    .route("/copy", web::post().to(copy_file))
     .route("/upload", web::post().to(upload))
     .route("/search", web::post().to(search))
     .route("/search_files", web::post().to(search_files))

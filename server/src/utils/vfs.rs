@@ -175,6 +175,20 @@ pub async fn create_dir(file_root: &PathBuf, user_root: &str, file: &str) -> Res
   Ok(result)
 }
 
+pub async fn move_file(file_root: &PathBuf, user_root: &str, from_file: &str, to_file: &str) -> Result<(), AppError> {
+  let from_file = normailze_path(&file_root, &user_root, &from_file)?;
+  let to_file = normailze_path(&file_root, &user_root, &to_file)?;
+  let result = fs::rename(from_file, to_file).await?;
+  Ok(result)
+}
+
+pub async fn copy_file(file_root: &PathBuf, user_root: &str, from_file: &str, to_file: &str) -> Result<u64, AppError> {
+  let from_file = normailze_path(&file_root, &user_root, &from_file)?;
+  let to_file = normailze_path(&file_root, &user_root, &to_file)?;
+  let result = fs::copy(from_file, to_file).await?;
+  Ok(result)
+}
+
 pub async fn search_in_index(kw: &str, limit: i64) -> Result<Vec<FileIndex>, AppError> {
   use crate::schema::file_index::dsl::*;
   use diesel::prelude::*;

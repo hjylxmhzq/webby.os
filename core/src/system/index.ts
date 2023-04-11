@@ -37,3 +37,15 @@ export async function openFileBy(appName: string, file: string): Promise<void> {
     return;
   }
 }
+
+export function getAppManager() {
+  const sc = (window as any).sharedScope;
+  const appManager = sc.system.appManager;
+  return appManager;
+}
+
+export function getWindowManager() {
+  const sc = (window as any).sharedScope;
+  const windowManager = sc.system.windowManager;
+  return windowManager;
+}

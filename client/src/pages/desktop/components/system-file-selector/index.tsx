@@ -81,8 +81,25 @@ function FileList(props: { dir: string, onClick: (file: FileStat) => void, onSel
       </span>
       <span className={style.right}>
         <Icon onClick={() => setListType(listType === 'list' ? 'card' : 'list')} className={style.icon} name={listType === 'list' ? 'list' : 'all'}></Icon>
+        {
+          props.options.allowDirectory &&
+          <Button
+            className={classNames(style.btn)}
+            onClick={async () => {
+              const dir: FileStat = {
+                name: '',
+                is_dir: true,
+                is_file: false,
+                accessed: 0,
+                modified: 0,
+                created: 0,
+                size: 0,
+              }
+              props.onSelection([dir]);
+            }}>当前文件夹</Button>
+        }
         <Button
-          className={style.btn}
+          className={classNames(style.btn, { [style.disabled]: checkList.size === 0 })}
           onClick={async () => {
             const selected = files.filter((f) => checkList.has(f.name));
             props.onSelection(selected);

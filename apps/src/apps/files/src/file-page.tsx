@@ -1,4 +1,4 @@
-import { create_compression_download_link, create_download_link, create_download_link_from_file_path, delete_files, FileStat, readdir, upload } from "@webby/core/fs"
+import { copy_file, create_compression_download_link, create_download_link, create_download_link_from_file_path, delete_files, FileStat, move_file, readdir, upload } from "@webby/core/fs"
 import { useEffect, useRef, useState } from "react";
 import style from './file-page.module.less';
 import path from 'path-browserify';
@@ -10,6 +10,7 @@ import { AppContext } from "@webby/core/web-app";
 import { makedir } from "@webby/core/fs";
 import { AnimationButton } from "../../../components/button";
 import { UploadProgress } from "../../../components/progress";
+import { systemSelectFile } from "@webby/core/system";
 
 export default function FilePage(props: { ctx: AppContext, openFile: (file: string) => void, eventBus: CachedEventEmitter }) {
   const [dir, setDir] = useState('');
@@ -81,7 +82,7 @@ function FileList(props: { ctx: AppContext, dir: string, onClick: (name: FileSta
         {props.dir.split('/').join(' / ')}
       </span>
       <span className={style.right}>
-        <Button className={style['title-btn']} style={{ width: 90 }} onClick={async () => {
+        <Button className={style['title-btn']} onClick={async () => {
           const dirName = prompt('文件夹名称');
           if (dirName) {
             const dir = path.join(props.dir, dirName);
@@ -149,6 +150,79 @@ function FileList(props: { ctx: AppContext, dir: string, onClick: (name: FileSta
               await gotoDir(props.dir);
             }}>删除</AnimationButton>
         }
+        {
+          checkList.some(c => c) &&
+          <AnimationButton
+            className={style['title-btn']}
+            onClick={async () => {
+              const checked_files: { from: string, to: string }[] = [];
+              const to_dir_list = await systemSelectFile({ allowFile: false, allowDirectory: true, multiple: false });
+              if (!to_dir_list?.length) return;
+              const to_dir = to_dir_list[0];
+              for (let i in checkList) {
+                if (checkList[i]) {
+                  const from = path.join(props.dir, files[i].name);
+                  const to = path.join(to_dir, files[i].name);
+                  checked_files.push({ from, to });
+                  if (from === to) {
+                    continue;
+                  }
+                }
+              }
+              for (let { from, to } of checked_files) {
+                await move_file(from, to);
+              }
+              await gotoDir(props.dir);
+            }}>移动到</AnimationButton>
+        }
+        {
+          checkList.some(c => c) &&
+          <AnimationButton
+            className={style['title-btn']}
+            onClick={async () => {
+              const checked_files: { from: string, to: string }[] = [];
+              const to_dir_list = await systemSelectFile({ allowFile: false, allowDirectory: true, multiple: false });
+              if (!to_dir_list?.length) return;
+              const to_dir = to_dir_list[0];
+              for (let i in checkList) {
+                if (checkList[i]) {
+                  const from = path.join(props.dir, files[i].name);
+                  const to = path.join(to_dir, files[i].name);
+                  if (from === to) {
+                    continue;
+                  }
+                  checked_files.push({ from, to });
+                }
+              }
+              for (let { from, to } of checked_files) {
+                await copy_file(from, to);
+              }
+              await gotoDir(props.dir);
+            }}>复制到</AnimationButton>
+        }
+        {
+          checkList.filter(c => c).length === 1 &&
+          <AnimationButton
+            className={style['title-btn']}
+            onClick={async () => {
+              let from: string = '';
+              let to: string = '';
+              for (let i in checkList) {
+                if (checkList[i]) {
+                  from = path.join(props.dir, files[i].name);
+                  const new_name = prompt('文件名');
+                  if (new_name) {
+                    to = path.join(props.dir, new_name);
+                  }
+                  break;
+                }
+              }
+              if (from && to) {
+                await move_file(from, to);
+              }
+              await gotoDir(props.dir);
+            }}>重命名</AnimationButton>
+        }
       </span>
     </div>
     {
@@ -162,7 +236,7 @@ function FileList(props: { ctx: AppContext, dir: string, onClick: (name: FileSta
         const link = create_link(props.dir, file.name);
         return <div key={file.name} className={style['file-item']}>
           <span className={style.left}>
-            <Checkbox checked={!!checkList[idx]} onChange={checked => {
+            <Checkbox className={style.checkbox} checked={!!checkList[idx]} onChange={checked => {
               checkList[idx] = checked;
               setCheckList([...checkList]);
             }} />
