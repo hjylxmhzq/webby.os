@@ -1012,7 +1012,7 @@ const UI = {
         
         const protocol = window.location.protocol;
         const host = window.location.hostname;
-        const port = window.location.port || (protocol.includes('https') ? '80' : '443');
+        const port = window.location.port || (protocol.includes('https') ? '443' : '80');
         const path = `websocket/websockify/connect?remote=${remoteHost}`;
 
         if (typeof password === 'undefined') {
