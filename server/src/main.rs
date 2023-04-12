@@ -99,6 +99,7 @@ async fn main() -> Result<(), AppError> {
       .app_data(awmp_config)
       .app_data(web::Data::new(app_state.clone()))
       .service(routers::tunnel::tunnel_routers())
+      .service(routers::tunnel::websockify_routers())
       .service(routers::kv_storage::kv_storage_routers())
       .service(routers::kv_storage::kv_storage_ws_routers())
       .service(routers::message_queue::message_queue_routers())

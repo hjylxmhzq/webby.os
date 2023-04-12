@@ -82,6 +82,7 @@ module.exports = {
         { from: "../node_modules/pdfjs-dist/cmaps", to: path.join(outputDir, 'pdf-viewer', 'cmaps') },
         { from: "./src/apps/3d-editor/editor", to: path.join(outputDir, '3d-editor') },
         { from: "./src/apps/paint/jspaint", to: path.join(outputDir, 'paint') },
+        { from: "./src/apps/vnc-viewer/novnc", to: path.join(outputDir, 'vnc-viewer') },
       ],
     }),
   ],

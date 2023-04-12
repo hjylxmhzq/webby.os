@@ -52,6 +52,7 @@ actix = "0.13.0"
 ptyprocess = "0.4.1"
 rust_search = "2.1.0"
 normpath = "1.1.1"
+bytes = "1.4.0"
 
 [dependencies.ffmpeg_cli_utils]
 git = "https://github.com/hjylxmhzq/ffmpeg-cli-utils.git"

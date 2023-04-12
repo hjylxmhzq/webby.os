@@ -1026,6 +1026,7 @@ export type AppDefinitionWithContainer = AppDefinition & {
 };
 
 const builtinApps = [
+  ['vnc-viewer', 'VNCViewer'],
   ['chat-gpt', 'ChatGPT'],
   ['paint', 'Paint'],
   ['file-browser', 'Cloud'],
