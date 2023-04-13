@@ -104,14 +104,14 @@ export async function mount(ctx: AppContext) {
   });
   // const term = new Term(xterm);
 
-  let cache: string[] = [];
+  // let cache: string[] = [];
 
-  store.get<string>('history').then(v => {
-    if (v) {
-      xterm.write(v);
-      xterm.write('\n\r已从上次会话恢复\n\r');
-    }
-  });
+  // store.get<string>('history').then(v => {
+  //   if (v) {
+  //     xterm.write(v);
+  //     xterm.write('\n\r已从上次会话恢复\n\r');
+  //   }
+  // });
 
   ctx.onOpenFile((cmd) => {
     eventBus.emit('exec', cmd);
@@ -142,27 +142,27 @@ export async function mount(ctx: AppContext) {
     // }
   });
 
-  function writeHisotry(text: string) {
-    cache.push(text);
-    if (cache.length > 100) {
-      cache = cache.slice(-100);
-    }
-  }
+  // function writeHisotry(text: string) {
+  //   cache.push(text);
+  //   if (cache.length > 100) {
+  //     cache = cache.slice(-100);
+  //   }
+  // }
 
-  function saveHistory() {
-    store.set('history', cache.join(''));
-  }
+  // function saveHistory() {
+  //   store.set('history', cache.join(''));
+  // }
 
-  const debounceSave = debounce(saveHistory, 3000);
+  // const debounceSave = debounce(saveHistory, 3000);
 
   shell.onStdOut(text => {
-    writeHisotry(text);
-    debounceSave();
+    // writeHisotry(text);
+    // debounceSave();
     xterm.write(text);
   });
   shell.onStdErr(text => {
-    writeHisotry(text);
-    debounceSave();
+    // writeHisotry(text);
+    // debounceSave();
     xterm.write(text);
   });
   (document as any)._fit = fitAddon;
@@ -172,6 +172,7 @@ export async function unmount(ctx: AppContext) {
   store.remove('history');
   eventBus.removeAllListeners();
   shell.close();
+  ctx.appRootEl.innerHTML = '';
 }
 
 export function getAppInfo(): AppInfo {
