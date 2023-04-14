@@ -12,12 +12,14 @@ import { create_download_link_from_file_path } from "@webby/core/fs";
 import MessageLine from "./components/message";
 import { MessageQueue } from '@webby/core/message-queue';
 import { GlobalSearch } from "./components/global-search";
+import { PromptContent, PromptProps, PromptResult, SystemPrompt } from "./components/system-prompt";
 
 
 (window as any)._http = http;
 (window as any)._Collection = Collection;
 (window as any)._MessageQueue = MessageQueue;
 (window as any)._systemMessage = systemMessage;
+(window as any)._systemPrompt = systemPrompt;
 
 export enum DeskTopEventType {
   SelectFile = 'selectFile',
@@ -26,7 +28,10 @@ export enum DeskTopEventType {
   CloseSystemMessage = 'closeSystemMessage',
   SystemMessageClosed = 'systemMessageClosed',
   ShowGlobalSearch = 'showGlobalSearch',
+  ShowPrompt = 'showPrompt',
+  PromptFinished = 'promptFinished',
 }
+
 export const desktopEventBus = new EventEmitter();
 
 export function systemSelectFile(options: SelectFileProps): Promise<string[] | null> {
@@ -63,6 +68,15 @@ export function systemMessage(msg: SystemMessage, onClose?: () => void): SystemM
   return handle;
 }
 
+export function systemPrompt(prompt: PromptContent): Promise<PromptResult | null> {
+  return new Promise((resolve, _reject) => {
+    desktopEventBus.once(DeskTopEventType.PromptFinished, (result: PromptResult | null) => {
+      resolve(result);
+    });
+    desktopEventBus.emit(DeskTopEventType.ShowPrompt, prompt);
+  });
+}
+
 type IdMessage = { id: string } & SystemMessage;
 
 export function HomePage() {
@@ -76,8 +90,14 @@ export function HomePage() {
   const [fileSelectorOptioins, setFileSelectorOptioins] = useState<SelectFileProps>({});
   const [wallpaper, setWallpaper] = useState('');
   const [messages, setMessages] = useState<({ id: string } & SystemMessage)[]>([]);
+  const [prompt, setPrompt] = useState<PromptProps['prompt']>();
   const msgsRef = useRef(messages);
   msgsRef.current = messages;
+
+  const onPromptFinish = (promptResult?: PromptResult) => {
+    setPrompt(undefined);
+    desktopEventBus.emit(DeskTopEventType.PromptFinished, promptResult || null);
+  };
 
   useEffect(() => {
     (async () => {
@@ -133,6 +153,10 @@ export function HomePage() {
     const onMouseDown = () => {
       setShowGlobalSearch(false);
     }
+
+    const showPrompt = (prompt: PromptContent) => {
+      setPrompt(prompt);
+    }
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('mousedown', onMouseDown)
 
@@ -140,6 +164,7 @@ export function HomePage() {
     desktopEventBus.on(DeskTopEventType.SystemMessage, onSystemMessage);
     desktopEventBus.on(DeskTopEventType.CloseSystemMessage, onCloseMsg);
     desktopEventBus.on(DeskTopEventType.ShowGlobalSearch, showSearch);
+    desktopEventBus.on(DeskTopEventType.ShowPrompt, showPrompt);
 
     return () => {
       window.removeEventListener('keydown', onKeyDown);
@@ -148,6 +173,7 @@ export function HomePage() {
       desktopEventBus.off(DeskTopEventType.SystemMessage, onSystemMessage);
       desktopEventBus.off(DeskTopEventType.CloseSystemMessage, onCloseMsg);
       desktopEventBus.off(DeskTopEventType.ShowGlobalSearch, showSearch);
+      desktopEventBus.off(DeskTopEventType.ShowPrompt, showPrompt);
     };
 
   }, []);
@@ -213,6 +239,10 @@ export function HomePage() {
       showGlobalSearch && <div className={style['global-search']}>
         <GlobalSearch onClose={() => setShowGlobalSearch(false)} />
       </div>
+    }
+    {
+      !!prompt &&
+      <SystemPrompt prompt={prompt} onComfirm={onPromptFinish} onCancel={onPromptFinish} />
     }
   </div>
 }

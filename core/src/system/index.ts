@@ -3,9 +3,27 @@ import { SelectFileOptions } from "../web-app";
 import { SystemMessageHandle } from "../web-app";
 import { SystemMessage } from "../web-app";
 
+export interface PromptContent {
+  title: string;
+  records?: {
+    name: string,
+    type?: 'text',
+    pattern?: RegExp,
+  }[];
+}
+
+export interface PromptResult {
+  [key: string]: string,
+}
+
 export function systemMessage(message: SystemMessage, onClose?: () => void): SystemMessageHandle {
   const sc = (window as any).sharedScope;
   return sc.system.systemMessage(message, onClose);
+}
+
+export function systemPrompt(prompt: PromptContent): Promise<PromptResult | null> {
+  const sc = (window as any).sharedScope;
+  return sc.system.systemPrompt(prompt);
 }
 
 export function systemSelectFile(options: SelectFileOptions): Promise<string[] | null> {

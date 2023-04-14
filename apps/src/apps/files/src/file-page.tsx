@@ -10,7 +10,7 @@ import { AppContext } from "@webby/core/web-app";
 import { makedir } from "@webby/core/fs";
 import { AnimationButton } from "../../../components/button";
 import { UploadProgress } from "../../../components/progress";
-import { systemSelectFile } from "@webby/core/system";
+import { systemPrompt, systemSelectFile } from "@webby/core/system";
 
 export default function FilePage(props: { ctx: AppContext, openFile: (file: string) => void, eventBus: CachedEventEmitter }) {
   const [dir, setDir] = useState('');
@@ -83,13 +83,14 @@ function FileList(props: { ctx: AppContext, dir: string, onClick: (name: FileSta
       </span>
       <span className={style.right}>
         <Button className={style['title-btn']} onClick={async () => {
-          const dirName = prompt('文件夹名称');
+          const promtpResult = await systemPrompt({title: '文件夹名称'});
+          const dirName = promtpResult?.default;
           if (dirName) {
             const dir = path.join(props.dir, dirName);
             await makedir(dir);
             await gotoDir(props.dir);
           } else {
-            props.ctx.systemMessage({ type: 'error', title: '文件名错误', content: '文件名不能为空', timeout: 3000 });
+            props.ctx.systemMessage({ type: 'error', title: '文件名错误', content: '文件夹名称不能为空', timeout: 3000 });
           }
         }}>新建文件夹</Button>
         <Button className={style['title-btn']} onClick={async () => {

@@ -1,0 +1,75 @@
+.prompt-container {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: 350px;
+  padding: 20px;
+  border-radius: 10px;
+  background-color: var(--bg-medium-hover);
+  max-width: 100vw;
+  transform: translate(-50%, -50%);
+  max-height: 350px;
+  overflow: auto;
+  box-shadow: var(--box-shadow);
+  color: var(--font-color);
+}
+
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 25px;
+  bottom: 0;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.btn {
+  margin-top: 10px;
+  text-align: right;
+
+  &>button {
+    margin: 0 5px;
+  }
+}
+
+.title {
+  padding: 0 10px;
+  font-size: 18px;
+}
+
+.content {
+  margin-top: 10px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.label {
+  font-size: 14px;
+  flex: 0px 1 0;
+  padding-right: 10px;
+}
+
+.input {
+  height: 26px;
+  flex: 400px 0 1;
+  outline: none;
+  padding: 0 10px;
+  border-radius: 5px;
+  &:focus {
+    box-shadow: var(--box-shadow-shrink);
+  }
+}
+
+.container {
+  position: fixed;
+  top: 25px;
+  bottom: 0px;
+  left: 0px;
+  right: 0px;
+  z-index: 999999;
+}

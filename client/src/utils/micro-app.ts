@@ -9,7 +9,7 @@ import { Collection } from "@webby/core/kv-storage";
 import path from "path-browserify";
 import style from './micro-app.module.less';
 import { transformScale, transformTranslate } from "./animation";
-import { systemMessage, systemSelectFile } from "src/pages/desktop";
+import { systemMessage, systemPrompt, systemSelectFile } from "src/pages/desktop";
 
 const store = new Collection('app_manager');
 const eventbus = new EventEmitter();
@@ -1239,6 +1239,7 @@ let sharedScope = {
   system: {
     systemSelectFile: systemSelectFile,
     systemMessage: systemMessage,
+    systemPrompt: systemPrompt,
     windowManager,
     appManager,
   }
