@@ -4,6 +4,9 @@ import EventEmitter from 'events';
 export class Collection {
   private eventBus = new EventEmitter();
   constructor(public collection: string) {
+    if (collection.startsWith('_')) {
+      throw new Error('collection with name starts with "_" is reserved by system');
+    }
   }
   async set(key: string, value: any): Promise<void> {
     const v = JSON.stringify(value);
@@ -108,5 +111,9 @@ async function waitForWs(ws: WebSocket): Promise<WebSocket> {
 }
 
 export const commonCollection = {
-  desktop: new Collection('desktop_config'),
+  desktop: new Collection('_desktop_config'),
+  windowManager: new Collection('_window_manager'),
+  processManager: new Collection('_process_manager'),
+  appManager: new Collection('_app_manager'),
+  systemHook: new Collection('_system_hook'),
 }

@@ -1,0 +1,82 @@
+.app_dock_container {
+  transition: transform 0.2s;
+  position: fixed;
+  bottom: 0;
+  margin: 0 auto;
+  left: 50%;
+  height: 25px;
+  display: flex;
+  background-color: #2d3935;
+  transform: translate(-50%, 0);
+  box-sizing: border-box;
+  align-items: center;
+  border-radius: 5px;
+  overflow: hidden;
+  z-index: 99999;
+}
+
+.app_dock_app {
+  &:last-child {
+    margin-right: 0;
+  }
+
+  margin: 0 4px 0 0;
+  display: flex;
+  align-items: center;
+  background-color: #525856;
+  font-size: 14px;
+  height: 25px;
+  padding: 0 5px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #727272;
+  }
+
+  &>img {
+    width: 16px;
+    height: auto;
+    padding: 0 2px;
+  }
+}
+
+.hide {
+  transform: translate(-50%, 100%);
+}
+
+.titlebar_btn {
+  cursor: pointer;
+  font-size: 8px;
+  width: 14px;
+  height: 14px;
+  background-color: #888888;
+  border-radius: 50%;
+  display: flex;
+  margin-right: 5px;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  &:hover {
+    background-color: #bebebe;
+  }
+}
+
+.titlebar_btn_right {
+  cursor: pointer;
+  font-size: 10px;
+  width: 16px;
+  height: 16px;
+  // background-color: #888888;
+  border-radius: 50%;
+  display: flex;
+  margin-right: 5px;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  position: absolute;
+  right: 5px;
+  &:hover {
+    background-color: #bebebe91;
+  }
+}

@@ -18,6 +18,21 @@ module.exports = {
         use: 'ts-loader',
         exclude: /node_modules/,
       },
+      {
+        test: /\.module.less?$/,
+        use: [
+          {
+            loader: 'style-loader',
+            options: {
+              modules: true
+            }
+          },
+          {
+            loader: require.resolve('css-loader'),
+            options: cssOptions,
+          },
+        ]
+      },
     ],
   },
   optimization: {

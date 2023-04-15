@@ -1,5 +1,8 @@
 import { Theme } from "../types/theme";
 import type EventEmitter from 'events';
+import processManager, { ProcessManager } from "./process-manager";
+import windowManager, { WindowManager } from "./window-manager";
+import appManager, { AppManager } from "./app-manager";
 
 export interface SelectFileOptions {
   allowFile?: boolean;
@@ -125,4 +128,54 @@ export interface SystemMessage {
   title: string,
   content: string,
   timeout: number,
+}
+
+
+export interface SelectFileProps {
+  allowFile?: boolean;
+  allowDirectory?: boolean;
+  multiple?: boolean;
+  allowedExts?: string[];
+}
+
+export interface PromptContent {
+  title: string;
+  records?: {
+    name: string,
+    type?: 'text',
+    pattern?: RegExp,
+  }[];
+}
+
+export interface PromptResult {
+  [key: string]: string,
+}
+
+export interface SystemSharedScope {
+  systemSelectFile(options: SelectFileProps): Promise<string[] | null>,
+  systemMessage(msg: SystemMessage, onClose?: () => void): SystemMessageHandle,
+  systemPrompt(prompt: PromptContent): Promise<PromptResult | null>,
+  processManager: ProcessManager,
+  windowManager: WindowManager,
+  appManager: AppManager,
+}
+
+export interface SharedScope {
+  system: SystemSharedScope,
+}
+
+declare global {
+  interface Window { sharedScope: SharedScope; }
+}
+
+export function initSharedScope(system: Pick<SystemSharedScope, 'systemSelectFile' | 'systemMessage' | 'systemPrompt'>) {
+  const sharedScope: SharedScope = {
+    system: {
+      appManager: appManager,
+      windowManager: windowManager,
+      processManager: processManager,
+      ...system,
+    }
+  }
+  window.sharedScope = sharedScope;
 }
