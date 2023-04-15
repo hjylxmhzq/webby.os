@@ -11,6 +11,7 @@ import { makedir } from "@webby/core/fs";
 import { AnimationButton } from "../../../components/button";
 import { UploadProgress } from "../../../components/progress";
 import { systemPrompt, systemSelectFile } from "@webby/core/system";
+import { Popover } from "../../../components/popover";
 
 export default function FilePage(props: { ctx: AppContext, openFile: (file: string) => void, eventBus: CachedEventEmitter }) {
   const [dir, setDir] = useState('');
@@ -83,7 +84,7 @@ function FileList(props: { ctx: AppContext, dir: string, onClick: (name: FileSta
       </span>
       <span className={style.right}>
         <Button className={style['title-btn']} onClick={async () => {
-          const promtpResult = await systemPrompt({title: '文件夹名称'});
+          const promtpResult = await systemPrompt({ title: '文件夹名称' });
           const dirName = promtpResult?.default;
           if (dirName) {
             const dir = path.join(props.dir, dirName);
@@ -138,18 +139,25 @@ function FileList(props: { ctx: AppContext, dir: string, onClick: (name: FileSta
         }}>上传</Button>
         {
           checkList.some(c => c) &&
-          <AnimationButton
-            className={style['title-btn']}
-            onClick={async () => {
-              const checked_files = [];
-              for (let i in checkList) {
-                if (checkList[i]) {
-                  checked_files.push(path.join(props.dir, files[i].name));
+          <Popover inline auto content={
+            <div style={{ lineHeight: '35px', fontSize: 12, padding: '0 10px' }}>
+              此操作不可恢复，确认删除文件吗?
+              <Button type="danger" onClick={async () => {
+                const checked_files = [];
+                for (let i in checkList) {
+                  if (checkList[i]) {
+                    checked_files.push(path.join(props.dir, files[i].name));
+                  }
                 }
-              }
-              await delete_files(checked_files);
-              await gotoDir(props.dir);
-            }}>删除</AnimationButton>
+                await delete_files(checked_files);
+                await gotoDir(props.dir);
+              }} style={{ fontSize: 12 }}>确认</Button>
+            </div>
+          }>
+            <AnimationButton
+              className={style['title-btn']}
+            >删除</AnimationButton>
+          </Popover>
         }
         {
           checkList.some(c => c) &&

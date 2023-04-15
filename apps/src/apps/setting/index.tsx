@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Button from "./components/button";
 import { Popover } from "./components/popover";
-import { formatTime } from "./utils";
-import StoragePieChart from "./components/pie-chart";
 import style from './index.module.less';
 import ReactDom from 'react-dom/client';
 import { AppContext, AppInfo, SelectFileOptions } from '@webby/core/web-app';
@@ -244,6 +242,7 @@ function UserSetting() {
 function DesktopSetting() {
 
   const [wallpaper, setWallpaper] = useState('');
+  const [bgFillMode, setBgFillMode] = useState<'contain' | 'cover' | 'fill'>('cover');
 
   useEffect(() => {
     (async () => {
@@ -251,11 +250,21 @@ function DesktopSetting() {
       if (wp) {
         setWallpaper(wp);
       }
+      const fillMode = await commonCollection.desktop.get('bg-fill-mode');
+      if (fillMode) {
+        setBgFillMode(fillMode);
+      }
     })();
     const unsubscribe = commonCollection.desktop.subscribe<string>('wallpaper', (v) => {
       setWallpaper(v || '');
     });
-    return unsubscribe;
+    const unsubscribe1 = commonCollection.desktop.subscribe<string>('bg-fill-mode', (v: any) => {
+      setBgFillMode(v || 'contain');
+    });
+    return () => {
+      unsubscribe();
+      unsubscribe1();
+    }
   }, []);
 
   return <div>
@@ -282,6 +291,20 @@ function DesktopSetting() {
             <Button style={{ fontSize: 12 }}>删除壁纸</Button>
           </Popover>
         }
+      </div>
+      <div className={style['setting-item']}>
+        <span>壁纸填充方法</span>
+        <select
+          onChange={async e => {
+            setBgFillMode(e.target.value as any);
+            await commonCollection.desktop.set('bg-fill-mode', e.target.value);
+          }}
+          value={bgFillMode}
+        >
+          <option value={'contain'}>contain</option>
+          <option value={'cover'}>cover</option>
+          <option value={'fill'}>fill</option>
+        </select>
       </div>
       <div className={style['setting-item']}>
         {

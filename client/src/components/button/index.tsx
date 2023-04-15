@@ -9,17 +9,18 @@ interface Props {
   type?: 'normal' | 'danger',
   style?: CSSProperties,
   className?: string,
+  submit?: boolean
 }
 
 export default function Button(props: Props) {
   const onClick: MouseEventHandler = function (this: any, e) {
     props.onClick?.call(this, e);
   };
-  return <button style={{ height: props.height || 'auto', ...(props.style || {}) }} className={classNames(style.btn, { [style.danger]: props.type === 'danger' }, props.className)} onClick={onClick}>{props.children}</button>
+  return <button type={props.submit ? 'submit' : 'button'} style={{ height: props.height || 'auto', ...(props.style || {}) }} className={classNames(style.btn, { [style.danger]: props.type === 'danger' }, props.className)} onClick={onClick}>{props.children}</button>
 }
 
 export function AnimationButton(props: Props) {
-  return <button style={{ height: props.height || 'auto' }} className={classNames(style.btn, style.animation, { [style.danger]: props.type === 'danger' })} onClick={props.onClick}>{props.children}</button>
+  return <button type={props.submit ? 'submit' : 'button'} style={{ height: props.height || 'auto' }} className={classNames(style.btn, style.animation, { [style.danger]: props.type === 'danger' })} onClick={props.onClick}>{props.children}</button>
 }
 
 interface PopBtnProps {

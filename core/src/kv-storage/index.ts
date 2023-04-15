@@ -3,15 +3,23 @@ import EventEmitter from 'events';
 
 let allowBuiltIn = false;
 
+interface StorageOptions {
+  localFirst?: boolean,
+}
+
 export class Collection {
   private eventBus = new EventEmitter();
-  constructor(public collection: string) {
+  initedKeys = new Set();
+  constructor(public collection: string, public options: StorageOptions = {}) {
     if (!allowBuiltIn && collection.startsWith('_')) {
       throw new Error('collection with name starts with "_" is reserved by system');
     }
   }
   async set(key: string, value: any): Promise<void> {
     const v = JSON.stringify(value);
+    if (this.options.localFirst) {
+      localStorage.setItem(`_collection_${this.collection}|${key}`, v);
+    }
     const r = await post('/kv_storage/set', {
       key, value: v, collection: this.collection
     }, Math.random().toString());
@@ -19,14 +27,38 @@ export class Collection {
     return r.data;
   }
   async get<V = any>(key: string): Promise<V | null> {
-    const r = await post('/kv_storage/get', {
-      key, collection: this.collection
-    }, 'collection_get' + '_' + key + '_' + this.collection);
-    let d = r.data;
-    if (d.length > 0) {
-      return JSON.parse(d[0].value);
+    let localVal: V | undefined;
+    if (this.options.localFirst) {
+      const val = localStorage.getItem(`_collection_${this.collection}|${key}`);
+      if (val) {
+        localVal = JSON.parse(val);
+      }
     }
-    return null;
+    const getRemoteVal = async () => {
+      const r = await post('/kv_storage/get', {
+        key, collection: this.collection
+      }, 'collection_get' + '_' + key + '_' + this.collection);
+      let d = r.data;
+      if (d.length > 0) {
+        const val = JSON.parse(d[0].value);
+        if (this.options.localFirst) {
+          this.initedKeys.add(key);
+          const s = JSON.stringify(val);
+          localStorage.setItem(`_collection_${this.collection}|${key}`, s);
+        }
+        return val;
+      }
+      return null;
+    }
+    if (localVal) {
+      if (!this.initedKeys.has(key)) {
+        // not fresh data, update localStorage but dont wait for update
+        getRemoteVal();
+      }
+      return localVal;
+    } else {
+      return await getRemoteVal();
+    }
   }
   async has(key: string): Promise<boolean> {
     const r = await post('/kv_storage/has', {
@@ -113,7 +145,7 @@ async function waitForWs(ws: WebSocket): Promise<WebSocket> {
 }
 allowBuiltIn = true;
 export const commonCollection = {
-  desktop: new Collection('_desktop_config'),
+  desktop: new Collection('_desktop_config', { localFirst: true }),
   windowManager: new Collection('_window_manager'),
   processManager: new Collection('_process_manager'),
   appManager: new Collection('_app_manager'),

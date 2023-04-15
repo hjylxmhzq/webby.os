@@ -35,7 +35,7 @@ export enum DeskTopEventType {
   ShowGlobalSearch = 'showGlobalSearch',
   ShowPrompt = 'showPrompt',
   PromptFinished = 'promptFinished',
-}
+};
 
 export const desktopEventBus = new EventEmitter();
 
@@ -96,6 +96,7 @@ export function HomePage() {
   const [wallpaper, setWallpaper] = useState('');
   const [messages, setMessages] = useState<({ id: string } & SystemMessage)[]>([]);
   const [prompt, setPrompt] = useState<PromptProps['prompt']>();
+  const [bgFillMode, setBgFillMode] = useState<'fill' | 'contain' | 'cover'>('cover');
   const msgsRef = useRef(messages);
   msgsRef.current = messages;
 
@@ -110,8 +111,15 @@ export function HomePage() {
       if (wp) {
         setWallpaper(wp);
       }
+      const _bgFillMode = await commonCollection.desktop.get<string>('bg-fill-mode');
+      if (_bgFillMode) {
+        setBgFillMode(_bgFillMode as 'contain' | 'cover' | 'fill');
+      }
       commonCollection.desktop.subscribe('wallpaper', (v) => {
         setWallpaper(v || '');
+      });
+      commonCollection.desktop.subscribe('bg-fill-mode', (v) => {
+        setBgFillMode(v || 'contain');
       });
     })();
   }, []);
@@ -213,6 +221,7 @@ export function HomePage() {
           onMouseDown={deactiveApps}
           src={create_download_link_from_file_path(wallpaper, 3600 * 24 * 30)}
           alt="background"
+          style={{ objectFit: bgFillMode }}
         />
       }
       <div style={{ width: '100%' }} ref={mountPoint}></div>
