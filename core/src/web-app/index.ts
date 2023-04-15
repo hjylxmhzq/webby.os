@@ -4,6 +4,16 @@ import processManager, { ProcessManager } from "./process-manager";
 import windowManager, { WindowManager } from "./window-manager";
 import appManager, { AppManager } from "./app-manager";
 
+export * from './process-manager';
+export * from './app-manager';
+export * from './window-manager';
+
+export {
+  processManager,
+  windowManager,
+  appManager,
+};
+
 export interface SelectFileOptions {
   allowFile?: boolean;
   allowDirectory?: boolean;

@@ -1,10 +1,12 @@
 import { post } from "../utils/http";
 import EventEmitter from 'events';
 
+let allowBuiltIn = false;
+
 export class Collection {
   private eventBus = new EventEmitter();
   constructor(public collection: string) {
-    if (collection.startsWith('_')) {
+    if (!allowBuiltIn && collection.startsWith('_')) {
       throw new Error('collection with name starts with "_" is reserved by system');
     }
   }
@@ -109,7 +111,7 @@ async function waitForWs(ws: WebSocket): Promise<WebSocket> {
     });
   });
 }
-
+allowBuiltIn = true;
 export const commonCollection = {
   desktop: new Collection('_desktop_config'),
   windowManager: new Collection('_window_manager'),
@@ -117,3 +119,4 @@ export const commonCollection = {
   appManager: new Collection('_app_manager'),
   systemHook: new Collection('_system_hook'),
 }
+allowBuiltIn = false;

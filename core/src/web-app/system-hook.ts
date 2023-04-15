@@ -1,5 +1,5 @@
 import EventEmitter from "events";
-import { commonCollection } from "src/kv-storage";
+import { commonCollection } from "../kv-storage";
 
 const store = commonCollection.systemHook;
 export class SystemHook<T extends (...args: any[]) => Promise<any>> {

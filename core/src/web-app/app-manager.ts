@@ -260,3 +260,93 @@ function createAppInstallContext(appName: string): AppInstallContext {
   }
   return ctx;
 }
+
+
+function createFakeDocument(scope: HTMLElement, scopeHead: HTMLElement, mountPoint: HTMLElement, scriptSrc: string) {
+  const proxy = new Proxy(document, {
+    get(target, key: keyof Document) {
+      if (key === 'querySelector') {
+        function q(selector: string) {
+          const el = document.querySelector(selector);
+          if (el?.tagName.toLowerCase() === 'head') {
+            return scopeHead
+          }
+          if (el?.tagName.toLowerCase() === 'body') {
+            return mountPoint
+          }
+          return scope.querySelector(selector);
+        }
+        return q;
+      } else if (key === 'head') {
+        return scopeHead;
+      } else if (key === 'documentElement') {
+        return scope;
+      } else if (key === 'body') {
+        return mountPoint;
+      } else if (key === 'currentScript') {
+        return {
+          src: scriptSrc,
+          type: 'application/javascript',
+          charset: 'utf-8',
+          async: false,
+          defer: false,
+        };
+      } else {
+        let v;
+        if (typeof target[key] === 'function') {
+          const d: any = target[key];
+          v = d.bind(target);
+        } else {
+          v = target[key];
+        }
+        return v;
+      }
+    }
+  });
+  return proxy
+}
+
+function createFakeWindow(fakeDocument: Document) {
+  const fakeWindow = Object.create(null);
+  const cacheFn = Object.create(null);
+  const proxy = new Proxy(window, {
+    get(target, key: any) {
+      if (key === 'sharedScope') {
+        return window.sharedScope;
+      }
+      if (cacheFn[key]) return cacheFn[key];
+      if (key === 'document') {
+        return fakeDocument;
+      }
+      let d: any = target[key];
+      if (typeof d === 'function') {
+        let k = d.bind(target);
+        cacheFn[key] = k;
+        return k;
+      }
+      return d;
+    },
+    set(target, key, value) {
+      fakeWindow[key] = value;
+      return true;
+    }
+  });
+  return proxy
+}
+
+function createScopeConsole(scope: string) {
+  const proxy = new Proxy(console, {
+    get(target, key: keyof Console) {
+      const c = console[key]
+      if (typeof c === 'function') {
+        return (c as any).bind(console, `[${scope}]: `);
+      }
+      return c;
+    }
+  });
+  return proxy
+}
+
+(window as any).__createFakeWindow = createFakeWindow;
+(window as any).__createFakeDocument = createFakeDocument;
+(window as any).__createScopeConsole = createScopeConsole;

@@ -1,8 +1,9 @@
 import EventEmitter from "events";
-import { commonCollection } from "../kv-storage";
-import { AppWindow } from ".";
+import { AppWindow, processManager } from ".";
 import zIndexManager from "./z-index-manager";
 import style from './index.module.less';
+
+const DOCK_HEIGHT = 25; // also defined in ./index.module.css
 
 enum WindowEventType {
   BeforeClose = 'BeforeClose',
@@ -149,14 +150,14 @@ export class WindowManager {
     };
     const resizeHandler = document.createElement('div');
     resizeHandler.innerHTML = `
-  <div class="resize_handler resize_handler_left"></div>
-  <div class="resize_handler resize_handler_top"></div>
-  <div class="resize_handler resize_handler_right"></div>
-  <div class="resize_handler resize_handler_bottom"></div>
-  <div class="resize_handler resize_handler_left resize_handler_top"></div>
-  <div class="resize_handler resize_handler_right resize_handler_top"></div>
-  <div class="resize_handler resize_handler_left resize_handler_bottom"></div>
-  <div class="resize_handler resize_handler_right resize_handler_bottom"></div>
+  <div class="${style.resize_handler} ${style.resize_handler_left}"></div>
+  <div class="${style.resize_handler} ${style.resize_handler_top}"></div>
+  <div class="${style.resize_handler} ${style.resize_handler_right}"></div>
+  <div class="${style.resize_handler} ${style.resize_handler_bottom}"></div>
+  <div class="${style.resize_handler} ${style.resize_handler_left} ${style.resize_handler_top}"></div>
+  <div class="${style.resize_handler} ${style.resize_handler_right} ${style.resize_handler_top}"></div>
+  <div class="${style.resize_handler} ${style.resize_handler_left} ${style.resize_handler_bottom}"></div>
+  <div class="${style.resize_handler} ${style.resize_handler_right} ${style.resize_handler_bottom}"></div>
   `;
     appEl.appendChild(resizeHandler);
     let resizing = 0;
@@ -169,17 +170,17 @@ export class WindowManager {
       appContainer.style.pointerEvents = 'none';
       const el = (e.target as HTMLElement);
       resizing = 0;
-      if (el.classList.contains('resize_handler')) {
-        if (el.classList.contains('resize_handler_left')) {
+      if (el.classList.contains(style.resize_handler)) {
+        if (el.classList.contains(style.resize_handler_left)) {
           resizing = resizing | verticalLeft;
         }
-        if (el.classList.contains('resize_handler_right')) {
+        if (el.classList.contains(style.resize_handler_right)) {
           resizing = resizing | verticalRight;
         }
-        if (el.classList.contains('resize_handler_top')) {
+        if (el.classList.contains(style.resize_handler_top)) {
           resizing = resizing | horizonTop;
         }
-        if (el.classList.contains('resize_handler_bottom')) {
+        if (el.classList.contains(style.resize_handler_bottom)) {
           resizing = resizing | horizonBottom;
         }
         startElSize = [parseFloat(appEl.style.width), parseFloat(appEl.style.height)];
@@ -326,7 +327,7 @@ export class WindowManager {
 
     function toggleFullscreen(force: boolean = false) {
       const rect = getRect();
-      const dockHeight = 0;
+      const dockHeight = processManager.appsInDock.length ? DOCK_HEIGHT : 0;
       let tleft = 0;
       let ttop = 25;
       let twidth = document.documentElement.clientWidth;

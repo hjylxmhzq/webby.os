@@ -1,9 +1,8 @@
 import Header from "./components/header/header";
 import style from './index.module.less';
-import { AppDefinitionWithContainer, appManager, windowManager } from "src/utils/micro-app";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { http } from '@webby/core/tunnel';
-import { AppMenu, AppState, SystemMessage, SystemMessageHandle } from "@webby/core/web-app";
+import webApp, { AppDefinitionWithContainer, AppMenu, AppState, SystemMessage, SystemMessageHandle, appManager, initSharedScope, processManager } from "@webby/core/web-app";
 import { Collection, commonCollection } from '@webby/core/kv-storage'
 import { debounce } from "src/utils/common";
 import SystemFileSelector, { SelectFileProps } from "./components/system-file-selector";
@@ -20,6 +19,12 @@ import { PromptContent, PromptProps, PromptResult, SystemPrompt } from "./compon
 (window as any)._MessageQueue = MessageQueue;
 (window as any)._systemMessage = systemMessage;
 (window as any)._systemPrompt = systemPrompt;
+console.log(webApp, initSharedScope);
+initSharedScope({
+  systemMessage,
+  systemSelectFile,
+  systemPrompt,
+});
 
 export enum DeskTopEventType {
   SelectFile = 'selectFile',
@@ -183,9 +188,9 @@ export function HomePage() {
       setApps({ ...appManager.apps });
     }));
     if (!mountPoint.current) return;
-    if (windowManager.isInited) return;
-    windowManager.init(mountPoint.current);
-    windowManager.eventBus.on('active_app_change', (app: AppState | null, _old) => {
+    if (processManager.isInited) return;
+    processManager.init(mountPoint.current);
+    processManager.eventBus.on('active_app_change', (app: AppState | null, _old) => {
       setActiveApp(app);
       if (app) setCurrentMenu(app.ctx.systemMenu);
       else setCurrentMenu([]);
@@ -196,7 +201,7 @@ export function HomePage() {
   }, []);
   const appNames = Object.keys(apps).sort();
   const deactiveApps = () => {
-    windowManager.blur();
+    processManager.blur();
   }
   return <div>
     <Header menu={currentMenu} activeApp={activeApp}></Header>
@@ -218,7 +223,7 @@ export function HomePage() {
             let iconUrl = app.getAppInfo().iconUrl;
             return <div key={appName} className={style['app-icon']} onClick={async (e) => {
               if (e.button === 0 && mountPoint.current) {
-                await windowManager.startApp(appName);
+                await processManager.startApp(appName);
               }
             }}>
               <div className={style['app-icon-img']}>

@@ -4,10 +4,9 @@ import style from './index.module.less';
 import classNames from "classnames";
 import { debounce } from "src/utils/common";
 import LoadingBar from "src/pages/file/components/loading-bar";
-import { appManager, windowManager } from "src/utils/micro-app";
 import { CSSTransition, TransitionGroup } from "react-transition-group";
 import { FileThumbnailIcon } from "src/components/icon/icon";
-import { GlobalSearchResult } from "@webby/core/web-app";
+import { GlobalSearchResult, appManager, processManager } from "@webby/core/web-app";
 
 export function GlobalSearch(props: { onClose?(): void }) {
   const [search, setSearch] = useState('');
@@ -95,7 +94,7 @@ export function GlobalSearch(props: { onClose?(): void }) {
           {
             files.map((l, idx) => {
               return <div key={idx + l.name + '_' + l.dir} className={style['list-item']} onClick={async () => {
-                await windowManager.openFileBy('Files', l.dir);
+                await processManager.openFileBy('Files', l.dir);
                 props.onClose?.();
               }}>
                 <span className={style['list-item-left']}>

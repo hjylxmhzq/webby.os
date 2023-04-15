@@ -3,13 +3,17 @@ const fs = require('fs');
 
 const modules = fs.readdirSync('./src');
 
+const entries = modules.reduce((prev, m) => {
+  return {
+    ...prev,
+    [m]: './' + path.join('src', m, 'index.ts'),
+  }
+}, {});
+
 module.exports = {
   mode: 'production',
-  experiments: {
-    outputModule: true,
-  },
   entry: {
-    index: './src/index.ts'
+    ...entries
   },
   module: {
     rules: [
@@ -23,14 +27,16 @@ module.exports = {
         use: [
           {
             loader: 'style-loader',
-            options: {
-              modules: true
-            }
           },
           {
             loader: require.resolve('css-loader'),
-            options: cssOptions,
+            options: {
+              modules: true,
+            }
           },
+          {
+            loader: 'less-loader',
+          }
         ]
       },
     ],
@@ -39,13 +45,12 @@ module.exports = {
     minimize: false
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js'],
+    extensions: ['.tsx', '.ts', '.js', '.less'],
   },
   output: {
-    filename: '[name].js',
+    filename: './[name]/index.js',
     path: path.resolve(__dirname, 'dist'),
     library: {
-      name: 'core',
       type: 'commonjs',
     }
   },
