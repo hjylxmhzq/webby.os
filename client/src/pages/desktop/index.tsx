@@ -2,7 +2,7 @@ import Header from "./components/header/header";
 import style from './index.module.less';
 import { useCallback, useEffect, useRef, useState } from "react";
 import { http } from '@webby/core/tunnel';
-import webApp, { AppDefinitionWithContainer, AppMenu, AppState, SystemMessage, SystemMessageHandle, appManager, initSharedScope, processManager } from "@webby/core/web-app";
+import { AppDefinitionWithContainer, AppMenu, AppState, SystemMessage, SystemMessageHandle, appManager, initSharedScope, processManager } from "@webby/core/web-app";
 import { Collection, commonCollection } from '@webby/core/kv-storage'
 import { debounce } from "src/utils/common";
 import SystemFileSelector, { SelectFileProps } from "./components/system-file-selector";
@@ -19,7 +19,7 @@ import { PromptContent, PromptProps, PromptResult, SystemPrompt } from "./compon
 (window as any)._MessageQueue = MessageQueue;
 (window as any)._systemMessage = systemMessage;
 (window as any)._systemPrompt = systemPrompt;
-console.log(webApp, initSharedScope);
+
 initSharedScope({
   systemMessage,
   systemSelectFile,
