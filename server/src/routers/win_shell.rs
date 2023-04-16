@@ -100,7 +100,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
       let now = Instant::now();
       if now.duration_since(act.hb) > Duration::from_secs(60) {
         if let Some(ref mut process) = act.process {
-          process.exit(0).unwrap();
+          process.exit(0).ok();
         }
         ctx.close(None);
       }
