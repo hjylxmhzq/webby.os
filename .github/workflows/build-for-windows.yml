@@ -2,13 +2,11 @@ name: Build
 
 on:
   push:
-    branches: [ "main" ]
-    tags:
-      - '**'   
+    branches: [ "build-for-windows" ]
+
   pull_request:
-    branches: [ "main" ]
-    tags:
-      - '**'
+    branches: [ "build-for-windows" ]
+
 
 env:
   CARGO_TERM_COLOR: always
@@ -25,8 +23,8 @@ jobs:
       matrix:
         # a list of all the targets
         include:
-          - TARGET: x86_64-unknown-linux-gnu # tested in a debian container on a mac
-            OS: ubuntu-20.04
+          # - TARGET: x86_64-unknown-linux-gnu # tested in a debian container on a mac
+          #   OS: ubuntu-20.04
           # - TARGET: x86_64-unknown-linux-musl # test in an alpine container on a mac
           #   OS: ubuntu-latest
           # - TARGET: aarch64-unknown-linux-gnu # tested on aws t4g.nano
@@ -43,8 +41,8 @@ jobs:
           #   OS: ubuntu-latest
           # - TARGET: x86_64-apple-darwin # tested on a mac, is not properly signed so there are security warnings
           #   OS: macos-latest
-          # - TARGET: x86_64-pc-windows-msvc # tested on a windows machine
-          #   OS: windows-latest
+          - TARGET: x86_64-pc-windows-msvc # tested on a windows machine
+            OS: windows-latest
     runs-on: ${{ matrix.OS }}
     env:
       NAME: webbyos
