@@ -77,9 +77,6 @@ jobs:
           command: build
           working-directory: ./server
           args: --release --target ${{ matrix.TARGET }}
-      - name: List target
-        working-directory: ./server
-        run: find ./target
       - name: Compress
         working-directory: ./server
         run: |
@@ -115,8 +112,6 @@ jobs:
         with:
           name: result
           path: ./artifacts
-      - name: List
-        run: find ./artifacts
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
