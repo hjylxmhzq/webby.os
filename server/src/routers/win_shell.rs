@@ -1,22 +1,21 @@
 use std::{
-  io::{BufReader, Read, Write},
-  process::Command,
+  io::{Read, Write},
   thread,
-  time::{Duration, Instant},
+  time::{Duration, Instant}, str::FromStr,
 };
 
 use actix::{Actor, AsyncContext, Handler, StreamHandler};
 use actix_web::{web, Error, HttpRequest, HttpResponse, Scope};
 use actix_web_actors::ws;
-use ptyprocess::PtyProcess;
 use serde::Deserialize;
+use std::ffi::OsString;
 
-use crate::{config, utils::error::AppError};
+use crate::{utils::error::AppError, config};
 
 /// Define HTTP actor
 struct MyWs {
   // child: Option<Child>,
-  process: Option<PtyProcess>,
+  process: Option<conpty::Process>,
   hb: Instant,
 }
 
@@ -74,18 +73,18 @@ struct SetTTYSizePayload {
   cols: u16,
 }
 
-fn find_shell() -> Result<String, AppError> {
+fn find_shell() -> Result<OsString, AppError> {
   let default_shell = config!(shell);
   if let Ok(shell) = which::which(default_shell) {
-    return Ok(shell.to_string_lossy().to_string());
+    return Ok(OsString::from_str(shell.to_str().unwrap()).unwrap());
   }
-  let candidates = vec!["zsh", "bash", "sh"];
-  let list: Vec<String> = candidates.into_iter().map(|c| {
+  let candidates = vec!["powershell", "cmd"];
+  let list: Vec<OsString> = candidates.into_iter().map(|c| {
     return which::which(c);
   }).filter(|c| {
     return c.is_ok();
   }).map(|c| {
-    return c.unwrap().to_string_lossy().to_string();
+    return OsString::from_str(c.unwrap().to_str().unwrap()).unwrap();
   }).collect();
   if list.len() > 0 {
     return Ok(list[0].clone());
@@ -101,51 +100,46 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
       let now = Instant::now();
       if now.duration_since(act.hb) > Duration::from_secs(60) {
         if let Some(ref mut process) = act.process {
-          process.kill(ptyprocess::Signal::SIGKILL).ok();
+          process.exit(0).unwrap();
         }
         ctx.close(None);
       }
       if let Some(ref mut process) = act.process {
-        if !process.is_alive().map_or(false, |v| v) {
+        if !process.is_alive() {
           ctx.close(None);
         }
       }
       ctx.ping(b"PING");
     });
 
-    let shell = find_shell();
-    if shell.is_err() {
-      ctx.text(r#"{ "type": "spawn_shell_error", "payload": "can not find shell" }"#.to_owned());
+    let cmd = find_shell();
+
+    if cmd.is_err() {
+      ctx.text(r#"{ "type": "spawn_shell_error", "payload": "" }"#.to_owned());
       ctx.close(None);
       return;
     }
-    let shell = shell.unwrap();
 
-    let process = PtyProcess::spawn(Command::new(shell));
-    if let Ok(mut process) = process {
-      process.set_echo(true, None).ok();
+    let cmd = cmd.unwrap();
 
-      let pty_handle = process.get_raw_handle();
-
-      if let Ok(pty_handle) = pty_handle {
-        self.process = Some(process);
-        let addr = ctx.address();
-        thread::spawn(move || {
-          let mut reader = BufReader::new(pty_handle);
-          let buf = &mut [0; 4096];
-          while let Ok(s) = reader.read(buf) {
-            if s == 0 {
-              break;
-            }
-            addr.do_send(WsMessage(buf[0..s].to_vec()));
+    let mut process = conpty::spawn(cmd).expect("spawn shell error");
+    process.set_echo(true).unwrap();
+    let reader = process.output();
+    self.process = Some(process);
+    if let Ok(mut reader) = reader {
+      let addr = ctx.address();
+      thread::spawn(move || {
+        let buf = &mut [0; 4096];
+        while let Ok(s) = reader.read(buf) {
+          if s == 0 {
+            break;
           }
-          addr.do_send(WsTextMessage(
-            r#"{ "type": "shell_closed", "payload": "" }"#.to_owned(),
-          ));
-        });
-      } else {
-        ctx.text(r#"{ "type": "spawn_shell_error", "payload": "" }"#.to_owned());
-      }
+          addr.do_send(WsMessage(buf[0..s].to_vec()));
+        }
+        addr.do_send(WsTextMessage(
+          r#"{ "type": "shell_closed", "payload": "" }"#.to_owned(),
+        ));
+      });
     } else {
       ctx.text(r#"{ "type": "spawn_shell_error", "payload": "" }"#.to_owned());
     }
@@ -167,8 +161,13 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
             let cmd = msg.payload;
             let process = &mut self.process;
             if let Some(process) = process {
-              let mut pty_handler = process.get_raw_handle().unwrap();
-              pty_handler.write_all(cmd.as_bytes()).unwrap();
+              let writer = process.input();
+              if let Ok(mut writer) = writer {
+                writer.write_all(cmd.as_bytes()).ok();
+              } else {
+                ctx.text(r#"{ "type": "error", "payload": "fail writing to shell" }"#.to_owned());
+                ctx.close(None);
+              }
             } else {
               ctx.text(r#"{ "type": "error", "payload": "shell_is_not_start" }"#.to_owned());
               ctx.close(None);
@@ -178,10 +177,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
             if let Ok(sizes) = sizes {
               let process = &mut self.process;
               if let Some(process) = process {
-                process.set_window_size(sizes.cols, sizes.rows).unwrap();
+                process
+                  .resize(sizes.cols as i16, sizes.rows as i16)
+                  .unwrap();
               }
             } else {
-              ctx.text(r#"{ "type": "error", "payload": "message format error" }"#.to_owned());    
+              ctx.text(r#"{ "type": "error", "payload": "message format error" }"#.to_owned());
             }
           }
         } else {

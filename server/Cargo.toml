@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 serde = { version = "1", features = ["derive", "alloc", "rc"] }
 tokio = { version = "1.23.0", features = ["full"] }
+libsqlite3-sys = { version = "^0", features = ["bundled"] }
 diesel = { version = "2", features = ["sqlite", "returning_clauses_for_sqlite_3_35"] }
 actix-web = "4"
 serde_json = "1.0.92"
@@ -49,10 +50,16 @@ reqwest = { version = "0.11.15", features = ["stream"] }
 url = "2.3.1"
 actix-web-actors = "4.2.0"
 actix = "0.13.0"
-ptyprocess = "0.4.1"
 rust_search = "2.1.0"
 normpath = "1.1.1"
 bytes = "1.4.0"
+which = "4.4.0"
+
+[target.'cfg(not(target_os = "windows"))'.dependencies]
+ptyprocess = "0.4.1"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+conpty = "0.5"
 
 [dependencies.ffmpeg_cli_utils]
 git = "https://github.com/hjylxmhzq/ffmpeg-cli-utils.git"
@@ -72,9 +79,3 @@ ffmpeg = []
 [profile.release]
 lto = true
 strip = true
-
-[target.x86_64-unknown-linux-gnu]
-pre-build = ["apt-get update && apt-get install sqlite3 && apt-get install libsqlite3-dev"]
-
-[target.aarch64-unknown-linux-gnu]
-pre-build = ["apt-get update && apt-get install sqlite3 && apt-get install libsqlite3-dev"]

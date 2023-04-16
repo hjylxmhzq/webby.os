@@ -23,17 +23,17 @@ const pageEntries = pages.reduce((prev, file) => {
   let entryName = file.split('.')[0];
   return {
     ...prev,
-    [entryName]: path.join('./src/isolate-pages', file),
+    [entryName]: path.join(__dirname, 'src/isolate-pages', file),
   }
 }, {
-  index: './src/index.tsx',
+  index: path.join(__dirname, 'src/index.tsx'),
 });
 
 const htmlWithChuncks = Object.keys(pageEntries).map(name => {
   return {
     chunks: [name],
     filename: `${name}.html`,
-    template: './public/index.html'
+    template: path.join(__dirname, 'public/index.html')
   };
 });
 
