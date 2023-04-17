@@ -10,6 +10,7 @@ import EventEmitter from "events";
 import { create_download_link_from_file_path } from "@webby/core/fs";
 import MessageLine from "./components/message";
 import { MessageQueue } from '@webby/core/message-queue';
+import { net } from '@webby/core/tunnel';
 import { GlobalSearch } from "./components/global-search";
 import { PromptContent, PromptProps, PromptResult, SystemPrompt } from "./components/system-prompt";
 
@@ -19,6 +20,7 @@ import { PromptContent, PromptProps, PromptResult, SystemPrompt } from "./compon
 (window as any)._MessageQueue = MessageQueue;
 (window as any)._systemMessage = systemMessage;
 (window as any)._systemPrompt = systemPrompt;
+(window as any)._TcpSocket = net.TcpSocket;
 
 initSharedScope({
   systemMessage,
