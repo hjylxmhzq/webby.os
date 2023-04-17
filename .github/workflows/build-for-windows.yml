@@ -3,12 +3,9 @@ name: Build
 on:
   push:
     branches: [ "build-for-windows" ]
-    tags:
-      - '**'
+
   pull_request:
     branches: [ "build-for-windows" ]
-    tags:
-      - '**'
 
 env:
   CARGO_TERM_COLOR: always
