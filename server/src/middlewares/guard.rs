@@ -12,12 +12,16 @@ use futures_util::future::LocalBoxFuture;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::{utils::{
-  auth::ONETIME_TOKENS,
-  error::AppError,
-  response::{create_resp, EmptyResponseData},
-  session::SessionUtils,
-}, config, routers::auth::login_fake_user};
+use crate::{
+  config,
+  routers::auth::login_fake_user,
+  utils::{
+    auth::ONETIME_TOKENS,
+    error::AppError,
+    response::{create_resp, EmptyResponseData},
+    session::SessionUtils,
+  },
+};
 
 lazy_static! {
   pub static ref IGNORE_PATHS: Vec<Regex> = vec![Regex::new(r#"^/static/.+"#).unwrap()];
@@ -101,18 +105,36 @@ where
   forward_ready!(service);
 
   fn call(&self, req: ServiceRequest) -> Self::Future {
+    let ip = req
+      .request()
+      .connection_info()
+      .realip_remote_addr()
+      .map_or("unknown ip".to_owned(), |v| v.to_owned());
+    let path = req.path().to_owned();
+
     let ret = guard(&req);
     if let Ok(is_valid_request) = ret {
       if is_valid_request {
         let fut = self.service.call(req);
         return Box::pin(async move {
           let res = fut.await?;
+          let status_code = res.status();
+          let status_code_num: u16 = status_code.into();
+          if status_code_num >= 400 {
+            tracing::error!(
+              "Request with {} Error: CLIENT IP: {}, PATH: {}",
+              status_code_num,
+              ip,
+              path
+            );
+          }
           Ok(res.map_into_boxed_body())
         });
       }
     }
 
     return Box::pin(async move {
+      tracing::info!("Auth Error - CLIENT IP: {}, PATH: {}", ip, path);
       let resp = create_resp(false, EmptyResponseData::new(), "authentication error");
       let r = ServiceResponse::new(req.request().clone(), resp);
       Ok(r)

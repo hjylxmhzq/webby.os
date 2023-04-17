@@ -18,6 +18,7 @@ pub struct AppConfig {
   pub authentication: Option<String>,
   pub static_dir: Option<String>,
   pub shell: Option<String>,
+  pub log_path: Option<String>,
 }
 
 /// Simple program to greet a person
@@ -65,6 +66,7 @@ impl Default for AppConfig {
       authentication: Some("user".to_owned()),
       static_dir: Some("./static".to_owned()),
       shell: Some("zsh".to_owned()),
+      log_path: Some("log/system.log".to_owned()),
     }
   }
 }

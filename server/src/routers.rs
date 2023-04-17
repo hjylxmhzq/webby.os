@@ -4,6 +4,8 @@ pub mod gallery;
 pub mod index;
 pub mod kv_storage;
 pub mod tunnel;
+pub mod log;
+
 #[cfg(target_os="windows")]
 pub mod win_shell;
 #[cfg(target_os="windows")]

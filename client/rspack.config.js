@@ -132,6 +132,10 @@ module.exports = {
         changeOrigin: true,
         ws: true,
       },
+      '/log': {
+        target: 'http://127.0.0.1:7001',
+        changeOrigin: true,
+      },
       '/file': {
         target: 'http://127.0.0.1:7001',
         changeOrigin: true,

@@ -26,6 +26,7 @@ macro_rules! conv_err (
 
 impl AppError {
   pub fn new(msg: &str) -> AppError {
+    tracing::error!(msg);
     Self {
       msg: msg.to_string(),
       status_code: StatusCode::INTERNAL_SERVER_ERROR,

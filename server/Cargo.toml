@@ -54,6 +54,7 @@ rust_search = "2.1.0"
 normpath = "1.1.1"
 bytes = "1.4.0"
 which = "4.4.0"
+log4rs = "1.2.0"
 
 [target.'cfg(not(target_os = "windows"))'.dependencies]
 ptyprocess = "0.4.1"

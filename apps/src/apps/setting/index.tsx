@@ -3,7 +3,8 @@ import Button from "./components/button";
 import { Popover } from "./components/popover";
 import style from './index.module.less';
 import ReactDom from 'react-dom/client';
-import { AppContext, AppInfo, SelectFileOptions } from '@webby/core/web-app';
+import { AppContext, AppInfo } from '@webby/core/web-app';
+import { http } from '@webby/core/utils';
 import iconUrl from './icon.svg';
 import { commonCollection } from "@webby/core/kv-storage";
 import { create_download_link_from_file_path } from "@webby/core/fs";
@@ -37,6 +38,7 @@ const menu = {
   '桌面与个性化': <DesktopSetting />,
   '用户与安全性': <UserSetting />,
   '全局搜索': <GlobalSearchSetting />,
+  '日志': <LogSetting />,
 }
 
 function SettingPage() {
@@ -236,6 +238,21 @@ function UserSetting() {
         </div>
       </div>
     </div>
+  </div>
+}
+
+function LogSetting() {
+  const [log, setLog] = useState('');
+  const readLog = async () => {
+    const resp = await http.inner_fetch('/log/read_to_string', { method: 'post' })
+    const text = await resp.json();
+    setLog(text.data);
+  }
+  useEffect(() => {
+    readLog();
+  }, []);
+  return <div className={style.log}>
+    {log}
   </div>
 }
 

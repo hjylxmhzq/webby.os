@@ -1,6 +1,12 @@
 use crate::utils::error::AppError;
 use actix_web::{self, web, App, HttpServer};
 use config::APP_CONFIG;
+use log4rs::{
+  append::rolling_file::policy::compound::{
+    roll::delete::DeleteRoller, trigger::size::SizeTrigger,
+  },
+  config::{Appender, Root},
+};
 use serde::{Deserialize, Serialize};
 use std::{
   collections::HashMap,
@@ -73,7 +79,7 @@ pub type AppData = Arc<RwLock<AppState>>;
 
 #[actix_web::main]
 async fn main() -> Result<(), AppError> {
-  tracing_subscriber::fmt::init();
+  init_log();
 
   let app_state = init();
   let app_state = Arc::new(RwLock::new(app_state));
@@ -105,6 +111,7 @@ async fn main() -> Result<(), AppError> {
       .service(routers::message_queue::message_queue_routers())
       .service(routers::shell::shell_routers())
       .service(routers::fs::file_routers())
+      .service(routers::log::log_routers())
       .service(routers::auth::auth_routers())
       .service(routers::gallery::gallery_routers())
       .service(routers::index::index_routers())
@@ -169,4 +176,46 @@ pub fn connect_db() -> SqliteConnection {
   let conn =
     SqliteConnection::establish(&database_url).expect("can not establish database connection");
   conn
+}
+
+fn init_log() {
+  use log4rs::{
+    append::{
+      console::ConsoleAppender,
+      rolling_file::{policy::compound::CompoundPolicy, RollingFileAppender},
+    },
+    encode::pattern::PatternEncoder,
+  };
+
+  let stdout = ConsoleAppender::builder()
+    .encoder(Box::new(PatternEncoder::new(
+      "[{l}] {d} - {t} - {m}{n}",
+    )))
+    .build();
+
+  let file = RollingFileAppender::builder()
+    .encoder(Box::new(PatternEncoder::new(
+      "[{l}] {d} - {t} - {m}{n}",
+    )))
+    .build(
+      config!(log_path),
+      Box::new(CompoundPolicy::new(
+        Box::new(SizeTrigger::new(1000 * 1000 * 20)), // 20MB
+        Box::new(DeleteRoller::new()),
+      )),
+    )
+    .unwrap();
+
+  let config = log4rs::Config::builder()
+    .appender(Appender::builder().build("stdout", Box::new(stdout)))
+    .appender(Appender::builder().build("file", Box::new(file)))
+    .build(
+      Root::builder()
+        .appender("stdout")
+        .appender("file")
+        .build(tracing::log::LevelFilter::Info),
+    )
+    .unwrap();
+
+  let _ = log4rs::init_config(config).unwrap();
 }
