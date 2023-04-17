@@ -80,6 +80,7 @@ jobs:
       - name: List target
         working-directory: ./server
         run: find ./target
+        shell: bash
       - name: Compress
         working-directory: ./server
         run: |
