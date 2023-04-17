@@ -2,10 +2,11 @@ name: Build
 
 on:
   push:
-    branches: [ "main" ]
-
+    tags:
+      - '**'
   pull_request:
-    branches: [ "main" ]
+    tags:
+      - '**'
 
 env:
   CARGO_TERM_COLOR: always
@@ -40,8 +41,8 @@ jobs:
           #   OS: ubuntu-latest
           # - TARGET: x86_64-apple-darwin # tested on a mac, is not properly signed so there are security warnings
           #   OS: macos-latest
-          # - TARGET: x86_64-pc-windows-msvc # tested on a windows machine
-          #   OS: windows-latest
+          - TARGET: x86_64-pc-windows-msvc # tested on a windows machine
+            OS: windows-latest
     runs-on: ${{ matrix.OS }}
     env:
       NAME: webbyos
@@ -122,10 +123,3 @@ jobs:
         with:
           files: ./artifacts/*.tar.gz
 
-    # - name: Build Backend
-    #   run: bash ./build/backend.sh
-    # - name: Upload Build Artifact
-    #   uses: actions/upload-artifact@v3
-    #   with:
-    #     name: dist
-    #     path: ./dist
