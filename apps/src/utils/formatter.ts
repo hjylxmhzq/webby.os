@@ -25,3 +25,18 @@ export function formatTime(timestamp: number) {
   t.setTime(timestamp);
   return t.toLocaleString();
 }
+
+export function makeDefaultTemplate(defaultStr: string) {
+  function stringDefault(strList: TemplateStringsArray, ...segs: any[]) {
+    let result = '';
+    for (let i = 0; i < strList.length; i++) {
+      result += strList[i];
+      if (i !== strList.length - 1) {
+        const seg = segs[i] === undefined || segs[i] === null ? defaultStr : String(segs[i]);
+        result += seg;
+      }
+    }
+    return result;
+  }
+  return stringDefault;
+}

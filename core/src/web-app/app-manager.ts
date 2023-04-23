@@ -11,6 +11,7 @@ export type AppDefinitionWithContainer = AppDefinition & {
 };
 
 const builtinApps = [
+  ['book-reader', 'BookReader'],
   ['vnc-viewer', 'VNCViewer'],
   ['chat-gpt', 'ChatGPT'],
   ['paint', 'Paint'],
@@ -136,10 +137,6 @@ export async function loadModule(appScript: { scriptContent: string, scriptSrc: 
   const escapedModuleName = JSON.stringify(moduleName);
   const escapedScriptSrc = JSON.stringify(appScript.scriptSrc);
 
-  const m = (window as any).__modules;
-  (window as any).__modules = m || {};
-  (window as any).__modules[moduleName] = { exports: {} };
-
   const sandbox = `
       (function() {
         
@@ -154,7 +151,7 @@ export async function loadModule(appScript: { scriptContent: string, scriptSrc: 
         const scopedConsole = __createScopeConsole(${escapedModuleName});
         const fakeWindow = __createFakeWindow(fakeDocument);
 
-        const __module = window.__modules[${escapedModuleName}];
+        const __module = { exports: {} };
         const __import = { meta: { url: ${JSON.stringify(appScript.scriptSrc)} }};
         
         (function (window, globalThis, document, console, module, exports, __import){
@@ -170,9 +167,13 @@ export async function loadModule(appScript: { scriptContent: string, scriptSrc: 
   
         })(fakeWindow, fakeWindow, fakeDocument, scopedConsole, __module, __module.exports, __import);
         
-        console.log('install app: ${escapedModuleName}', __module);
+        const app = fakeWindow.__app || __module.exports;
+        console.log('install app: ${escapedModuleName}', app);
         
-        __module.exports.container = container;
+        app.container = container;
+        const apps = window.__apps || {};
+        apps[${escapedModuleName}] = app;
+        window.__apps = apps;
 
         // document.body.appendChild(container);
 
@@ -224,8 +225,7 @@ export async function loadModule(appScript: { scriptContent: string, scriptSrc: 
       script.addEventListener('load', () => {
         document.body.removeChild(script);
         URL.revokeObjectURL(blobSrc);
-        const __module = (window as any).__modules[moduleName];
-        const appDef = __module.exports as AppDefinitionWithContainer;
+        const appDef = (window as any).__apps[moduleName] as AppDefinitionWithContainer;
         if (typeof appDef.mount !== 'function' || typeof appDef.getAppInfo !== 'function') {
           reject(`install app [${moduleName}] error`);
         }
@@ -323,6 +323,9 @@ function createFakeWindow(fakeDocument: Document) {
         let k = d.bind(target);
         cacheFn[key] = k;
         return k;
+      }
+      if (fakeWindow[key]) {
+        return fakeWindow[key];
       }
       return d;
     },

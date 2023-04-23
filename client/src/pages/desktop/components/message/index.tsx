@@ -4,6 +4,7 @@ import style from './index.module.less';
 import { CSSTransition, TransitionGroup } from 'react-transition-group' // ES6
 import classNames from "classnames";
 import { useEffect, useState } from "react";
+import { xssFilter } from "src/utils/xss-filter";
 
 type Message = { id: string } & SystemMessage;
 
@@ -24,8 +25,8 @@ export default function MessageLine(props: { messages: Message[], onClose: (id: 
         {
           msg.isHtml ?
             <>
-              <div className={style.title} dangerouslySetInnerHTML={{ __html: msg.title }}></div>
-              <div className={style.content} dangerouslySetInnerHTML={{ __html: msg.content }}></div>
+              <div className={style.title} dangerouslySetInnerHTML={{ __html: xssFilter(msg.title) }}></div>
+              <div className={style.content} dangerouslySetInnerHTML={{ __html: xssFilter(msg.content) }}></div>
             </>
             :
             <>

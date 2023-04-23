@@ -7,6 +7,7 @@ import LoadingBar from "src/pages/file/components/loading-bar";
 import { CSSTransition, TransitionGroup } from "react-transition-group";
 import { FileThumbnailIcon } from "src/components/icon/icon";
 import { GlobalSearchResult, appManager, processManager } from "@webby/core/web-app";
+import { xssFilter } from "src/utils/xss-filter";
 
 export function GlobalSearch(props: { onClose?(): void }) {
   const [search, setSearch] = useState('');
@@ -127,12 +128,27 @@ export function GlobalSearch(props: { onClose?(): void }) {
                   l.onClick?.();
                   props.onClose?.();
                 }}>
-                  <span className={style['list-item-left']}>
-                    <span title={l.title}>{l.title}</span>
-                  </span>
-                  <span title={l.content}>{l.content}</span>
                   {
-                    l.pre && <div className={style.pre}>{l.pre}</div>
+                    l.isHtml ?
+                      <>
+                        <span className={style['list-item-left']}>
+                          <span title={l.title} dangerouslySetInnerHTML={{ __html: xssFilter(l.title) }}></span>
+                        </span>
+                        <span title={l.content} dangerouslySetInnerHTML={{ __html: xssFilter(l.content || '') }}></span>
+                        {
+                          l.pre && <div className={style.pre} dangerouslySetInnerHTML={{ __html: xssFilter(l.pre) }}></div>
+                        }
+                      </>
+                      :
+                      <>
+                        <span className={style['list-item-left']}>
+                          <span title={l.title}>{l.title}</span>
+                        </span>
+                        <span title={l.content}>{l.content}</span>
+                        {
+                          l.pre && <div className={style.pre}>{l.pre}</div>
+                        }
+                      </>
                   }
                 </div>
               })

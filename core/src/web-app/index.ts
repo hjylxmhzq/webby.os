@@ -73,6 +73,7 @@ export interface GlobalSearchResult {
   content?: string,
   icon?: string,
   pre?: string,
+  isHtml?: boolean,
   onClick?: () => void;
 }
 
@@ -189,4 +190,15 @@ export function initSharedScope(system: Pick<SystemSharedScope, 'systemSelectFil
     }
   }
   window.sharedScope = sharedScope;
+}
+
+export interface App {
+  mount?(ctx: AppContext): Promise<void>;
+  unmount?(ctx: AppContext): Promise<void>;
+  installed?(ctx: AppInstallContext): Promise<void>;
+  getAppInfo(): AppInfo;
+}
+
+export function defineApp(app: App) {
+  (window as any).__app = app;
 }
