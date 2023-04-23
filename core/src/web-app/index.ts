@@ -138,6 +138,7 @@ export interface SystemMessage {
   title: string,
   content: string,
   timeout: number,
+  isHtml?: boolean
 }
 
 

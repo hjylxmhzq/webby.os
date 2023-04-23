@@ -21,8 +21,18 @@ export default function MessageLine(props: { messages: Message[], onClose: (id: 
   const msgEls = props.messages.map(msg => {
     return <CSSTransition key={msg.id} timeout={{ enter: 300, exit: 300 }}>
       <div className={style.message}>
-        <div className={style.title}>{msg.title}</div>
-        <div className={style.content}>{msg.content}</div>
+        {
+          msg.isHtml ?
+            <>
+              <div className={style.title} dangerouslySetInnerHTML={{ __html: msg.title }}></div>
+              <div className={style.content} dangerouslySetInnerHTML={{ __html: msg.content }}></div>
+            </>
+            :
+            <>
+              <div className={style.title}>{msg.title}</div>
+              <div className={style.content}>{msg.content}</div>
+            </>
+        }
         <div className={style.control}>
           <Button onClick={() => props.onClose(msg.id)} className={style.btn}>关闭</Button>
         </div>
