@@ -320,9 +320,19 @@ function createFakeWindow(fakeDocument: Document) {
       }
       let d: any = target[key];
       if (typeof d === 'function') {
-        let k = d.bind(target);
-        cacheFn[key] = k;
-        return k;
+        const pd = new Proxy(d, {
+          set(target, p, newValue, receiver) {
+            return Reflect.set(target, p, newValue, receiver);
+          },
+          get(target, key, receiver) {
+            return Reflect.get(target, key, receiver);
+          },
+          apply(target, _thisArg, argArray) {
+            return Reflect.apply(target, window, argArray);
+          },
+        });
+        cacheFn[key] = pd;
+        return pd;
       }
       if (fakeWindow[key]) {
         return fakeWindow[key];

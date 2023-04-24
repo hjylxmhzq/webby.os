@@ -7,7 +7,7 @@ export interface PromptContent {
   title: string;
   records?: {
     name: string,
-    type?: 'text',
+    type?: 'text' | 'number',
     pattern?: RegExp,
   }[];
 }
@@ -35,7 +35,7 @@ export async function openFile(file: string): Promise<boolean> {
   const sc = (window as any).sharedScope;
   const appManager = sc.system.appManager;
   const windowManager = sc.system.windowManager;
-  
+
   const ext = path.parse(file).ext;
   const apps = appManager.getSupportedAppsByExt(ext);
   if (apps.length) {

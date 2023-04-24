@@ -8,7 +8,7 @@ export interface PromptContent {
   title: string;
   records?: {
     name: string,
-    type?: 'text',
+    type?: 'text' | 'number',
     pattern?: RegExp,
   }[];
 }

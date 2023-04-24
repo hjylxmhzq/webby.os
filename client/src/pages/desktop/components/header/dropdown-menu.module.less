@@ -21,6 +21,15 @@
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
+
+  &>.arrow {
+    display: flex;
+    align-items: center;
+
+    &>.arrow-icon {
+      transform: rotate(-90deg);
+    }
+  }
 }
 
 .menu-item-submenu {
@@ -42,6 +51,7 @@
   box-shadow: var(--box-shadow);
   border-radius: 8px;
   border: 1px solid #eeeeee62;
+  max-height: 80vh;
 }
 
 .dropdown {
@@ -49,4 +59,8 @@
   user-select: none;
   -webkit-user-select: none;
   padding: 0 10px;
+}
+
+.up-arrow {
+  transform: rotate(180deg);
 }
