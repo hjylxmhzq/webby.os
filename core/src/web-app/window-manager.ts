@@ -103,7 +103,8 @@ export class WindowManager {
     inset: 0;
     margin: 0 50px;
     overflow: hidden;
-    text-overflow: ellipsis;"
+    text-overflow: ellipsis;
+    white-space: nowrap;"
     >${appName}</span>
     <span class="app_window_new_window_btn" style="cursor: pointer;">
       <svg class="icon" aria-hidden="true">

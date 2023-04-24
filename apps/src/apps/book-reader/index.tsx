@@ -15,6 +15,7 @@ import classNames from 'classnames';
 import { Collection } from '@webby/core/kv-storage';
 import { PopButton } from '../../components/button';
 import { CachedEventEmitter } from '../../utils/events';
+import path from 'path-browserify';
 
 let reactRoot: ReactDom.Root;
 
@@ -164,13 +165,14 @@ async function mount(ctx: AppContext) {
       let openByOther = false;
       store.get<string>('open_file').then(file => {
         if (file && !openByOther) {
-          const r = create_download_link_from_file_path(file);
-          setResource(r);
+          eventBus.emit('open', file);
         }
       });
 
       const open = (file: string) => {
         if (file) {
+          const p = path.parse(file).base;
+          ctx.appWindow.setTitle(`Book - ${p}`);
           openByOther = true;
           store.set('open_file', file);
           const r = create_download_link_from_file_path(file);
@@ -246,8 +248,7 @@ async function mount(ctx: AppContext) {
     useEffect(() => {
 
       if (props.file) {
-        const r = create_download_link_from_file_path(props.file);
-        setResource(r);
+        eventBus.emit('open', props.file);
       }
 
     }, [props.file]);
@@ -381,9 +382,8 @@ async function mount(ctx: AppContext) {
               onKeyDown={keydown} tabIndex={0} ref={maskRef} className={style.mask}></div>
           </>
           : <OpenFile onSelectFile={file => {
-            const r = create_download_link_from_file_path(file);
             store.set('open_file', file);
-            setResource(r);
+            eventBus.emit('open', file);
           }} />
       }
     </div>

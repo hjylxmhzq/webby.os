@@ -40,11 +40,10 @@ export async function mount(ctx: AppContext) {
   });
 
   reactRoot = ReactDom.createRoot(root);
-  reactRoot.render(<Index onOpenFile={onOpenFile} selectFile={ctx.selectFile} />)
-
+  reactRoot.render(<Index ctx={ctx} onOpenFile={onOpenFile} selectFile={ctx.selectFile} />);
 }
 
-function Index(props: { onOpenFile: (cb: (file: string) => void) => void, selectFile: (options: SelectFileOptions) => Promise<string[] | null> }) {
+function Index(props: { ctx: AppContext, onOpenFile: (cb: (file: string) => void) => void, selectFile: (options: SelectFileOptions) => Promise<string[] | null> }) {
   const [file_path, setFilePath] = useState('');
   const [file, setFile] = useState<FileStat>();
   const [files, setFiles] = useState<FileStat[]>([]);
@@ -68,7 +67,7 @@ function Index(props: { onOpenFile: (cb: (file: string) => void) => void, select
 
   return <div style={{ position: 'absolute', inset: 0 }}>
     {
-      file ? <ImagePreview files={files} file={file} dir={path.parse(file_path).dir} />
+      file ? <ImagePreview ctx={props.ctx} files={files} file={file} dir={path.parse(file_path).dir} />
         : <OpenFile onClick={async () => {
           const files = await props.selectFile({ allowedExts });
           console.log(files);

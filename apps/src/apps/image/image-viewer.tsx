@@ -3,6 +3,7 @@ import { memo, MouseEventHandler, useEffect, useMemo, useRef, useState } from "r
 import classnames from 'classnames';
 import { create_download_link, create_thumbnail_link, FileStat } from "@webby/core/fs";
 import style from './image-viewer.module.less';
+import { AppContext } from "@webby/core/web-app";
 
 function debounce<T extends Function>(fn: T, delay = 500, mw?: (...args: any[]) => any) {
   let timer: number | undefined;
@@ -22,7 +23,7 @@ function is_image(file: string) {
   return file.toLowerCase().endsWith('.png') || file.toLowerCase().endsWith('.jpeg') || file.toLowerCase().endsWith('.jpg');
 }
 
-export default function ImagePreview({ dir, files, file, onPreviewingChange }: { dir: string, files: FileStat[], file: FileStat, onPreviewingChange?: (file: FileStat) => void }) {
+export default function ImagePreview({ ctx, dir, files, file, onPreviewingChange }: {ctx: AppContext,  dir: string, files: FileStat[], file: FileStat, onPreviewingChange?: (file: FileStat) => void }) {
 
   const pics = useMemo(() => files.filter(f => is_image(f.name)), [files]);
   const idx = useMemo(() => pics.findIndex(f => f.name === file.name), [pics, file]);
@@ -112,7 +113,9 @@ export default function ImagePreview({ dir, files, file, onPreviewingChange }: {
     // eslint-disable-next-line
   }, [onPreviewingChange, currentIdx]);
 
-  const currentSrc = create_download_link(dir, currentIdx === -1 ? file.name : pics[currentIdx].name);
+  const filename = currentIdx === -1 ? file.name : pics[currentIdx].name
+  const currentSrc = create_download_link(dir, filename);
+  ctx.appWindow.setTitle(`Image - ${filename}`);
   const clickThumbnail: MouseEventHandler<HTMLDivElement> = (e) => {
     let el = e.target as HTMLDivElement | null;
     while (el && !el?.dataset?.idx) {
