@@ -187,6 +187,9 @@ async function mount(ctx: AppContext) {
         rendition = book.renderTo(containerRef.current, {
           manager: "continuous", flow: "paginated", width: '100%', height: '100%'
         });
+        rendition.on('keydown', (e: any) => {
+          keydown(e);
+        });
         console.log(book, rendition);
         rendition.themes.register("light", { "body": { "background-color": "#FFFFFF", "color": "#000000" }, 'p': { 'line-height': '160% !important' }, font: 'Arial' });
         rendition.themes.register("dark", { "body": { "background-color": "#1e1e1e", "color": "#D9D9D9" }, 'p': { 'line-height': '160% !important' }, font: 'Arial' });
@@ -200,7 +203,6 @@ async function mount(ctx: AppContext) {
           rendition.themes.fontSize(fontSize + 'px');
         });
         rendition.on("relocated", function (location: any) {
-          console.log(location);
           store.set('location', location.start?.cfi);
 
           if (location.atEnd) {
@@ -217,8 +219,8 @@ async function mount(ctx: AppContext) {
 
         });
 
-        store.get('location').then(l => {
-          rendition.display(l || undefined)
+        store.get('location').then(async l => {
+          await rendition.display(l || undefined);
         });
 
         book.loaded.navigation.then(function (toc) {
@@ -231,6 +233,8 @@ async function mount(ctx: AppContext) {
           console.log(treeNodes);
           setToc(treeNodes);
         });
+
+        focus();
 
         return () => {
           book.destroy();
@@ -248,15 +252,15 @@ async function mount(ctx: AppContext) {
 
     }, [props.file]);
 
-    const nextPage = () => {
+    const nextPage = async () => {
       if (rendition) {
-        rendition.next();
+        await rendition.next();
       }
     }
 
-    const prevPage = () => {
+    const prevPage = async () => {
       if (rendition) {
-        rendition.prev();
+        await rendition.prev();
       }
     }
 
@@ -266,15 +270,29 @@ async function mount(ctx: AppContext) {
       }
     }
 
-    const keydown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        nextPage();
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        prevPage();
+    let timer: number;
+
+    function focus() {
+      if (containerRef.current) {
+        const el = containerRef.current;
+        clearTimeout(timer);
+        timer = window.setTimeout(() => {
+          const iframe = el.querySelector('iframe');
+          iframe?.focus();
+        }, 300);
       }
     }
 
-    return <div className={style.box}>
+    const keydown = async (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        await nextPage();
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        await prevPage();
+      }
+      focus();
+    }
+
+    return <div tabIndex={0} className={style.box}>
       {
         resoure ?
           <>
@@ -285,13 +303,13 @@ async function mount(ctx: AppContext) {
                 <div className={style.menu}>
                   {
                     toc.map(t => {
-                      return <Tree isOpen={false} tree={t} onClick={t => jump(t.value)} />
+                      return <Tree key={t.title} isOpen={false} tree={t} onClick={t => jump(t.value)} />
                     })
                   }
                 </div>
               } />
             </div>
-            <div tabIndex={0} onKeyDown={keydown} ref={containerRef} className={style.container}></div>
+            <div ref={containerRef} className={style.container}></div>
           </>
           : <OpenFile onSelectFile={file => {
             const r = create_download_link_from_file_path(file);
