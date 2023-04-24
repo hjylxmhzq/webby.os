@@ -6,7 +6,7 @@ import { downloadLink } from '../../utils/download';
 import { formatFileSize, makeDefaultTemplate } from '../../utils/formatter';
 import Epub, { Rendition } from 'epubjs';
 import style from './index.module.less';
-import { KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { KeyboardEvent, MouseEvent, WheelEvent, useEffect, useRef, useState } from 'react';
 import { systemPrompt, systemSelectFile } from '@webby/core/system';
 import { create_download_link_from_file_path } from '@webby/core/fs';
 import { availableFonts } from '../../utils/fonts';
@@ -148,6 +148,8 @@ async function mount(ctx: AppContext) {
   function Index(props: Props) {
     const [resoure, setResource] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
+    const maskRef = useRef<HTMLDivElement>(null);
+    const [showMask, setShowMask] = useState(true);
     const [showNext, setShowNext] = useState(true);
     const [showPrev, setShowPrev] = useState(true);
     const [toc, setToc] = useState<TreeNode[]>([]);
@@ -187,9 +189,9 @@ async function mount(ctx: AppContext) {
         rendition = book.renderTo(containerRef.current, {
           manager: "continuous", flow: "paginated", width: '100%', height: '100%'
         });
-        rendition.on('keydown', (e: any) => {
-          keydown(e);
-        });
+        // rendition.on('keydown', (e: any) => {
+        //   keydown(e);
+        // });
         console.log(book, rendition);
         rendition.themes.register("light", { "body": { "background-color": "#FFFFFF", "color": "#000000" }, 'p': { 'line-height': '160% !important' }, font: 'Arial' });
         rendition.themes.register("dark", { "body": { "background-color": "#1e1e1e", "color": "#D9D9D9" }, 'p': { 'line-height': '160% !important' }, font: 'Arial' });
@@ -224,13 +226,11 @@ async function mount(ctx: AppContext) {
         });
 
         book.loaded.navigation.then(function (toc) {
-          const l: { label: string, ref: string }[] = [];
           const treeNodes: TreeNode[] = [];
           toc.forEach(t => {
             treeNodes.push(toc2Tree(t));
             return {};
           });
-          console.log(treeNodes);
           setToc(treeNodes);
         });
 
@@ -252,15 +252,65 @@ async function mount(ctx: AppContext) {
 
     }, [props.file]);
 
+    let pageChangeTimer: number | undefined;
+    let curAnimation = '';
     const nextPage = async () => {
-      if (rendition) {
-        await rendition.next();
+      let container = containerRef.current;
+      if (container) {
+        if (pageChangeTimer) {
+          clearTimeout(pageChangeTimer);
+        }
+        if (curAnimation === 'prev') {
+          rendition?.prev();
+        } else if (curAnimation === 'next') {
+          rendition?.next();
+        }
+        curAnimation = 'next';
+        const views = [...container.querySelectorAll('.epub-view')] as HTMLDivElement[];
+        const w = container.clientWidth;
+        views.forEach((v: HTMLDivElement) => {
+          v.style.transition = 'transform 0.3s';
+          v.style.transform = `translateX(-${w}px)`;
+        });
+        pageChangeTimer = window.setTimeout(() => {
+          views.forEach((v: HTMLDivElement) => {
+            v.style.transition = 'none';
+            v.style.transform = 'translateX(0px)';
+          });
+          rendition?.next();
+          pageChangeTimer = undefined;
+          curAnimation = '';
+        }, 300);
       }
     }
 
     const prevPage = async () => {
-      if (rendition) {
-        await rendition.prev();
+      let container = containerRef.current;
+      if (container) {
+        if (pageChangeTimer) {
+          if (curAnimation === 'prev') {
+            rendition?.prev();
+          } else if (curAnimation === 'next') {
+            rendition?.next();
+          }
+          clearTimeout(pageChangeTimer);
+        }
+        curAnimation = 'prev';
+        const views = [...container.querySelectorAll('.epub-view')] as HTMLDivElement[];
+        const w = container.clientWidth;
+        views.forEach((v: HTMLDivElement) => {
+          v.style.transition = 'transform 0.3s';
+          v.style.transform = `translateX(${w}px)`;
+        });
+        pageChangeTimer = window.setTimeout(() => {
+          views.forEach((v: HTMLDivElement) => {
+            v.style.transition = 'none';
+            v.style.transform = 'translateX(0px)';
+          });
+          rendition?.prev();
+          pageChangeTimer = undefined;
+          curAnimation = '';
+        }, 300);
       }
     }
 
@@ -270,16 +320,12 @@ async function mount(ctx: AppContext) {
       }
     }
 
-    let timer: number;
-
     function focus() {
-      if (containerRef.current) {
-        const el = containerRef.current;
-        clearTimeout(timer);
-        timer = window.setTimeout(() => {
-          const iframe = el.querySelector('iframe');
-          iframe?.focus();
-        }, 300);
+      if (maskRef.current) {
+        const el = maskRef.current;
+        setTimeout(() => {
+          el.focus();
+        }, 100);
       }
     }
 
@@ -291,6 +337,24 @@ async function mount(ctx: AppContext) {
       }
       focus();
     }
+
+    let timer: number;
+    const mouseMove = (e: MouseEvent) => {
+      clearTimeout(timer);
+      setShowMask(false);
+      timer = window.setTimeout(() => {
+        setShowMask(true);
+        focus();
+      }, 500);
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY > 0) {
+        nextPage();
+      } else if (e.deltaY < 0) {
+        prevPage();
+      }
+    };
 
     return <div tabIndex={0} className={style.box}>
       {
@@ -310,6 +374,11 @@ async function mount(ctx: AppContext) {
               } />
             </div>
             <div ref={containerRef} className={style.container}></div>
+            <div
+              style={{ display: showMask ? 'block' : 'none' }}
+              // onWheel={onWheel}
+              onMouseMove={mouseMove}
+              onKeyDown={keydown} tabIndex={0} ref={maskRef} className={style.mask}></div>
           </>
           : <OpenFile onSelectFile={file => {
             const r = create_download_link_from_file_path(file);
