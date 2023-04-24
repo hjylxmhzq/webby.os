@@ -270,7 +270,7 @@ async function mount(ctx: AppContext) {
         const views = [...container.querySelectorAll('.epub-view')] as HTMLDivElement[];
         const w = container.clientWidth;
         views.forEach((v: HTMLDivElement) => {
-          v.style.transition = 'transform 0.3s';
+          v.style.transition = 'transform 0.3s cubic-bezier(0.230, 1.000, 0.320, 1.000)';
           v.style.transform = `translateX(-${w}px)`;
         });
         pageChangeTimer = window.setTimeout(() => {
@@ -300,7 +300,7 @@ async function mount(ctx: AppContext) {
         const views = [...container.querySelectorAll('.epub-view')] as HTMLDivElement[];
         const w = container.clientWidth;
         views.forEach((v: HTMLDivElement) => {
-          v.style.transition = 'transform 0.3s';
+          v.style.transition = 'transform 0.3s cubic-bezier(0.230, 1.000, 0.320, 1.000)';
           v.style.transform = `translateX(${w}px)`;
         });
         pageChangeTimer = window.setTimeout(() => {

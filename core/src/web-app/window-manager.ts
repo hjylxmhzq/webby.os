@@ -45,7 +45,7 @@ export class WindowManager {
     appEl.style.overflow = 'hidden';
     appEl.style.color = 'var(--font-color)';
     appEl.style.backgroundColor = 'var(--bg-medium-hover)';
-    appEl.style.transition = 'transform 0.2s, opacity 0.2s, box-shadow 0.1s';
+    appEl.style.transition = 'transform 0.2s cubic-bezier(0.230, 1.000, 0.320, 1.000), opacity 0.2s, box-shadow 0.1s';
     appEl.style.outline = 'none';
     appEl.tabIndex = 0;
     zIndexManager.setTop(appEl);
@@ -350,7 +350,7 @@ export class WindowManager {
         }], {
           duration: 200,
           iterations: 1,
-          easing: 'ease-in',
+          easing: 'cubic-bezier(0.230, 1.000, 0.320, 1.000)',
         }).addEventListener('finish', () => {
           appEl.style.left = tleft + 'px';
           appEl.style.top = ttop + 'px';
