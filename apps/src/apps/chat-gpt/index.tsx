@@ -15,7 +15,7 @@ const store = new Collection('built_in_app_chat');
 let enabledGlobalSearch = false;
 export async function mount(ctx: AppContext) {
   let token = '';
-  ctx.systemMenu = [
+  const systemMenu = [
     {
       name: '对话',
       children: [
@@ -63,6 +63,8 @@ export async function mount(ctx: AppContext) {
         }
       ]
     }];
+
+  ctx.systemMenu.set(systemMenu);
 
   store.get('enable_global_search').then(v => {
     enabledGlobalSearch = !!v;

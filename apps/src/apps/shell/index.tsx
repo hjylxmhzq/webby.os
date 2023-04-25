@@ -30,7 +30,7 @@ const DefaultFontSize = 14;
 
 let eventBus = new CachedEventEmitter();
 export async function mount(ctx: AppContext) {
-  ctx.systemMenu = [
+  const systemMenu = [
     {
       name: '字体',
       children: [
@@ -52,7 +52,8 @@ export async function mount(ctx: AppContext) {
         }
       ]
     }
-  ]
+  ];
+  ctx.systemMenu.set(systemMenu);
 
   const root = ctx.appRootEl;
   root.style.position = 'absolute';

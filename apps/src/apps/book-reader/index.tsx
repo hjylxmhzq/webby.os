@@ -27,7 +27,7 @@ async function mount(ctx: AppContext) {
     eventBus.emit('open', file);
   });
 
-  ctx.systemMenu = [
+  ctx.systemMenu.set([
     {
       name: '文件',
       children: [{
@@ -48,9 +48,14 @@ async function mount(ctx: AppContext) {
           children: fonts.map(f => {
             return {
               name: f,
-              onClick() {
+              onClick(menu) {
+                const parent = menu.parent();
                 if (rendition) {
                   rendition.themes.font(f);
+                  if (parent) {
+                    parent.setName(`字体(${f})`);
+                  }
+                  menu.setChecked(true, true);
                 }
               }
             }
@@ -58,21 +63,24 @@ async function mount(ctx: AppContext) {
         },
         {
           name: '字体大小',
+          id: 'fontsize',
           children: [{
             name: '放大',
-            onClick() {
+            onClick(menu) {
               if (rendition) {
                 fontSize += 2;
                 rendition.themes.fontSize(fontSize + 'px');
+                menu.parent()!.name = `字体大小(${fontSize}px)`
                 store.set('fontSize', fontSize);
               }
             }
           }, {
             name: '缩小',
-            onClick() {
+            onClick(menu) {
               if (rendition) {
                 fontSize -= 2;
                 rendition.themes.fontSize(fontSize + 'px')
+                menu.parent()!.name = `字体大小(${fontSize}px)`
                 store.set('fontSize', fontSize);
               }
             }
@@ -80,31 +88,38 @@ async function mount(ctx: AppContext) {
         },
         {
           name: '主题',
+          id: 'theme',
           children: [
             {
               name: '白色',
-              onClick() {
+              id: 'light',
+              onClick(menu) {
                 if (rendition) {
                   rendition.themes.select('light');
                   store.set('theme', 'light');
+                  menu.setChecked(true, true);
                 }
               }
             },
             {
               name: '黑色',
-              onClick() {
+              id: 'dark',
+              onClick(menu) {
                 if (rendition) {
                   rendition.themes.select('dark');
                   store.set('theme', 'dark');
+                  menu.setChecked(true, true);
                 }
               }
             },
             {
               name: '暖色',
-              onClick() {
+              id: 'warm',
+              onClick(menu) {
                 if (rendition) {
                   rendition.themes.select('warm');
                   store.set('theme', 'warm');
+                  menu.setChecked(true, true);
                 }
               }
             }
@@ -127,7 +142,7 @@ async function mount(ctx: AppContext) {
         }
       ]
     }
-  ];
+  ]);
 
   const root = ctx.appRootEl;
   root.style.position = 'absolute';
@@ -150,7 +165,7 @@ async function mount(ctx: AppContext) {
     const [resoure, setResource] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
     const maskRef = useRef<HTMLDivElement>(null);
-    const [showMask, setShowMask] = useState(true);
+    const [showMask, setShowMask] = useState(false);
     const [showNext, setShowNext] = useState(true);
     const [showPrev, setShowPrev] = useState(true);
     const [toc, setToc] = useState<TreeNode[]>([]);
@@ -191,9 +206,6 @@ async function mount(ctx: AppContext) {
         rendition = book.renderTo(containerRef.current, {
           manager: "continuous", flow: "paginated", width: '100%', height: '100%'
         });
-        // rendition.on('keydown', (e: any) => {
-        //   keydown(e);
-        // });
         console.log(book, rendition);
         rendition.themes.register("light", { "body": { "background-color": "#FFFFFF", "color": "#000000" }, 'p': { 'line-height': '160% !important' }, font: 'Arial' });
         rendition.themes.register("dark", { "body": { "background-color": "#1e1e1e", "color": "#D9D9D9" }, 'p': { 'line-height': '160% !important' }, font: 'Arial' });
@@ -201,10 +213,12 @@ async function mount(ctx: AppContext) {
         store.get<string>('theme').then(v => {
           let theme = v || 'light';
           rendition.themes.select(theme);
+          ctx.systemMenu.getById(theme)?.setChecked(true, true);
         });
         store.get<number>('fontSize').then(v => {
           fontSize = v || fontSize;
           rendition.themes.fontSize(fontSize + 'px');
+          ctx.systemMenu.getById('fontsize')!.name = `字体大小(${fontSize}px)`;
         });
         rendition.on("relocated", function (location: any) {
           store.set('location', location.start?.cfi);
@@ -225,9 +239,20 @@ async function mount(ctx: AppContext) {
 
         store.get('location').then(async l => {
           await rendition.display(l || undefined);
+          focus();
+          (rendition as any).manager.on('added', (e: any) => {
+            const iframe = e.element?.firstElementChild;
+            setTimeout(() => {
+              iframe?.focus();
+            }, 100);
+          });
         });
 
+        rendition.on('keydown', (e: KeyboardEvent) => {
+          keydown(e);
+        });
         book.loaded.navigation.then(function (toc) {
+
           const treeNodes: TreeNode[] = [];
           toc.forEach(t => {
             treeNodes.push(toc2Tree(t));
@@ -235,8 +260,6 @@ async function mount(ctx: AppContext) {
           });
           setToc(treeNodes);
         });
-
-        focus();
 
         return () => {
           book.destroy();
@@ -322,10 +345,11 @@ async function mount(ctx: AppContext) {
     }
 
     function focus() {
-      if (maskRef.current) {
-        const el = maskRef.current;
+      if (containerRef.current) {
+        const el = containerRef.current;
         setTimeout(() => {
-          el.focus();
+          const iframe = el.querySelector('iframe');
+          iframe?.focus();
         }, 100);
       }
     }
@@ -336,18 +360,16 @@ async function mount(ctx: AppContext) {
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
         await prevPage();
       }
-      focus();
     }
 
-    let timer: number;
-    const mouseMove = (e: MouseEvent) => {
-      clearTimeout(timer);
+    const mouseDown = (e: MouseEvent) => {
       setShowMask(false);
-      timer = window.setTimeout(() => {
-        setShowMask(true);
-        focus();
-      }, 500);
     };
+
+    const mouseUp = (e: MouseEvent) => {
+      setShowMask(true);
+      focus();
+    }
 
     const onWheel = (e: WheelEvent) => {
       if (e.deltaY > 0) {
@@ -378,7 +400,8 @@ async function mount(ctx: AppContext) {
             <div
               style={{ display: showMask ? 'block' : 'none' }}
               // onWheel={onWheel}
-              onMouseMove={mouseMove}
+              // onMouseDown={mouseDown}
+              // onMouseUp={mouseUp}
               onKeyDown={keydown} tabIndex={0} ref={maskRef} className={style.mask}></div>
           </>
           : <OpenFile onSelectFile={file => {

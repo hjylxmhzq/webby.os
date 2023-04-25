@@ -202,7 +202,7 @@ export function HomePage() {
     processManager.init(mountPoint.current);
     processManager.eventBus.on('active_app_change', (app: AppState | null, _old) => {
       setActiveApp(app);
-      if (app) setCurrentMenu(app.ctx.systemMenu);
+      if (app) setCurrentMenu(app.ctx.systemMenu.get());
       else setCurrentMenu([]);
     });
     return () => {

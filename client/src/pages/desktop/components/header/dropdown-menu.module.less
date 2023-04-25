@@ -6,6 +6,10 @@
   cursor: pointer;
   transition: background-color 0.1s;
 
+  &.more-padding {
+    padding: 3px 10px 3px 20px;
+  }
+
   &:hover {
     background-color: var(--bg-transparent);
   }
@@ -21,6 +25,12 @@
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
+
+  &>.text {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
 
   &>.arrow {
     display: flex;
@@ -63,4 +73,13 @@
 
 .up-arrow {
   transform: rotate(180deg);
+}
+
+.tick {
+  position: absolute;
+  left: 5px;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
 }

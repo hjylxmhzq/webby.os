@@ -8,7 +8,7 @@ import iconUrl from './icon.svg';
 let reactRoot: ReactDom.Root;
 
 export async function mount(ctx: AppContext) {
-  ctx.systemMenu = [{
+  const systemMenu = [{
     name: 'File',
     children: [
       {
@@ -24,6 +24,8 @@ export async function mount(ctx: AppContext) {
       }
     ]
   }];
+  ctx.systemMenu.set(systemMenu);
+
   const root = ctx.appRootEl;
   root.style.position = 'absolute';
   root.style.inset = '0';

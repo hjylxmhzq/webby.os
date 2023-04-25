@@ -3,7 +3,7 @@ import { AppContext, AppInfo, AppInstallContext } from '@webby/core/web-app';
 const iconUrl = 'https://v1.vuepress.vuejs.org/hero.png';
 
 export async function mount(ctx: AppContext) {
-  ctx.systemMenu = [{
+  const systemMenu = [{
     name: 'test',
   }, {
     name: 'websites',
@@ -27,7 +27,9 @@ export async function mount(ctx: AppContext) {
         },
       }
     ]
-  }]
+  }];
+  ctx.systemMenu.set(systemMenu);
+
   const root = ctx.appRootEl;
   root.style.position = 'absolute';
   root.style.inset = '0';

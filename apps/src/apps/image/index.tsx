@@ -11,7 +11,7 @@ import style from './image-viewer.module.less';
 let reactRoot: ReactDom.Root;
 let eventBus = new CachedEventEmitter();
 export async function mount(ctx: AppContext) {
-  ctx.systemMenu = [{
+  const systemMenu = [{
     name: 'File',
     children: [
       {
@@ -26,6 +26,7 @@ export async function mount(ctx: AppContext) {
       }
     ]
   }];
+  ctx.systemMenu.set(systemMenu);
 
   const root = ctx.appRootEl;
   root.style.position = 'absolute';

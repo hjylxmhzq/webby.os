@@ -49,6 +49,7 @@
 }
 
 .label {
+  white-space: nowrap;
   font-size: 14px;
   flex: 0px 1 0;
   padding-right: 10px;
@@ -60,6 +61,11 @@
   outline: none;
   padding: 0 10px;
   border-radius: 5px;
+  background-color: var(--bg-light);
+  color: var(--font-color);
+  outline: none;
+  border: 1px solid var(--border-color);
+
   &:focus {
     box-shadow: var(--box-shadow-shrink);
   }

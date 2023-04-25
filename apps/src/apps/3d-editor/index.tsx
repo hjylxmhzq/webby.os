@@ -13,7 +13,7 @@ export async function mount(ctx: AppContext) {
   });
   
   ctx.systemMessage({ type: 'info', title: '当前场景共享密钥', content: key, timeout: 0 });
-  ctx.systemMenu = [{
+  const systemMenu = [{
     name: '共享',
     children: [
       {
@@ -49,6 +49,7 @@ export async function mount(ctx: AppContext) {
       }
     ]
   }];
+  ctx.systemMenu.set(systemMenu);
 
   const root = ctx.appRootEl;
   root.style.position = 'absolute';

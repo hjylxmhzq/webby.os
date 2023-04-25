@@ -29,7 +29,7 @@ export async function mount(ctx: AppContext) {
 
   const eventBus = new CachedEventEmitter();
 
-  ctx.systemMenu = [
+  const systemMenu = [
     {
       name: '文件',
       children: [
@@ -45,6 +45,7 @@ export async function mount(ctx: AppContext) {
       ]
     }
   ];
+  ctx.systemMenu.set(systemMenu);
 
   ctx.onOpenFile(async (file) => {
     if (file) {

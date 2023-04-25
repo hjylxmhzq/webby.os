@@ -1,5 +1,5 @@
 import EventEmitter from "events";
-import { AppContext, AppState, AppWindow } from ".";
+import { AppContext, AppMenuManager, AppState, AppWindow } from ".";
 import { commonCollection } from "../kv-storage";
 import style from './index.module.less';
 import { transformScale, transformTranslate } from "./animation";
@@ -377,7 +377,7 @@ export function createContext(appWindow: AppWindow, theme: Theme) {
     setWindowSize,
     isResume: false,
     channel: channel.port2,
-    systemMenu: [],
+    systemMenu: new AppMenuManager(),
     selectFile: systemSelectFile,
     systemMessage: systemMessage,
     onOpenFile(cb) {
