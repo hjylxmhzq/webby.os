@@ -74,6 +74,7 @@
   position: absolute;
   transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
   inset: 0 0 0 0;
+  overflow: hidden;
   background-color: var(--bg-heavy);
 
   *::-webkit-scrollbar {
@@ -169,6 +170,7 @@
 
 .pdf-viewer {
   position: relative;
+  overflow: hidden;
 }
 
 .pdf-text {
@@ -192,4 +194,11 @@
     position: absolute;
     line-height: 1;
   }
+}
+
+.virtual-viewport {
+  width: 1000px;
+  height: 1000px;
+  overflow: auto;
+  transform-origin: top left;
 }

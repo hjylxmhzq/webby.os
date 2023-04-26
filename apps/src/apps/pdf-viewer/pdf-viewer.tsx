@@ -11,6 +11,8 @@ const MORE_PAGE = 10;
 
 type Outline = PromiseValue<ReturnType<PDFDocumentProxy['getOutline']>>[0]
 
+const VIEWPORT_WIDTH = 1000;
+
 export default function PdfViewer(props: { onResize: (w: number) => void, onScroll: (st: number) => void, onLoaded: (el: HTMLDivElement) => void, width: number, file: string, pageIdx: number }) {
   GlobalWorkerOptions.workerSrc = '/apps/pdf-viewer/pdf.worker.min.js';
   const CMAP_URL = '/apps/pdf-viewer/cmaps/';
@@ -30,55 +32,55 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
   const [currentPage, setCurrentPage] = useState(0);
   const isWaiting = useRef(false);
   const [isShowOutline, setIsShowOutline] = useState(true);
-  const [clientWidth, setClientWidth] = useState(props.width);
+  const [clientWidth, setClientWidth] = useState(VIEWPORT_WIDTH);
   const [invertColor, setInvertColor] = useState(false);
   const pageIdxBeforeZoom = useRef(-1);
   const [percent, setPercent] = useState('');
+  const [viewportScale, setViewportScale] = useState(1);
+  const viewportScaleRef = useRef(viewportScale);
+  viewportScaleRef.current = viewportScale;
+  const [isAutoFit, setIsAutoFit] = useState(true);
+  const [viewportHeight, setViewportHeight] = useState(VIEWPORT_WIDTH);
+  const [viewportPadding, setViewportPadding] = useState(0);
 
   useEffect(() => {
-    setClientWidth(props.width);
+    // setViewportWidthByPercent(1);
   }, [props.width]);
 
   function zoomIn() {
-    let cw = clientWidth - 100;
-    if (box.current) {
-      pageIdxBeforeZoom.current = calPageIdx(box.current.scrollTop);
-    }
-    setClientWidth(cw);
+    setIsAutoFit(false);
+    const w = viewportScale * VIEWPORT_WIDTH;
+    let cw = w - 100;
+    cw = cw < 100 ? 100 : cw;
+    setViewportWidth(cw);
     props.onResize(cw);
   }
 
   function zoomOut() {
-    let cw = clientWidth + 100;
-    if (cw > 100) {
-      if (box.current) {
-        pageIdxBeforeZoom.current = calPageIdx(box.current.scrollTop);
-      }
-      setClientWidth(cw);
-      props.onResize(cw);
+    const el = containerRef.current;
+    if (!el) return;
+    setIsAutoFit(false);
+    const w = viewportScale * VIEWPORT_WIDTH;
+    let cw = w + 100;
+    const clientWidth = el.clientWidth;
+    if (cw > clientWidth) {
+      cw = clientWidth;
+      setIsAutoFit(true);
     }
+    setViewportWidth(cw);
+    props.onResize(cw);
   }
 
   function zoomPercent(percent: number) {
-    if (box.current) {
-      pageIdxBeforeZoom.current = calPageIdx(box.current.scrollTop);
-      const el = canvasRef.current;
-      if (!el) return;
-      const cw = el.clientWidth * percent >> 0;
-      setClientWidth(cw);
-      props.onResize(cw);
-    }
+    setIsAutoFit(false);
+    setViewportWidthByPercent(percent)
   }
 
   function zoomFit() {
-    const el = canvasRef.current;
-    if (!el) return;
-    const cw = el.clientWidth;
-    if (box.current) {
-      pageIdxBeforeZoom.current = calPageIdx(box.current.scrollTop);
-    }
-    setClientWidth(cw);
-    props.onResize(cw);
+    setIsAutoFit(true);
+    setViewportWidthByPercent(1);
+    const width = containerRef.current?.getBoundingClientRect().width;
+    props.onResize(width || 100);
   }
 
   useEffect(() => {
@@ -125,13 +127,11 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
     setHeights(heights);
     const c = box.current;
     if (!c) return;
-    const count = Math.ceil(c.clientHeight / heights[0]) + MORE_PAGE;
+    const count = Math.ceil(viewportHeight / heights[0]) + MORE_PAGE;
     const cvsNum = heights.length >= count ? count : heights.length;
     setCanvasNum(cvsNum);
     const el = canvasRef.current;
     if (!el) return;
-    const percent = ((clientWidth / el.clientWidth) * 100).toFixed(0) + '%';
-    setPercent(percent);
   }, [pages, clientWidth]);
 
   useEffect(() => {
@@ -163,6 +163,66 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
     }
   }, [canvasList]);
 
+  function setViewportWidth(width: number) {
+    if (!containerRef.current) return;
+    const el = containerRef.current;
+    const rect = el.getBoundingClientRect();
+    const { width: w, height } = rect;
+    const ratio = height / width;
+    setPercent(Math.floor((width / w) * 100) + '%');
+    setViewportHeight(ratio * VIEWPORT_WIDTH);
+    setViewportScale(width / VIEWPORT_WIDTH);
+    setViewportPadding((w - width) / 2);
+  }
+
+  function setViewportWidthByPercent(percent: number) {
+    if (!containerRef.current) return;
+    const el = containerRef.current;
+    const rect = el.getBoundingClientRect();
+    const { width } = rect;
+    const w = width * percent;
+    setViewportWidth(w);
+  }
+
+  useEffect(() => {
+    if (!containerRef.current) {
+      return;
+    }
+    const ob = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const { width, height } = entry.contentRect;
+      const viewportWidth = viewportScaleRef.current * VIEWPORT_WIDTH;
+      const ratio = height / viewportWidth;
+      if (!isAutoFit) {
+        const padding = (width - viewportWidth) / 2;
+        if (padding <= 0) {
+          setIsAutoFit(true);
+          return;
+        }
+        setViewportPadding(padding);
+        setViewportHeight(ratio * VIEWPORT_WIDTH);
+        return
+      };
+      setViewportHeight(ratio * VIEWPORT_WIDTH);
+      setViewportScale(width / VIEWPORT_WIDTH);
+    });
+    ob.observe(containerRef.current);
+
+    if (isAutoFit) {
+      const el = containerRef.current;
+      const rect = el.getBoundingClientRect();
+      const { width } = rect;
+      setViewportWidth(width);
+      setViewportPadding(0);
+      setPercent('100%');
+    }
+
+    return () => {
+      ob.disconnect();
+    }
+  }, [isAutoFit]);
+
   const _onScroll = async (force = false) => {
     const cvsEl = canvasRef.current;
     if (!cvsEl) return;
@@ -183,7 +243,7 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
         break;
       }
       paddingTop = sumHeight;
-      startPageIdx = i;
+      startPageIdx += 1;
       sumHeight += h;
     }
     const lastPageIdx = currentPageIdx.current;
@@ -311,6 +371,8 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
     }
   }, [currentPdf, heights]);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+
   return <div style={{ overflow: 'auto', height: '100%' }}>
     <div className={style['title-bar']}>
       <span className={style.left}>
@@ -352,19 +414,21 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
       <div className={classNames(style['outlin-wrapper'], { [style.show]: isShowOutline })}>
         <OutlineBar outline={outline?.items} onClick={onClickOutline} />
       </div>
-      <div className={classNames(style['pdf-page'])} ref={box} style={{ overflow: 'auto', height: '100%', left: isShowOutline ? '200px' : '0' }} onScroll={onScroll}>
-        <div className={classNames(style['pdf-viewer'], { [style['invert-color']]: invertColor })} ref={canvasRef}>
-          {
-            Array.from({ length: canvasNum }).map((_, idx) => {
-              return <canvas key={idx} className={style['pdf-canvas']}></canvas>;
-            })
-          }
-          <div className={style['pdf-text-container']}>
+      <div className={classNames(style['pdf-page'])} ref={containerRef} style={{ height: '100%', left: isShowOutline ? '200px' : '0' }}>
+        <div className={style['virtual-viewport']} onScroll={onScroll} ref={box} style={{ transform: `scale(${viewportScale})`, padding: `0 ${viewportPadding / viewportScale}px`, height: viewportHeight }}>
+          <div className={classNames(style['pdf-viewer'], { [style['invert-color']]: invertColor })} ref={canvasRef}>
             {
               Array.from({ length: canvasNum }).map((_, idx) => {
-                return <div key={'text' + idx} className={style['pdf-text']}></div>;
+                return <canvas key={idx} className={style['pdf-canvas']}></canvas>;
               })
             }
+            <div className={style['pdf-text-container']}>
+              {
+                Array.from({ length: canvasNum }).map((_, idx) => {
+                  return <div key={'text' + idx} className={style['pdf-text']}></div>;
+                })
+              }
+            </div>
           </div>
         </div>
       </div>

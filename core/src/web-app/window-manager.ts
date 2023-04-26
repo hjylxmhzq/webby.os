@@ -198,7 +198,6 @@ export class WindowManager {
         startElSize = [parseFloat(appEl.style.width), parseFloat(appEl.style.height)];
         startElPos = [parseFloat(appEl.style.left), parseFloat(appEl.style.top)];
         startCursorPos = [e.clientX, e.clientY];
-        console.log(startElSize)
       }
     });
     const checkPos = () => {
