@@ -7,7 +7,7 @@ import appManager from "./app-manager";
 import { debounce } from "../utils/common";
 import path from "path-browserify";
 import windowManager from "./window-manager";
-import { systemMessage, systemSelectFile } from "../system";
+import { setSystemTitleBarFlow, systemMessage, systemSelectFile } from "../system";
 import { Theme } from "../types/theme";
 
 interface DockApp {
@@ -114,6 +114,7 @@ export class ProcessManager {
           const app = await this.startApp(appName, true);
           app?.ctx.appWindow.showTitleBar(false);
           app?.ctx.appWindow.forceFullscreen();
+          setSystemTitleBarFlow(true);
           return;
         }
       }

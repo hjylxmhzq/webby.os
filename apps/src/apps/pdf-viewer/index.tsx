@@ -19,6 +19,7 @@ export async function mount(ctx: AppContext) {
   root.style.inset = '0';
   root.style.overflow = 'auto';
 
+  ctx.appWindow.noBackground(true);
   store.get<string[]>('recent_files').then(files => {
     if (files) {
       recentOpenFiles = files;

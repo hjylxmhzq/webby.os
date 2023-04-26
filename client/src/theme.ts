@@ -18,6 +18,7 @@ export const lightVars = {
   '--checkbox-bg': '#fff',
   '--font-color-light': '#555',
   '--bg-transparent-deep': '#1b1b1bbd',
+  '--timing-fn-quick': 'cubic-bezier(0.230, 1.000, 0.320, 1.000)',
 };
 
 export const darkVars = {
@@ -40,4 +41,5 @@ export const darkVars = {
   '--checkbox-bg': '#555',
   '--font-color-light': '#555',
   '--bg-transparent-deep': '#1b1b1bbd',
+  '--timing-fn-quick': 'cubic-bezier(0.230, 1.000, 0.320, 1.000)',
 };

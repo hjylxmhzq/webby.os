@@ -15,11 +15,31 @@
   box-sizing: border-box;
   flex: 0 0 200px;
   max-width: 200px;
-  background-color: var(--bg-medium);
   text-align: left;
   overflow: auto;
   padding: 10px;
   font-size: 14px;
+}
+
+.outlin-wrapper {
+  position: absolute;
+  height: 100%;
+  width: 200px;
+  left: -202px;
+  top: 0;
+  z-index: 1;
+  overflow: auto;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(12px);
+  background-color: #222222d6;
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  // transform: translateX(-200px);
+  border-right: 1px solid var(--border-color);
+
+  &.show {
+    // transform: translateX(0px);
+    left: 0px;
+  }
 }
 
 .invert-color {
@@ -33,6 +53,7 @@
 .subtree {
   padding: 0px 0px 0px 10px;
   overflow: hidden;
+  transition: height 0.2s var(--timing-fn-quick);
 }
 
 .tree-title {
@@ -48,8 +69,10 @@
 }
 
 .pdf-page {
-  flex: 0 0;
-  transition: all 0.2s;
+  position: absolute;
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  inset: 0 0 0 0;
+  background-color: var(--bg-heavy);
 
   *::-webkit-scrollbar {
     width: 6px;
@@ -88,11 +111,21 @@
   font-size: 16px;
   line-height: 16px;
   align-items: center;
+  position: relative;
+  box-shadow: var(--box-shadow);
+  z-index: 2;
+  background-color: var(--bg-medium-hover);
+
+  &>span {
+    display: flex;
+    align-items: center;
+  }
 }
 
 .title-icon {
   cursor: pointer;
   padding: 2px;
+  transition: background-color 0.2s;
 
   &:hover {
     background-color: var(--bg-heavy);

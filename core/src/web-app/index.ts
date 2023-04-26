@@ -187,6 +187,7 @@ export interface AppWindow {
   showTitleBar(show?: boolean): void;
   toggleFullscreen(force?: boolean): void;
   forceFullscreen(fullscreen?: boolean): void;
+  noBackground(noBg: boolean): void;
   isMinimized: boolean;
 }
 export interface AppState {
@@ -257,6 +258,7 @@ export interface SystemSharedScope {
   systemSelectFile(options: SelectFileProps): Promise<string[] | null>,
   systemMessage(msg: SystemMessage, onClose?: () => void): SystemMessageHandle,
   systemPrompt(prompt: PromptContent): Promise<PromptResult | null>,
+  setSystemTitleBarFlow(isFlow: boolean): void;
   processManager: ProcessManager,
   windowManager: WindowManager,
   appManager: AppManager,
@@ -270,7 +272,7 @@ declare global {
   interface Window { sharedScope: SharedScope; }
 }
 
-export function initSharedScope(system: Pick<SystemSharedScope, 'systemSelectFile' | 'systemMessage' | 'systemPrompt'>) {
+export function initSharedScope(system: Pick<SystemSharedScope, 'setSystemTitleBarFlow' | 'systemSelectFile' | 'systemMessage' | 'systemPrompt'>) {
   const sharedScope: SharedScope = {
     system: {
       appManager: appManager,

@@ -5,6 +5,7 @@ import { create_download_link_from_file_path } from '@webby/core/fs';
 import { debounceThrottle, PromiseValue } from './utils';
 import Icon from '../../components/icon';
 import classNames from 'classnames';
+import { systemPrompt } from '@webby/core/system';
 
 const MORE_PAGE = 10;
 
@@ -26,10 +27,13 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
   const [currentPdf, setCurrentPdf] = useState<PDFDocumentProxy>();
   const cacheCanvasList = useRef<HTMLCanvasElement[]>([]);
   const currentPageIdx = useRef(0);
+  const [currentPage, setCurrentPage] = useState(0);
   const isWaiting = useRef(false);
   const [isShowOutline, setIsShowOutline] = useState(true);
   const [clientWidth, setClientWidth] = useState(props.width);
   const [invertColor, setInvertColor] = useState(false);
+  const pageIdxBeforeZoom = useRef(-1);
+  const [percent, setPercent] = useState('');
 
   useEffect(() => {
     setClientWidth(props.width);
@@ -37,6 +41,9 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
 
   function zoomIn() {
     let cw = clientWidth - 100;
+    if (box.current) {
+      pageIdxBeforeZoom.current = calPageIdx(box.current.scrollTop);
+    }
     setClientWidth(cw);
     props.onResize(cw);
   }
@@ -44,6 +51,20 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
   function zoomOut() {
     let cw = clientWidth + 100;
     if (cw > 100) {
+      if (box.current) {
+        pageIdxBeforeZoom.current = calPageIdx(box.current.scrollTop);
+      }
+      setClientWidth(cw);
+      props.onResize(cw);
+    }
+  }
+
+  function zoomPercent(percent: number) {
+    if (box.current) {
+      pageIdxBeforeZoom.current = calPageIdx(box.current.scrollTop);
+      const el = canvasRef.current;
+      if (!el) return;
+      const cw = el.clientWidth * percent >> 0;
       setClientWidth(cw);
       props.onResize(cw);
     }
@@ -53,6 +74,9 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
     const el = canvasRef.current;
     if (!el) return;
     const cw = el.clientWidth;
+    if (box.current) {
+      pageIdxBeforeZoom.current = calPageIdx(box.current.scrollTop);
+    }
     setClientWidth(cw);
     props.onResize(cw);
   }
@@ -104,6 +128,10 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
     const count = Math.ceil(c.clientHeight / heights[0]) + MORE_PAGE;
     const cvsNum = heights.length >= count ? count : heights.length;
     setCanvasNum(cvsNum);
+    const el = canvasRef.current;
+    if (!el) return;
+    const percent = ((clientWidth / el.clientWidth) * 100).toFixed(0) + '%';
+    setPercent(percent);
   }, [pages, clientWidth]);
 
   useEffect(() => {
@@ -123,11 +151,16 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
   }, [heights, canvasNum]);
 
   useEffect(() => {
-    _onScroll(true).then(() => {
-      if (box.current) {
-        props.onLoaded(box.current!);
-      }
-    });
+    if (pageIdxBeforeZoom.current !== -1 && box.current) {
+      box.current.scrollTop = calScrollTop(pageIdxBeforeZoom.current);
+      pageIdxBeforeZoom.current = -1;
+    } else {
+      _onScroll(true).then(() => {
+        if (box.current) {
+          props.onLoaded(box.current!);
+        }
+      });
+    }
   }, [canvasList]);
 
   const _onScroll = async (force = false) => {
@@ -154,6 +187,7 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
       sumHeight += h;
     }
     const lastPageIdx = currentPageIdx.current;
+    setCurrentPage(startPageIdx);
     if (!force && lastPageIdx !== -1
       && (
         startPageIdx === lastPageIdx
@@ -235,7 +269,6 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
     }
     cvsEl.style.marginTop = paddingTop + 'px';
     cvsEl.style.marginBottom = paddingBottom + 'px';
-
   };
   const onScroll = useCallback(debounceThrottle(() => _onScroll(false), 500), [heights, canvasList]);
 
@@ -282,20 +315,45 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
     <div className={style['title-bar']}>
       <span className={style.left}>
         <Icon className={style['title-icon']} name="menu" onClick={() => setIsShowOutline(!isShowOutline)} />
+        <span className={style['title-icon']} style={{ fontSize: 12, cursor: 'pointer' }}
+          onClick={async () => {
+            const records = await systemPrompt({ title: '跳转到', records: [{ name: '页码', type: 'number' }] });
+            const r = records?.['页码'];
+            if (r) {
+              let num = parseInt(r);
+              if (box.current && num <= pages.length && num > 0) {
+                const scrollTop = calScrollTop(num - 1);
+                box.current.scrollTop = scrollTop;
+              }
+            }
+          }}
+        >
+          {currentPage + 1}/{pages.length}
+        </span>
       </span>
       <span className={style.right}>
         <Icon className={style['title-icon']} name="dark" onClick={() => setInvertColor(!invertColor)} />
         <Icon className={style['title-icon']} name="zoom-in" onClick={zoomIn} />
         <Icon className={style['title-icon']} name="zoom-out" onClick={zoomOut} />
         <Icon className={style['title-icon']} name="column-width" onClick={zoomFit} />
+        <span className={style['title-icon']} style={{ fontSize: 12, cursor: 'pointer' }} onClick={async () => {
+          const records = await systemPrompt({ title: '设置宽度', records: [{ name: '宽度(%)', type: 'number' }] });
+          const r = records?.['宽度(%)'];
+          if (r) {
+            let num = parseFloat(r);
+            if (Number.isNaN(num)) return;
+            num = num > 100 ? 100 : num < 20 ? 20 : num;
+            zoomPercent(num / 100);
+          }
+        }}>{percent}</span>
       </span>
     </div>
     <div className={style['main-body']}>
-      {
-        isShowOutline && <OutlineBar outline={outline?.items} onClick={onClickOutline} />
-      }
-      <div className={classNames(style['pdf-page'], { [style['invert-color']]: invertColor })} ref={box} style={{ overflow: 'auto', height: '100%', flexBasis: isShowOutline ? 'calc(100% - 200px)' : '100%' }} onScroll={onScroll}>
-        <div className={style['pdf-viewer']} ref={canvasRef}>
+      <div className={classNames(style['outlin-wrapper'], { [style.show]: isShowOutline })}>
+        <OutlineBar outline={outline?.items} onClick={onClickOutline} />
+      </div>
+      <div className={classNames(style['pdf-page'])} ref={box} style={{ overflow: 'auto', height: '100%', left: isShowOutline ? '200px' : '0' }} onScroll={onScroll}>
+        <div className={classNames(style['pdf-viewer'], { [style['invert-color']]: invertColor })} ref={canvasRef}>
           {
             Array.from({ length: canvasNum }).map((_, idx) => {
               return <canvas key={idx} className={style['pdf-canvas']}></canvas>;
@@ -315,22 +373,37 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
 
 }
 
-function OutlineTree(props: { outline: Outline, onClick: (ol: Outline) => void }) {
+function OutlineTree(props: { idx: number, outline: Outline, onClick: (ol: Outline) => void, onExpand: (count: number, idx: number) => void }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [childCount, setChildCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const childCounts = useRef(new Map<number, number>());
+  const onExpand = (count: number, idx: number) => {
+    childCounts.current.set(idx, count);
+    const current = isOpen ? props.outline.items.length : 0;
+    const c = [...childCounts.current.values()].reduce((p, n) => p + n, 0);
+    setChildCount(c);
+    setTotalCount(c + current);
+    props.onExpand(count + current, props.idx);
+  };
   return <div className={style['outline-tree']}>
     <div className={style['tree-title']}>
       {
         !!props.outline?.items?.length ? <Icon onClick={() => {
-          setIsOpen(!isOpen)
+          setIsOpen(!isOpen);
+          const current = !isOpen ? props.outline.items.length : 0;
+          console.log(current, childCount);
+          setTotalCount(current + childCount);
+          props.onExpand(current + childCount, props.idx);
         }} name='arrow-down' className={classNames(style.icon, { [style.open]: isOpen })} />
           : <span style={{ display: 'inline-block', width: 13 }}></span>
       }
       <span onClick={() => props.onClick(props.outline)}>{props.outline.title}</span>
     </div>
-    <div className={style.subtree} style={{ height: isOpen ? 'auto' : 0 }}>
+    <div className={style.subtree} style={{ height: isOpen ? totalCount * 26 : 0 }}>
       {
         props.outline.items.map((ol, idx) => {
-          return <OutlineTree key={idx} outline={ol} onClick={props.onClick} />
+          return <OutlineTree idx={idx} onExpand={onExpand} key={idx} outline={ol} onClick={props.onClick} />
         })
       }
     </div>
@@ -342,7 +415,7 @@ function OutlineBar(props: { show?: boolean, outline?: Outline[], onClick: (ol: 
     {
       props.outline &&
       props.outline.map((ol, idx) => {
-        return <OutlineTree outline={ol} onClick={props.onClick} />;
+        return <OutlineTree idx={0} onExpand={() => { }} key={idx} outline={ol} onClick={props.onClick} />;
       })
     }
   </div>

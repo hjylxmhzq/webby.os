@@ -2,7 +2,7 @@ import Header from "./components/header/header";
 import style from './index.module.less';
 import { useCallback, useEffect, useRef, useState } from "react";
 import { http } from '@webby/core/tunnel';
-import { AppDefinitionWithContainer, AppMenu, AppState, SystemMessage, SystemMessageHandle, appManager, initSharedScope, processManager } from "@webby/core/web-app";
+import { AppActionMenu, AppDefinitionWithContainer, AppState, SystemMessage, SystemMessageHandle, appManager, initSharedScope, processManager } from "@webby/core/web-app";
 import { Collection, commonCollection } from '@webby/core/kv-storage'
 import { debounce } from "src/utils/common";
 import SystemFileSelector, { SelectFileProps } from "./components/system-file-selector";
@@ -26,6 +26,7 @@ initSharedScope({
   systemMessage,
   systemSelectFile,
   systemPrompt,
+  setSystemTitleBarFlow,
 });
 
 export enum DeskTopEventType {
@@ -37,6 +38,7 @@ export enum DeskTopEventType {
   ShowGlobalSearch = 'showGlobalSearch',
   ShowPrompt = 'showPrompt',
   PromptFinished = 'promptFinished',
+  FlowTitltBar = 'FlowTitltBar',
 };
 
 export const desktopEventBus = new EventEmitter();
@@ -48,6 +50,10 @@ export function systemSelectFile(options: SelectFileProps): Promise<string[] | n
     })
     desktopEventBus.emit(DeskTopEventType.SelectFile, options);
   });
+}
+
+export function setSystemTitleBarFlow(isFlow: boolean) {
+  desktopEventBus.emit(DeskTopEventType.FlowTitltBar, isFlow);
 }
 
 export function showGlobalSearch() {
@@ -90,7 +96,7 @@ export function HomePage() {
 
   const mountPoint = useRef<HTMLDivElement>(null);
   const [apps, setApps] = useState<{ [appName: string]: AppDefinitionWithContainer }>({});
-  const [currentMenu, setCurrentMenu] = useState<AppMenu[]>([]);
+  const [currentMenu, setCurrentMenu] = useState<AppActionMenu[]>([]);
   const [activeApp, setActiveApp] = useState<AppState | null>(null);
   const [showFileSelector, setShowFileSelector] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
@@ -172,6 +178,10 @@ export function HomePage() {
     const showPrompt = (prompt: PromptContent) => {
       setPrompt(prompt);
     }
+
+    const _setTitleBarFlow = (isFlow: boolean) => {
+      setTitlebarFlow(isFlow);
+    }
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('mousedown', onMouseDown)
 
@@ -180,6 +190,7 @@ export function HomePage() {
     desktopEventBus.on(DeskTopEventType.CloseSystemMessage, onCloseMsg);
     desktopEventBus.on(DeskTopEventType.ShowGlobalSearch, showSearch);
     desktopEventBus.on(DeskTopEventType.ShowPrompt, showPrompt);
+    desktopEventBus.on(DeskTopEventType.FlowTitltBar, _setTitleBarFlow);
 
     return () => {
       window.removeEventListener('keydown', onKeyDown);
@@ -189,6 +200,7 @@ export function HomePage() {
       desktopEventBus.off(DeskTopEventType.CloseSystemMessage, onCloseMsg);
       desktopEventBus.off(DeskTopEventType.ShowGlobalSearch, showSearch);
       desktopEventBus.off(DeskTopEventType.ShowPrompt, showPrompt);
+      desktopEventBus.off(DeskTopEventType.FlowTitltBar, _setTitleBarFlow);
     };
 
   }, []);
@@ -213,8 +225,11 @@ export function HomePage() {
   const deactiveApps = () => {
     processManager.blur();
   }
+
+  const [flowTitlebar, setTitlebarFlow] = useState(false);
+  
   return <div>
-    <Header menu={currentMenu} activeApp={activeApp}></Header>
+    <Header flow={flowTitlebar} menu={currentMenu} activeApp={activeApp}></Header>
     <div className={style['main-window']}>
       {
         wallpaper &&

@@ -172,7 +172,7 @@ async function mount(ctx: AppContext) {
 
     ctx.appWindow.onWindowResize((w, h) => {
       if (rendition) {
-        rendition.resize(w, h - 20);
+        rendition.resize(w, h);
       }
     });
 

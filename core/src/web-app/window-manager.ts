@@ -43,10 +43,8 @@ export class WindowManager {
     appEl.style.top = clientHeight / 2 - 250 + 'px';
     appEl.style.boxShadow = 'var(--box-shadow)';
     appEl.style.borderRadius = '10px';
-    appEl.style.backgroundColor = 'white';
     appEl.style.overflow = 'hidden';
     appEl.style.color = 'var(--font-color)';
-    appEl.style.backgroundColor = 'var(--bg-medium-hover)';
     appEl.style.transition = 'transform 0.2s cubic-bezier(0.230, 1.000, 0.320, 1.000), opacity 0.2s, box-shadow 0.1s';
     appEl.style.outline = 'none';
     appEl.tabIndex = 0;
@@ -78,6 +76,7 @@ export class WindowManager {
     appEl.style.opacity = '1';
     const titleBar = document.createElement('div');
     titleBar.style.userSelect = 'none';
+    titleBar.style.backgroundColor = 'var(--bg-medium-hover)';
     titleBar.innerHTML = `<span style="${`display: flex;
     padding: 0 10px;
     height: 22px;
@@ -203,6 +202,7 @@ export class WindowManager {
       }
     });
     const checkPos = () => {
+      if (isForceFullscreen) return;
       const width = document.documentElement.clientWidth;
       const height = document.documentElement.clientHeight;
       const rect = getRectByElementStyle(appEl);
@@ -320,7 +320,7 @@ export class WindowManager {
       if (fullscreen) {
         // window.addEventListener(WindowEventType.Resize, forceFullscreenResizeCb);
         window.addEventListener('beforeunload', foruceFullscreenBeforeClose);
-        appEl.style.inset = '25px 0 0 0';
+        appEl.style.inset = '0 0 0 0';
         appEl.style.width = 'auto'
         appEl.style.height = 'auto';
         appEl.style.borderRadius = '0px';
@@ -408,12 +408,20 @@ export class WindowManager {
     });
 
     appContainer.style.cssText = `position: absolute;
+  overflow: hidden;
   background-color: var(--bg-medium-hover);
   top: 22px;
   bottom: 0;
   left: 0;
   right: 0;`;
 
+    const noBackground = (noBg: boolean) => {
+      if (noBg) {
+        appContainer.style.backgroundColor = 'transparent';
+      } else {
+        appContainer.style.backgroundColor = 'var(--bg-medium-hover)';
+      }
+    };
     function showTitleBar(show: boolean = true) {
       if (!show) {
         (titleBar.firstElementChild as HTMLSpanElement).style.height = '0px';
@@ -496,6 +504,7 @@ export class WindowManager {
       onBeforeClose,
       onWindowMove,
       onWindowResize,
+      noBackground,
       getRect,
       getPos,
       onWindowMinimize: onMinimize,
