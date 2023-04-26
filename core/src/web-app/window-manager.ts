@@ -2,12 +2,14 @@ import EventEmitter from "events";
 import { AppWindow, processManager } from ".";
 import zIndexManager from "./z-index-manager";
 import style from './index.module.less';
+import { debounce, fullscreen } from "../utils/common";
 
 const DOCK_HEIGHT = 25; // also defined in ./index.module.css
 
 enum WindowEventType {
   BeforeClose = 'BeforeClose',
   WindowMin = 'WindowMin',
+  Resize = 'Resize',
 }
 
 function getRectByElementStyle(el: HTMLElement) {
@@ -98,10 +100,15 @@ export class WindowManager {
         <use xlink:href="#icon-minus"></use>
       </svg>
     </span>
+    <span class="app_window_fullscreen_btn" style="cursor: pointer;">
+      <svg class="icon" aria-hidden="true">
+        <use xlink:href="#icon-fullscreen"></use>
+      </svg>
+    </span>
     <span class="title_text" style="flex-grow: 1;
     position: absolute;
     inset: 0;
-    margin: 0 50px;
+    margin: 0 50px 0 70px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;"
@@ -116,8 +123,10 @@ export class WindowManager {
     const closeBtn = titleBar.querySelector('.app_window_close_btn') as HTMLSpanElement;
     const minBtn = titleBar.querySelector('.app_window_minimize_btn') as HTMLSpanElement;
     const newWindowBtn = titleBar.querySelector('.app_window_new_window_btn') as HTMLSpanElement;
+    const fullscreenBtn = titleBar.querySelector('.app_window_fullscreen_btn') as HTMLSpanElement;
     closeBtn.classList.add(style['titlebar_btn'].trim());
     minBtn.classList.add(style['titlebar_btn'].trim());
+    fullscreenBtn.classList.add(style['titlebar_btn'].trim());
     newWindowBtn.classList.add(style['titlebar_btn_right'].trim());
     newWindowBtn.addEventListener('click', () => {
       const size = getSize();
@@ -144,7 +153,10 @@ export class WindowManager {
     });
     minBtn.addEventListener('mousedown', (e) => {
       e.stopPropagation();
-    })
+    });
+    fullscreenBtn.addEventListener('click', () => {
+      systemFullScreen();
+    });
     const onMinimize = (cb: () => void) => {
       windowEventBus.on(WindowEventType.WindowMin, cb);
       return () => windowEventBus.off(WindowEventType.WindowMin, cb);
@@ -225,15 +237,11 @@ export class WindowManager {
       startElPos = [parseFloat(appEl.style.left), parseFloat(appEl.style.top)];
     });
     window.addEventListener('mouseup', onMouseUp);
-    const onResizeCbs: ((w: number, h: number) => void)[] = [];
     const onMoveCbs: ((left: number, top: number) => void)[] = [];
     const onWindowResize = (cb: (w: number, h: number) => void) => {
-      onResizeCbs.push(cb);
+      windowEventBus.on(WindowEventType.Resize, cb);
       return () => {
-        const idx = onResizeCbs.findIndex(c => c === cb);
-        if (idx > -1) {
-          onResizeCbs.splice(idx, 1);
-        }
+        windowEventBus.off(WindowEventType.Resize, cb);
       }
     }
     const onWindowMove = (cb: (left: number, top: number) => void) => {
@@ -287,7 +295,7 @@ export class WindowManager {
           }
         }
         onMoveCbs.forEach(cb => cb(_left, _top));
-        onResizeCbs.forEach(cb => cb(_w, _h));
+        // windowEventBus.emit(WindowEventType.Resize, _w, _h);
       } else if (isMouseDown) {
         let delta = [e.clientX - startCursorPos[0], e.clientY - startCursorPos[1]];
         let left = startElPos[0] + delta[0];
@@ -302,7 +310,7 @@ export class WindowManager {
     let isForceFullscreen = false;
     const forceFullscreenResizeCb = () => {
       const rect = getRect();
-      onResizeCbs.forEach(cb => cb(rect.width, rect.height));
+      windowEventBus.emit(WindowEventType.Resize, rect.width, rect.height);
     }
     const foruceFullscreenBeforeClose = () => {
       windowEventBus.emit(WindowEventType.BeforeClose);
@@ -310,14 +318,14 @@ export class WindowManager {
     function forceFullscreen(fullscreen = true) {
       isForceFullscreen = fullscreen;
       if (fullscreen) {
-        window.addEventListener('resize', forceFullscreenResizeCb);
+        // window.addEventListener(WindowEventType.Resize, forceFullscreenResizeCb);
         window.addEventListener('beforeunload', foruceFullscreenBeforeClose);
         appEl.style.inset = '25px 0 0 0';
         appEl.style.width = 'auto'
         appEl.style.height = 'auto';
         appEl.style.borderRadius = '0px';
       } else {
-        window.removeEventListener('resize', forceFullscreenResizeCb);
+        // window.removeEventListener(WindowEventType.Resize, forceFullscreenResizeCb);
         window.removeEventListener('beforeunload', foruceFullscreenBeforeClose);
         appEl.style.inset = 'none';
         appEl.style.width = '500px';
@@ -356,7 +364,7 @@ export class WindowManager {
           appEl.style.top = ttop + 'px';
           appEl.style.width = twidth + 'px';
           appEl.style.height = theight + 'px';
-          onResizeCbs.forEach(cb => cb(twidth, theight));
+          // windowEventBus.emit(WindowEventType.Resize, twidth, theight);
           onMoveCbs.forEach(cb => cb(tleft, ttop));
         });
       } else {
@@ -364,7 +372,7 @@ export class WindowManager {
         appEl.style.top = ttop + 'px';
         appEl.style.width = twidth + 'px';
         appEl.style.height = theight + 'px';
-        onResizeCbs.forEach(cb => cb(twidth, theight));
+        // windowEventBus.emit(WindowEventType.Resize, twidth, theight);
         onMoveCbs.forEach(cb => cb(tleft, ttop));
       }
     }
@@ -378,6 +386,26 @@ export class WindowManager {
 
     appEl.appendChild(titleBar);
     appEl.appendChild(appContainer);
+
+    async function systemFullScreen() {
+      await fullscreen(appContainer);
+    }
+
+    const onResizeDebounced = debounce((width: number, height: number) => {
+      windowEventBus.emit(WindowEventType.Resize, width, height);
+    });
+    const resizeOb = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        const { width, height } = entry.contentRect;
+        onResizeDebounced(width, height);
+      }
+    });
+
+    resizeOb.observe(appContainer);
+    windowEventBus.on(WindowEventType.BeforeClose, () => {
+      resizeOb.disconnect();
+    });
 
     appContainer.style.cssText = `position: absolute;
   background-color: var(--bg-medium-hover);
@@ -430,7 +458,7 @@ export class WindowManager {
       lastRect = getRect();
       appEl.style.width = w + 'px';
       appEl.style.height = h + 'px';
-      onResizeCbs.forEach(cb => cb(w, h));
+      // windowEventBus.emit(WindowEventType.Resize, w, h);
     };
     const setPos = (left: number, top: number) => {
       if (isForceFullscreen) return;

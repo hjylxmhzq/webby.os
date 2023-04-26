@@ -4495,6 +4495,131 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@webby/apps@*, @webby/apps@workspace:apps":
+  version: 0.0.0-use.local
+  resolution: "@webby/apps@workspace:apps"
+  dependencies:
+    "@types/katex": ^0.16.0
+    "@types/marked": ^4.0.8
+    "@webby/client": "*"
+    "@webby/core": "*"
+    copy-webpack-plugin: ^11.0.0
+    css-loader: ^6.7.3
+    epubjs: ^0.3.93
+    highlight.js: ^11.7.0
+    katex: ^0.16.4
+    less: ^4.1.3
+    less-loader: ^11.1.0
+    marked: ^4.3.0
+    path-browserify: ^1.0.1
+    pdfjs-dist: ^3.4.120
+    plyr-react: ^5.1.2
+    react: ^18.2.0
+    react-dom: ^18.2.0
+    style-loader: ^3.3.2
+    ts-loader: ^9.4.2
+    typescript: ^5.0.2
+    url-loader: ^4.1.1
+    webpack: ^5.76.3
+    webpack-cli: ^5.0.1
+    xterm: ^5.1.0
+    xterm-addon-canvas: ^0.3.0
+    xterm-addon-fit: ^0.7.0
+    xterm-addon-web-links: ^0.8.0
+    xterm-addon-webgl: ^0.14.0
+  languageName: unknown
+  linkType: soft
+
+"@webby/client@*, @webby/client@workspace:client":
+  version: 0.0.0-use.local
+  resolution: "@webby/client@workspace:client"
+  dependencies:
+    "@antv/g2": ^4.2.9
+    "@babel/core": ^7.16.0
+    "@pmmmwh/react-refresh-webpack-plugin": ^0.5.3
+    "@rspack/cli": ^0.1.0
+    "@svgr/webpack": ^5.5.0
+    "@testing-library/jest-dom": ^5.16.5
+    "@testing-library/react": ^13.4.0
+    "@testing-library/user-event": ^13.5.0
+    "@types/jest": ^27.5.2
+    "@types/less": ^3.0.3
+    "@types/node": ^16.18.12
+    "@types/path-browserify": ^1.0.0
+    "@types/react": ^18.0.27
+    "@types/react-dom": ^18.0.10
+    "@types/react-transition-group": ^4.4.5
+    "@webby/core": "*"
+    axios: ^1.3.2
+    babel-jest: ^27.4.2
+    babel-loader: ^8.2.3
+    babel-plugin-named-asset-import: ^0.3.8
+    babel-preset-react-app: ^10.0.1
+    bfj: ^7.0.2
+    browserslist: ^4.18.1
+    camelcase: ^6.2.1
+    case-sensitive-paths-webpack-plugin: ^2.4.0
+    classnames: ^2.3.2
+    copy-webpack-plugin: ^11.0.0
+    css-loader: ^6.5.1
+    css-minimizer-webpack-plugin: ^3.2.0
+    dotenv: ^10.0.0
+    dotenv-expand: ^5.1.0
+    eslint: ^8.3.0
+    eslint-config-react-app: ^7.0.1
+    eslint-webpack-plugin: ^3.1.1
+    events: ^3.3.0
+    file-loader: ^6.2.0
+    fs-extra: ^10.0.0
+    html-webpack-plugin: ^5.5.0
+    identity-obj-proxy: ^3.0.0
+    jest: ^27.4.3
+    jest-resolve: ^27.4.2
+    jest-watch-typeahead: ^1.0.0
+    less: ^4.1.3
+    less-loader: ^11.1.0
+    mime: ^3.0.0
+    mini-css-extract-plugin: ^2.4.5
+    mobx: ^6.8.0
+    mobx-react-lite: ^3.4.0
+    moment: ^2.29.4
+    path-browserify: ^1.0.1
+    pdfjs-dist: ^3.3.122
+    plyr-react: ^5.1.2
+    postcss: ^8.4.4
+    postcss-flexbugs-fixes: ^5.0.2
+    postcss-loader: ^6.2.1
+    postcss-normalize: ^10.0.1
+    postcss-preset-env: ^7.0.1
+    prompts: ^2.4.2
+    react: ^18.2.0
+    react-app-polyfill: ^3.0.0
+    react-dev-utils: ^12.0.1
+    react-dom: ^18.2.0
+    react-refresh: ^0.11.0
+    react-router: ^6.9.0
+    react-router-dom: ^6.9.0
+    react-transition-group: ^4.4.5
+    resolve: ^1.20.0
+    resolve-url-loader: ^4.0.0
+    sass-loader: ^12.3.0
+    semver: ^7.3.5
+    source-map-loader: ^3.0.0
+    style-loader: ^3.3.1
+    tailwindcss: ^3.0.2
+    terser-webpack-plugin: ^5.2.5
+    typescript: ^4.9.5
+    web-vitals: ^2.1.4
+    webpack: ^5.64.4
+    webpack-bundle-analyzer: ^4.8.0
+    webpack-dev-server: ^4.6.0
+    webpack-manifest-plugin: ^4.0.2
+    workbox-webpack-plugin: ^6.4.1
+    write-file-webpack-plugin: ^4.5.1
+    xss: ^1.0.14
+  languageName: unknown
+  linkType: soft
+
 "@webby/core@*, @webby/core@workspace:core":
   version: 0.0.0-use.local
   resolution: "@webby/core@workspace:core"
@@ -4506,6 +4631,15 @@ __metadata:
     typescript: ^5.0.2
     webpack: ^5.79.0
     webpack-cli: ^5.0.1
+  languageName: unknown
+  linkType: soft
+
+"@webby/server@workspace:server":
+  version: 0.0.0-use.local
+  resolution: "@webby/server@workspace:server"
+  dependencies:
+    "@webby/apps": "*"
+    "@webby/client": "*"
   languageName: unknown
   linkType: soft
 
@@ -4899,41 +5033,6 @@ __metadata:
   checksum: 3e044fd6d1d26545f235a9fe4d7a534e2029d8e59fa7fd9f2a6eb21230f6b5380ea1eaf55136e60cbf8e613544b3b766e7a6fa2102e2a3a117505466e3025dc2
   languageName: node
   linkType: hard
-
-"apps@workspace:apps":
-  version: 0.0.0-use.local
-  resolution: "apps@workspace:apps"
-  dependencies:
-    "@types/katex": ^0.16.0
-    "@types/marked": ^4.0.8
-    "@webby/core": "*"
-    client: "*"
-    copy-webpack-plugin: ^11.0.0
-    css-loader: ^6.7.3
-    epubjs: ^0.3.93
-    highlight.js: ^11.7.0
-    katex: ^0.16.4
-    less: ^4.1.3
-    less-loader: ^11.1.0
-    marked: ^4.3.0
-    path-browserify: ^1.0.1
-    pdfjs-dist: ^3.4.120
-    plyr-react: ^5.1.2
-    react: ^18.2.0
-    react-dom: ^18.2.0
-    style-loader: ^3.3.2
-    ts-loader: ^9.4.2
-    typescript: ^5.0.2
-    url-loader: ^4.1.1
-    webpack: ^5.76.3
-    webpack-cli: ^5.0.1
-    xterm: ^5.1.0
-    xterm-addon-canvas: ^0.3.0
-    xterm-addon-fit: ^0.7.0
-    xterm-addon-web-links: ^0.8.0
-    xterm-addon-webgl: ^0.14.0
-  languageName: unknown
-  linkType: soft
 
 "aproba@npm:^1.0.3 || ^2.0.0, aproba@npm:^2.0.0":
   version: 2.0.0
@@ -6000,96 +6099,6 @@ __metadata:
   checksum: 4c94af3769367a70e11ed69aa6095f1c600c0ff510f3921ab4045af961820d57c0233acfa8b6396037391f31b4c397e1f614d234294f979ff61430a6c166c3f6
   languageName: node
   linkType: hard
-
-"client@*, client@workspace:client":
-  version: 0.0.0-use.local
-  resolution: "client@workspace:client"
-  dependencies:
-    "@antv/g2": ^4.2.9
-    "@babel/core": ^7.16.0
-    "@pmmmwh/react-refresh-webpack-plugin": ^0.5.3
-    "@rspack/cli": ^0.1.0
-    "@svgr/webpack": ^5.5.0
-    "@testing-library/jest-dom": ^5.16.5
-    "@testing-library/react": ^13.4.0
-    "@testing-library/user-event": ^13.5.0
-    "@types/jest": ^27.5.2
-    "@types/less": ^3.0.3
-    "@types/node": ^16.18.12
-    "@types/path-browserify": ^1.0.0
-    "@types/react": ^18.0.27
-    "@types/react-dom": ^18.0.10
-    "@types/react-transition-group": ^4.4.5
-    "@webby/core": "*"
-    axios: ^1.3.2
-    babel-jest: ^27.4.2
-    babel-loader: ^8.2.3
-    babel-plugin-named-asset-import: ^0.3.8
-    babel-preset-react-app: ^10.0.1
-    bfj: ^7.0.2
-    browserslist: ^4.18.1
-    camelcase: ^6.2.1
-    case-sensitive-paths-webpack-plugin: ^2.4.0
-    classnames: ^2.3.2
-    copy-webpack-plugin: ^11.0.0
-    css-loader: ^6.5.1
-    css-minimizer-webpack-plugin: ^3.2.0
-    dotenv: ^10.0.0
-    dotenv-expand: ^5.1.0
-    eslint: ^8.3.0
-    eslint-config-react-app: ^7.0.1
-    eslint-webpack-plugin: ^3.1.1
-    events: ^3.3.0
-    file-loader: ^6.2.0
-    fs-extra: ^10.0.0
-    html-webpack-plugin: ^5.5.0
-    identity-obj-proxy: ^3.0.0
-    jest: ^27.4.3
-    jest-resolve: ^27.4.2
-    jest-watch-typeahead: ^1.0.0
-    less: ^4.1.3
-    less-loader: ^11.1.0
-    mime: ^3.0.0
-    mini-css-extract-plugin: ^2.4.5
-    mobx: ^6.8.0
-    mobx-react-lite: ^3.4.0
-    moment: ^2.29.4
-    path-browserify: ^1.0.1
-    pdfjs-dist: ^3.3.122
-    plyr-react: ^5.1.2
-    postcss: ^8.4.4
-    postcss-flexbugs-fixes: ^5.0.2
-    postcss-loader: ^6.2.1
-    postcss-normalize: ^10.0.1
-    postcss-preset-env: ^7.0.1
-    prompts: ^2.4.2
-    react: ^18.2.0
-    react-app-polyfill: ^3.0.0
-    react-dev-utils: ^12.0.1
-    react-dom: ^18.2.0
-    react-refresh: ^0.11.0
-    react-router: ^6.9.0
-    react-router-dom: ^6.9.0
-    react-transition-group: ^4.4.5
-    resolve: ^1.20.0
-    resolve-url-loader: ^4.0.0
-    sass-loader: ^12.3.0
-    semver: ^7.3.5
-    source-map-loader: ^3.0.0
-    style-loader: ^3.3.1
-    tailwindcss: ^3.0.2
-    terser-webpack-plugin: ^5.2.5
-    typescript: ^4.9.5
-    web-vitals: ^2.1.4
-    webpack: ^5.64.4
-    webpack-bundle-analyzer: ^4.8.0
-    webpack-dev-server: ^4.6.0
-    webpack-manifest-plugin: ^4.0.2
-    workbox-webpack-plugin: ^6.4.1
-    write-file-webpack-plugin: ^4.5.1
-    xss: ^1.0.14
-  languageName: unknown
-  linkType: soft
 
 "cliui@npm:^7.0.2":
   version: 7.0.4

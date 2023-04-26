@@ -1,5 +1,5 @@
 {
-  "name": "apps",
+  "name": "@webby/apps",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
@@ -8,8 +8,8 @@
     "start": "webpack --watch"
   },
   "dependencies": {
+    "@webby/client": "*",
     "@webby/core": "*",
-    "client": "*",
     "epubjs": "^0.3.93",
     "highlight.js": "^11.7.0",
     "katex": "^0.16.4",

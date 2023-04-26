@@ -23,14 +23,6 @@
     // "noEmit": true,
     "jsx": "react-jsx",
     "useDefineForClassFields": true,
-    "paths": {
-      "src/*": [
-        "./src/*"
-      ],
-      "@*": [
-        "./src/*"
-      ],
-    },
   },
   "include": [
     "src",

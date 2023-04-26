@@ -1,0 +1,12 @@
+{
+  "name": "@webby/server",
+  "packageManager": "yarn@3.5.0",
+  "scripts": {
+    "build": "cargo build --release",
+    "start": "cargo watch -x run"
+  },
+  "dependencies": {
+    "@webby/apps": "*",
+    "@webby/client": "*"
+  }
+}

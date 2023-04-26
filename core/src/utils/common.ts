@@ -1,22 +1,24 @@
 export function debounce<T extends Function>(fn: T, delay = 500) {
   let timer: number | undefined;
+  let cachedArgs: any[] = [];
   return (...args: any[]) => {
+    cachedArgs = args;
     window.clearTimeout(timer);
     timer = window.setTimeout(() => {
-      fn(...args);
+      fn(...cachedArgs);
     }, delay);
   }
 }
 
-export function fullscreen(el: HTMLElement) {
+export async function fullscreen(el: HTMLElement): Promise<void> {
   let elem: any = el; 
   if (elem.requestFullScreen) {
-    elem.requestFullScreen();
+    return await elem.requestFullScreen();
   } else if (elem.mozRequestFullScreen) {
-    elem.mozRequestFullScreen();
+    return await elem.mozRequestFullScreen();
   } else if (elem.webkitRequestFullScreen) {
-    elem.webkitRequestFullScreen();
+    return await elem.webkitRequestFullScreen();
   } else if (elem.webkitEnterFullScreen) {
-    elem.webkitEnterFullScreen();
+    return await elem.webkitEnterFullScreen();
   }
 }
