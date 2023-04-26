@@ -23,3 +23,8 @@ bash ./build/build.sh
 cd ./dist
 ./filego
 ```
+
+### TODO
+
+1. App Store
+
