@@ -10,7 +10,14 @@ A Web based os support third-party apps and many native capabilities.
 
 You can get the prebuilt binary from [release page](https://github.com/hjylxmhzq/webby.os/releases)
 
-currently support Linux_x86_64 & Windows_x86_64
+Prebuilt version currently supports Linux_x86_64 & Windows_x86_64
+
+Source code build worflow is passed in env as follow:
+
+- Windows_x86_64
+- Windows_aarch64
+- Macos_aarch64
+- Linux_x86_64
 
 ## Dependencies
 
@@ -19,7 +26,6 @@ currently support Linux_x86_64 & Windows_x86_64
 - @webby/core: provide core capabilities
 
 - @webby/server: backend
-
 
 
 ## Build binary from source code
