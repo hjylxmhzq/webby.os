@@ -1,0 +1,13 @@
+{
+  "name": "@webby/components",
+  "packageManager": "yarn@3.5.0",
+  "scripts": {
+    "build": "tsc --noEmit && rspack build",
+    "start": "rspack build --watch",
+    "update": "bash scripts/update-icon.sh"
+  },
+  "devDependencies": {
+    "@rspack/cli": "^0.1.9",
+    "typescript": "^5.0.4"
+  }
+}

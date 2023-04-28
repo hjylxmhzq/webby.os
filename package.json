@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.2.3",
   "workspaces": [
+    "components",
     "apps",
     "client",
     "core",
