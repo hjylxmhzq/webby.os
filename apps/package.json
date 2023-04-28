@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@webby/client": "*",
+    "@webby/components": "*",
     "@webby/core": "*",
     "epubjs": "^0.3.93",
     "highlight.js": "^11.7.0",

@@ -8,7 +8,7 @@ interface Props {
   text?: string;
 }
 
-export default function Progress(props: Props) {
+export function Progress(props: Props) {
   return <div className={style.progress}>
     <div style={{ position: 'absolute', left: 0, width: props.percent * 100 + '%', height: '100%', backgroundColor: '#d4d4d4' }}>
       <div className={style.text}>{props.text}</div>

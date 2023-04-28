@@ -1,13 +1,25 @@
 {
   "name": "@webby/components",
+  "version": "1.0.0",
   "packageManager": "yarn@3.5.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc --noEmit && rspack build",
-    "start": "rspack build --watch",
+    "build": "webpack",
+    "start": "webpack --watch",
     "update": "bash scripts/update-icon.sh"
   },
+  "dependencies": {
+    "@webby/core": "*"
+  },
   "devDependencies": {
-    "@rspack/cli": "^0.1.9",
-    "typescript": "^5.0.4"
+    "mini-css-extract-plugin": "^2.7.5",
+    "ts-loader": "^9.4.2",
+    "typescript": "^5.0.4",
+    "webpack": "^5.76.3",
+    "webpack-cli": "^5.0.1"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0"
   }
 }

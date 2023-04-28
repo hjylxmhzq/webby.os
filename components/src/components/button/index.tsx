@@ -12,7 +12,7 @@ interface Props {
   className?: string,
 }
 
-export default function Button(props: Props) {
+export function Button(props: Props) {
   const onClick: MouseEventHandler = function (this: any, e) {
     props.onClick?.call(this, e);
   };

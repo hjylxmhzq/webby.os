@@ -6,7 +6,7 @@ import { formatFileSize, formatTime } from "@utils/formatter";
 import Button from "@components/button";
 import Checkbox from "@components/checkbox";
 import classNames from "classnames";
-import Icon, { FileThumbnailIcon } from "@components/icon/icon";
+import { Icon, FileThumbnailIcon } from "@webby/components";
 
 export interface SelectFileProps {
   allowFile?: boolean;

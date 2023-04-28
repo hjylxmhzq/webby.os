@@ -5,7 +5,7 @@ import classNames from "classnames";
 import { debounce } from "src/utils/common";
 import LoadingBar from "src/pages/file/components/loading-bar";
 import { CSSTransition, TransitionGroup } from "react-transition-group";
-import { FileThumbnailIcon } from "src/components/icon/icon";
+import { FileThumbnailIcon } from "@webby/components";
 import { GlobalSearchResult, appManager, processManager } from "@webby/core/web-app";
 import { xssFilter } from "src/utils/xss-filter";
 
