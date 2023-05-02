@@ -3,6 +3,7 @@ import EventEmitter from 'events';
 import processManager, { ProcessManager } from "./process-manager";
 import windowManager, { WindowManager } from "./window-manager";
 import appManager, { AppManager } from "./app-manager";
+import { SystemHook } from "./system-hook";
 
 export * from './process-manager';
 export * from './app-manager';
@@ -119,6 +120,10 @@ export class AppMenuManager {
   }
 }
 
+export interface SystemHooks {
+  globalSearch: SystemHook<{ keyword: string, cb: (results: GlobalSearchResult[]) => void }>,
+}
+
 export interface AppInstallContext {
   hooks: SystemHooks,
   openFile(file: string): Promise<boolean>;
@@ -154,14 +159,14 @@ export interface GlobalSearchResult {
   icon?: string,
   pre?: string,
   isHtml?: boolean,
+  autoClose?: boolean,
+  thumbnails?: string[],
   onClick?: () => void;
 }
 
-export interface SystemHooks {
-  onGlobalSearch(cb: (keyword: string) => Promise<GlobalSearchResult[]>): void;
+export interface GlobalSearchOptions {
+  lazy: boolean;
 }
-
-export type SystemHookType = keyof SystemHooks;
 
 export interface AppWindow {
   minWidth: number,

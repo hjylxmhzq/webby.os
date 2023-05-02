@@ -437,7 +437,8 @@ const defautTemplate = makeDefaultTemplate('未知');
 
 async function installed(ctx: AppInstallContext) {
   let abort: AbortController | undefined = undefined;
-  ctx.hooks.onGlobalSearch(async (kw: string) => {
+  ctx.hooks.globalSearch.options.lazy = true;
+  ctx.hooks.globalSearch.register(async ({ keyword: kw, cb }) => {
     if (!kw) return [];
     try {
       if (abort) {
@@ -462,7 +463,8 @@ async function installed(ctx: AppInstallContext) {
           isHtml: true,
           title: `<strong>${r.title}</strong>`,
           content: '',
-          pre: defautTemplate`<div style="display: flex"><img style="height: 80px; margin-right: 10px" src=${r.cover} />
+          thumbnails: [r.cover],
+          pre: defautTemplate`<div style="display: flex">
           <div>作者: ${r.author}\n年份: ${r.year}\n出版社: ${r.publisher}\n文件大小: ${r.filesize && formatFileSize(+r.filesize)}\n可下载: ${r.zlib_download ? '是' : '否'}</div></div>`,
           onClick() {
             if (r.zlib_download) {
@@ -470,12 +472,12 @@ async function installed(ctx: AppInstallContext) {
             }
           }
         }
-      })
-      return result;
+      });
+      cb(result);
     } catch (err) {
-      return [{
-        title: '搜索发生错误'
-      }];
+      cb([{
+        title: `搜索发生错误: ${err}`,
+      }]);
     } finally {
       abort = undefined;
     }

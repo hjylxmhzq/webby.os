@@ -1,5 +1,5 @@
 import { commonCollection } from "../kv-storage";
-import { AppDefinition, AppInstallContext, GlobalSearchResult, SystemHooks } from ".";
+import { AppDefinition, AppInstallContext, GlobalSearchOptions, GlobalSearchResult, SystemHooks } from ".";
 import EventEmitter from "events";
 import { SystemHook } from "./system-hook";
 import { systemMessage } from "../system";
@@ -8,6 +8,7 @@ import { http } from "../tunnel";
 
 export type AppDefinitionWithContainer = AppDefinition & {
   container: HTMLElement;
+  hooks: SystemHooks
 };
 
 const builtinApps = [
@@ -32,9 +33,6 @@ export class AppManager {
   downloadedApps: { [appName: string]: { scriptContent: string, scriptSrc: string } } = {};
   remote = commonCollection.appManager;
   eventBus = new EventEmitter();
-  hooks = {
-    globalSearch: new SystemHook<Parameters<SystemHooks['onGlobalSearch']>[0]>('globalSearch'),
-  }
   private readyPromise?: Promise<void>;
   constructor() {
     this.apps = {};
@@ -99,8 +97,9 @@ export class AppManager {
       throw new Error(`app ${name} is not downloaded`);
     }
     const app = await loadModule(appScript, name);
+    const installCtx = createAppInstallContext();
+    app.hooks = installCtx.hooks;
     if (app.installed) {
-      const installCtx = createAppInstallContext(name);
       app.installed(installCtx);
     }
     this.apps[name] = app;
@@ -243,12 +242,10 @@ export async function loadModule(appScript: { scriptContent: string, scriptSrc: 
 const appManager = new AppManager();
 export default appManager;
 
-function createAppInstallContext(appName: string): AppInstallContext {
+function createAppInstallContext(): AppInstallContext {
   const ctx = {
     hooks: {
-      onGlobalSearch(cb: (keyword: string) => Promise<GlobalSearchResult[]>) {
-        appManager.hooks.globalSearch.register(appName, cb);
-      }
+      globalSearch: new SystemHook<{ keyword: string; cb: (results: GlobalSearchResult[]) => void; }>('globalSearch'),
     },
     systemMessage: systemMessage,
     async openFile(file: string): Promise<boolean> {
@@ -260,7 +257,6 @@ function createAppInstallContext(appName: string): AppInstallContext {
   }
   return ctx;
 }
-
 
 function createFakeDocument(scope: HTMLElement, scopeHead: HTMLElement, mountPoint: HTMLElement, scriptSrc: string) {
   const proxy = new Proxy(document, {

@@ -5,7 +5,7 @@ import classNames from "classnames";
 import { debounce } from "src/utils/common";
 import LoadingBar from "src/pages/file/components/loading-bar";
 import { CSSTransition, TransitionGroup } from "react-transition-group";
-import { FileThumbnailIcon } from "@webby/components";
+import { FileThumbnailIcon, SmartImage } from "@webby/components";
 import { GlobalSearchResult, appManager, processManager } from "@webby/core/web-app";
 import { xssFilter } from "src/utils/xss-filter";
 
@@ -15,6 +15,7 @@ export function GlobalSearch(props: { onClose?(): void }) {
   const [fileLoading, setFileLoading] = useState(false);
   const [appsSearchResult, setAppsSearchResult] = useState<{ [appName: string]: GlobalSearchResult[] }>({});
   const [appsSearchLoading, setAppsSearchLoading] = useState<{ [appName: string]: boolean }>({});
+  const [appsLazySearch, setAppsLazySearch] = useState<{ [appName: string]: boolean }>({});
   const appsSearchResultRef = useRef(appsSearchResult);
   const appsSearchLoadingRef = useRef(appsSearchLoading);
   appsSearchResultRef.current = appsSearchResult;
@@ -42,11 +43,8 @@ export function GlobalSearch(props: { onClose?(): void }) {
   // eslint-disable-next-line
   const searchByApps = useCallback(debounce(
     async function (search: string) {
-      Object.keys(appManager.hooks.globalSearch.callbacks).forEach(async appName => {
-        const cbs = appManager.hooks.globalSearch.callbacks;
-        const hook = cbs[appName][0];
-        if (hook && appManager.hooks.globalSearch.isEnabled(appName)) {
-          const cb = hook;
+      Object.entries(appManager.apps).forEach(async ([appName, app]) => {
+        if (app.hooks.globalSearch.isRegisted() && app.hooks.globalSearch.isEnabled()) {
           setAppsSearchResult((state) => ({
             ...state,
             [appName]: [],
@@ -55,16 +53,33 @@ export function GlobalSearch(props: { onClose?(): void }) {
             ...state,
             [appName]: true,
           }));
-          const result = await cb(search) as GlobalSearchResult[];
-          setAppsSearchResult(state => ({
-            ...state,
-            [appName]: result,
-          }));
+          const setResult = (results: GlobalSearchResult[]) => {
+            setAppsSearchResult(state => ({
+              ...state,
+              [appName]: results,
+            }));
 
-          setAppsSearchLoading(state => ({
-            ...state,
-            [appName]: false,
-          }));
+            setAppsSearchLoading(state => ({
+              ...state,
+              [appName]: false,
+            }));
+          };
+          if (!app.hooks.globalSearch.options.lazy) {
+            app.hooks.globalSearch.emit({ keyword: search, cb: setResult });
+          } else {
+            setResult([{
+              title: `在${appName}中搜索 <strong>${search}</strong>`,
+              isHtml: true,
+              autoClose: false,
+              onClick() {
+                setAppsSearchLoading((state) => ({
+                  ...state,
+                  [appName]: true,
+                }));
+                app.hooks.globalSearch.emit({ keyword: search, cb: setResult });
+              },
+            }]);
+          }
         }
       })
     }
@@ -94,10 +109,14 @@ export function GlobalSearch(props: { onClose?(): void }) {
         <div className={style['list-box']}>
           {
             files.map((l, idx) => {
-              return <div key={idx + l.name + '_' + l.dir} className={style['list-item']} onClick={async () => {
-                await processManager.openFileBy('Files', l.dir);
-                props.onClose?.();
-              }}>
+              return <div
+                key={idx + l.name + '_' + l.dir}
+                className={style['list-item']}
+                style={{ display: 'flex', justifyContent: 'space-between' }}
+                onClick={async () => {
+                  await processManager.openFileBy('Files', l.dir);
+                  props.onClose?.();
+                }}>
                 <span className={style['list-item-left']}>
                   <span className={style.icon}>
                     <FileThumbnailIcon imgStyle={{ display: 'inline-block', verticalAlign: 'bottom' }} dir={l.dir} file={{ name: l.name, is_dir: l.is_dir }} />
@@ -126,28 +145,55 @@ export function GlobalSearch(props: { onClose?(): void }) {
               results.map((l, idx) => {
                 return <div key={idx + l.title + '_' + l.subTitle || ''} className={style['list-item']} onClick={async () => {
                   l.onClick?.();
+                  if (l.autoClose === false) return;
                   props.onClose?.();
                 }}>
                   {
                     l.isHtml ?
                       <>
-                        <span className={style['list-item-left']}>
-                          <span title={l.title} dangerouslySetInnerHTML={{ __html: xssFilter(l.title) }}></span>
-                        </span>
-                        <span title={l.content} dangerouslySetInnerHTML={{ __html: xssFilter(l.content || '') }}></span>
-                        {
-                          l.pre && <div className={style.pre} dangerouslySetInnerHTML={{ __html: xssFilter(l.pre) }}></div>
-                        }
+                        <div className={style['list-item-top']}>
+                          <span className={style['list-item-left']}>
+                            <span title={l.title} dangerouslySetInnerHTML={{ __html: xssFilter(l.title) }}></span>
+                          </span>
+                          <span title={l.content} dangerouslySetInnerHTML={{ __html: xssFilter(l.content || '') }}></span>
+                        </div>
+                        <div className={style['list-item-bottom']}>
+                          {
+                            !!l.thumbnails?.length && <div>
+                              {
+                                l.thumbnails.map(t => {
+                                  return <SmartImage src={t} className={style.thumbnail} />
+                                })
+                              }
+                            </div>
+                          }
+                          {
+                            l.pre && <div className={style.pre} dangerouslySetInnerHTML={{ __html: xssFilter(l.pre) }}></div>
+                          }
+                        </div>
                       </>
                       :
                       <>
-                        <span className={style['list-item-left']}>
-                          <span title={l.title}>{l.title}</span>
-                        </span>
-                        <span title={l.content}>{l.content}</span>
-                        {
-                          l.pre && <div className={style.pre}>{l.pre}</div>
-                        }
+                        <div className={style['list-item-top']}>
+                          <span className={style['list-item-left']}>
+                            <span title={l.title}>{l.title || ''}</span>
+                          </span>
+                          <span title={l.content}>{l.content || ''}</span>
+                        </div>
+                        <div className={style['list-item-bottom']}>
+                          {
+                            !!l.thumbnails?.length && <div>
+                              {
+                                l.thumbnails.map(t => {
+                                  return <SmartImage src={t} className={style.thumbnail} />
+                                })
+                              }
+                            </div>
+                          }
+                          {
+                            l.pre && <div className={style.pre}>{l.pre || ''}</div>
+                          }
+                        </div>
                       </>
                   }
                 </div>

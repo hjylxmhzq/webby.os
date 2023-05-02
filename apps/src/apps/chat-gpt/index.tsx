@@ -286,14 +286,14 @@ export async function mount(ctx: AppContext) {
 }
 
 export async function installed(ctx: AppInstallContext) {
-  ctx.hooks.onGlobalSearch(async (search: string) => {
-    return [{
+  ctx.hooks.globalSearch.register(async ({ keyword: search, cb }) => {
+    cb([{
       title: '发送以下问题',
       pre: search,
       onClick() {
         openFileBy('ChatGPT', search);
       }
-    }];
+    }]);
   });
 }
 

@@ -93,9 +93,22 @@
   background-color: var(--bg-heavy);
 }
 
-.list-item {
+.list-item-top {
   display: flex;
   justify-content: space-between;
+}
+
+.list-item-bottom {
+  display: flex;
+}
+
+.thumbnail {
+  height: 80px;
+  width: auto;
+  margin: 5px 10px 0 0;
+}
+
+.list-item {
   padding: 5px 10px;
   font-size: 14px;
   transition: background-color 0.2s;
@@ -107,7 +120,7 @@
     background-color: var(--bg-transparent);
   }
 
-  &>.pre {
+  & .pre {
     white-space: pre-wrap;
     width: 100%;
     text-align: left;

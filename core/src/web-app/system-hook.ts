@@ -2,40 +2,40 @@ import EventEmitter from "events";
 import { commonCollection } from "../kv-storage";
 
 const store = commonCollection.systemHook;
-export class SystemHook<T extends (...args: any[]) => Promise<any>> {
-  constructor(public hookName: string) {
-    store.get<{ [appName: string]: boolean }>('hook_status_' + hookName).then(status => {
+export class SystemHook<T extends any> {
+  constructor(public hookName: string, public options: { lazy: boolean } = { lazy: false }) {
+    store.get<{ enabled: boolean }>('hook_status_' + hookName).then(status => {
       if (status) {
         this.hookStatus = status;
       }
     });
   }
-  hookStatus: { [appName: string]: boolean } = {};
-  callbacks: { [appName: string]: T[] } = {};
+  hookStatus: { enabled: boolean } = { enabled: false };
   eventBus = new EventEmitter();
-  setEnabled(appName: string, enabled: boolean) {
-    this.hookStatus[appName] = enabled;
+  setEnabled(enabled: boolean) {
+    this.hookStatus.enabled = enabled;
     store.set('hook_status_' + this.hookName, this.hookStatus);
-    this.eventBus.emit('enabled_change', appName);
+    this.eventBus.emit('enabled_change', enabled);
   }
-  isEnabled(appName: string): boolean {
-    return !!this.hookStatus[appName];
+  isEnabled(): boolean {
+    return !!this.hookStatus.enabled;
   }
-  onEnabledChange(cb: (appName: string) => void) {
+  onEnabledChange(cb: (enabled: boolean) => void) {
     this.eventBus.on('enabled_change', cb);
     return () => {
       this.eventBus.off('enabled_change', cb);
     }
   }
-  register(appName: string, cb: T) {
-    const cbs = this.callbacks[appName] || [];
-    this.callbacks[appName] = cbs;
-    cbs.push(cb);
+  isRegisted() {
+    return this.eventBus.listenerCount('hook');
+  }
+  emit(args: T) {
+    this.eventBus.emit('hook', args);
+  }
+  register(cb: (r: T) => void) {
+    this.eventBus.on('hook', cb);
     return () => {
-      const idx = cbs.indexOf(cb);
-      if (idx !== -1) {
-        cbs.splice(idx, 1);
-      }
-    }
+      this.eventBus.off('hook', cb);
+    };
   }
 }

@@ -187,14 +187,14 @@ export function getAppInfo(): AppInfo {
 }
 
 export async function installed(ctx: AppInstallContext) {
-  ctx.hooks.onGlobalSearch(async (keyword) => {
-    return [{
+  ctx.hooks.globalSearch.register(async ({ keyword, cb }) => {
+    cb([{
       title: `执行shell命令`,
       pre: `> ${keyword}`,
       onClick() {
         ctx.openFileBy('Shell', keyword);  
       }
-    }]
+    }]);
   });
 }
 

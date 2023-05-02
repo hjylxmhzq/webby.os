@@ -26,7 +26,7 @@ export function SmartImage(props: Props & imgProps) {
 class DownloadQueue {
   waitingPromise = Promise.resolve();
   public queue: HTMLImageElement[] = [];
-  constructor(public id: string, public parallelNum: number = 2) { }
+  constructor(public id: string, public parallelNum: number = 3) { }
   destroy() {
     for (let el of this.queue) {
       el.src = defaultImg;
@@ -48,6 +48,7 @@ class DownloadQueue {
             resolve(undefined);
           };
           el.onerror = function (err) {
+            el.src = defaultImg;
             console.error(err);
             resolve(undefined);
           }

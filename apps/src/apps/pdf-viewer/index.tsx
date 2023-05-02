@@ -128,12 +128,12 @@ export function getAppInfo(): AppInfo {
 
 export async function installed(ctx: AppInstallContext) {
   recentOpenFiles = await store.get('recent_files') || [];
-  ctx.hooks.onGlobalSearch(async (search) => {
+  ctx.hooks.globalSearch.register(async ({ keyword: search, cb }) => {
     const files = recentOpenFiles.filter(f => f.toLocaleLowerCase().includes(search));
-    return files.map(f => ({
+    cb(files.map(f => ({
       title: f,
       content: '最近打开的文件',
       onClick: () => ctx.openFileBy('PdfViewer', f),
-    }))
+    })));
   });
 }

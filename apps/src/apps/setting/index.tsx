@@ -3,7 +3,7 @@ import Button from "./components/button";
 import { Popover } from "./components/popover";
 import style from './index.module.less';
 import ReactDom from 'react-dom/client';
-import { AppContext, AppInfo } from '@webby/core/web-app';
+import { AppContext, AppDefinitionWithContainer, AppInfo } from '@webby/core/web-app';
 import { http } from '@webby/core/utils';
 import iconUrl from './icon.svg';
 import { commonCollection } from "@webby/core/kv-storage";
@@ -61,23 +61,30 @@ function SettingPage() {
 
 function GlobalSearchSetting() {
 
-  const [searchStatus, setSearchStatus] = useState<{ appName: string, enabled: boolean }[]>([]);
+  const [searchStatus, setSearchStatus] = useState<{ appName: string, enabled: boolean, app: AppDefinitionWithContainer }[]>([]);
 
   function refresh() {
-    const status: any = Object.keys(appManager.hooks.globalSearch.callbacks).map(appName => {
-      return {
-        appName,
-        enabled: appManager.hooks.globalSearch.isEnabled(appName)
-      };
-    });
+    const status = Object
+      .entries(appManager.apps)
+      .filter(([, app]) => app.hooks.globalSearch.isRegisted())
+      .map(([appName, app]) => {
+        return {
+          app,
+          appName: appName,
+          enabled: app.hooks.globalSearch.isEnabled(),
+        };
+      });
 
     setSearchStatus(status);
   }
+
   useEffect(() => {
-    appManager.hooks.globalSearch.onEnabledChange(() => {
-      refresh();
-    });
     refresh();
+    Object.values(appManager.apps).forEach((app) => {
+      app.hooks.globalSearch.onEnabledChange(() => {
+        refresh();
+      });
+    });
   }, []);
 
   return <div>
@@ -85,11 +92,11 @@ function GlobalSearchSetting() {
     <div className={style['setting-section']}>
       <div className={style['setting-item']}>
         {
-          searchStatus.map(({ enabled, appName }, idx) => {
+          searchStatus.map(({ enabled, appName, app }, idx) => {
             return <div key={appName} className={style['setting-item-row']}>
               <span>{appName}</span>
-              <Switch enabled={appManager.hooks.globalSearch.isEnabled(appName)} onChange={(enabled) => {
-                appManager.hooks.globalSearch.setEnabled(appName, enabled);
+              <Switch enabled={enabled} onChange={(enabled) => {
+                app.hooks.globalSearch.setEnabled(enabled);
               }}></Switch>
             </div>
           })
