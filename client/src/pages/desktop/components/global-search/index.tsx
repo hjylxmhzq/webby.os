@@ -15,7 +15,6 @@ export function GlobalSearch(props: { onClose?(): void }) {
   const [fileLoading, setFileLoading] = useState(false);
   const [appsSearchResult, setAppsSearchResult] = useState<{ [appName: string]: GlobalSearchResult[] }>({});
   const [appsSearchLoading, setAppsSearchLoading] = useState<{ [appName: string]: boolean }>({});
-  const [appsLazySearch, setAppsLazySearch] = useState<{ [appName: string]: boolean }>({});
   const appsSearchResultRef = useRef(appsSearchResult);
   const appsSearchLoadingRef = useRef(appsSearchLoading);
   appsSearchResultRef.current = appsSearchResult;
@@ -43,7 +42,8 @@ export function GlobalSearch(props: { onClose?(): void }) {
   // eslint-disable-next-line
   const searchByApps = useCallback(debounce(
     async function (search: string) {
-      Object.entries(appManager.apps).forEach(async ([appName, app]) => {
+      appManager.apps.forEach(async (app) => {
+        const appName = app.name;
         if (app.hooks.globalSearch.isRegisted() && app.hooks.globalSearch.isEnabled()) {
           setAppsSearchResult((state) => ({
             ...state,

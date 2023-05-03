@@ -64,13 +64,12 @@ function GlobalSearchSetting() {
   const [searchStatus, setSearchStatus] = useState<{ appName: string, enabled: boolean, app: AppDefinitionWithContainer }[]>([]);
 
   function refresh() {
-    const status = Object
-      .entries(appManager.apps)
-      .filter(([, app]) => app.hooks.globalSearch.isRegisted())
-      .map(([appName, app]) => {
+    const status = appManager.apps
+      .filter((app) => app.hooks.globalSearch.isRegisted())
+      .map((app) => {
         return {
           app,
-          appName: appName,
+          appName: app.name,
           enabled: app.hooks.globalSearch.isEnabled(),
         };
       });
@@ -80,7 +79,7 @@ function GlobalSearchSetting() {
 
   useEffect(() => {
     refresh();
-    Object.values(appManager.apps).forEach((app) => {
+    appManager.apps.forEach((app) => {
       app.hooks.globalSearch.onEnabledChange(() => {
         refresh();
       });

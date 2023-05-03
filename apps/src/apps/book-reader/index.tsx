@@ -8,7 +8,7 @@ import Epub, { Rendition } from 'epubjs';
 import style from './index.module.less';
 import { KeyboardEvent, MouseEvent, WheelEvent, useEffect, useRef, useState } from 'react';
 import { systemPrompt, systemSelectFile } from '@webby/core/system';
-import { create_download_link_from_file_path } from '@webby/core/fs';
+import { read_file } from '@webby/core/fs';
 import { availableFonts } from '../../utils/fonts';
 import Icon from '../../components/icon/icon';
 import classNames from 'classnames';
@@ -162,7 +162,7 @@ async function mount(ctx: AppContext) {
   const eventBus = new CachedEventEmitter();
 
   function Index(props: Props) {
-    const [resoure, setResource] = useState('');
+    const [resoure, setResource] = useState<ArrayBuffer>();
     const containerRef = useRef<HTMLDivElement>(null);
     const maskRef = useRef<HTMLDivElement>(null);
     const [showMask, setShowMask] = useState(false);
@@ -184,14 +184,15 @@ async function mount(ctx: AppContext) {
         }
       });
 
-      const open = (file: string) => {
+      const open = async (file: string) => {
         if (file) {
           const p = path.parse(file).base;
           ctx.appWindow.setTitle(`Book - ${p}`);
           openByOther = true;
           store.set('open_file', file);
-          const r = create_download_link_from_file_path(file);
-          setResource(r);
+          const r = await read_file(file, { localCache: true });
+          const ab = await r.arrayBuffer();
+          setResource(ab);
         }
       }
       eventBus.on('open', open);

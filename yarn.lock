@@ -4208,6 +4208,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/wicg-file-system-access@npm:^2020.9.6":
+  version: 2020.9.6
+  resolution: "@types/wicg-file-system-access@npm:2020.9.6"
+  checksum: 2dbf33ee55684d4ed0607ae4b470e0147806b15ec047563c59d94e6ac13be7bed904cc7eece5e4be7c0d58a4de0b0635089f7cd5b7738372e436c760b0719241
+  languageName: node
+  linkType: hard
+
 "@types/ws@npm:^8.5.1":
   version: 8.5.4
   resolution: "@types/ws@npm:8.5.4"
@@ -4822,8 +4829,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@webby/core@workspace:core"
   dependencies:
+    "@types/wicg-file-system-access": ^2020.9.6
     axios: ^1.3.4
     events: ^3.3.0
+    localforage: ^1.10.0
     path-browserify: ^1.0.1
     ts-loader: ^9.4.2
     typescript: ^5.0.2

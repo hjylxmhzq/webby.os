@@ -1,6 +1,7 @@
 import { AxiosProgressEvent } from "axios";
 import path from "path-browserify";
 import { post, post_formdata, post_raw, Response } from "../utils/http";
+import localforage from "localforage";
 
 export interface FileStat {
   name: string;
@@ -78,6 +79,13 @@ export function create_download_link_from_file_path(abs_file: string, expires?: 
   return url.toString();
 }
 
+export async function file_stat(abs_file: string): Promise<FileStat> {
+  let resp = await post('/file/stat', {
+    file: abs_file,
+  });
+  return resp.data;
+}
+
 export async function move_file(from_file: string, to_file: string): Promise<boolean> {
   let resp = await post('/file/move', {
     from_file,
@@ -119,12 +127,77 @@ export async function read_text_file(dir: string, file: string) {
   return content;
 }
 
-export async function read_file(file: string): Promise<Blob> {
-  const url = new URL('/file/read', window.location.origin);
+export interface ReadFileOptions {
+  localCache?: boolean,
+}
+
+interface LocalItem {
+  blob: Blob,
+  accessed_at: number,
+}
+
+async function clearLocalFs() {
+  const keys = (await localforage.keys()).filter(k => k.startsWith('time:')).map(k => k.slice(5));
+  if (keys.length > 50) {
+    const list: { file: string, time: number }[] = [];
+    for (let key of keys) {
+      list.push({
+        file: key,
+        time: await localforage.getItem(`time:${key}`) as number
+      });
+    }
+    list.sort((a, b) => {
+      return a.time - b.time;
+    });
+    const removed = list.slice(0, 5);
+    for (let item of removed) {
+      const p1 = localforage.removeItem(`size:${item.file}`);
+      const p2 = localforage.removeItem(`time:${item.file}`);
+      const p3 = localforage.removeItem(`data:${item.file}`);
+      await Promise.all([p1, p2, p3]);
+    }
+  }
+}
+
+async function saveLocalFs(file: string, data: Blob) {
+  const now = Date.now();
+  const item: LocalItem = {
+    blob: data,
+    accessed_at: now,
+  };
+  await localforage.setItem(`time:${file}`, now);
+  await localforage.setItem(`size:${file}`, data.size);
+  await localforage.setItem(`data:${file}`, item);
+  clearLocalFs();
+}
+
+async function getLocalFS(file: string) {
+  const data = await localforage.getItem<LocalItem>(`data:${file}`);
+  return data;
+}
+
+export async function read_file(file: string, options: ReadFileOptions = {}): Promise<Blob> {
   const file_path = path.join(file);
+  const cached = await getLocalFS(file_path);
+  if (cached) {
+    const fileStat = await file_stat(file);
+    if (fileStat.modified < cached.accessed_at) {
+      return cached.blob;
+    }
+  }
+  const url = new URL('/file/read', window.location.origin);
   let resp = await post_raw(url.toString(), { file: file_path }, file);
   let content = await resp.blob();
+  if (options.localCache) {
+    saveLocalFs(file_path, content);
+  }
   return content;
+}
+
+export async function read_file_to_link(file: string, options: ReadFileOptions = {}): Promise<string> {
+  const data = await read_file(file, options);
+  const url = URL.createObjectURL(data);
+  return url;
 }
 
 export async function read_zip_entries(dir: string, file: string) {
