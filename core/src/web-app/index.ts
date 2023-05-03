@@ -289,6 +289,10 @@ export function initSharedScope(system: Pick<SystemSharedScope, 'setSystemTitleB
   window.sharedScope = sharedScope;
 }
 
+export function getSharedScope() {
+  return window.sharedScope;
+}
+
 export interface App {
   mount?(ctx: AppContext): Promise<void>;
   unmount?(ctx: AppContext): Promise<void>;

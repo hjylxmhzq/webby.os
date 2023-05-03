@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { http } from '@webby/core/tunnel';
 import { AppActionMenu, AppDefinitionWithContainer, AppState, SystemMessage, SystemMessageHandle, appManager, initSharedScope, processManager } from "@webby/core/web-app";
 import { Collection, commonCollection } from '@webby/core/kv-storage'
-import { debounce } from "src/utils/common";
 import SystemFileSelector, { SelectFileProps } from "./components/system-file-selector";
 import EventEmitter from "events";
 import { create_download_link_from_file_path } from "@webby/core/fs";
@@ -95,7 +94,7 @@ type IdMessage = { id: string } & SystemMessage;
 export function HomePage() {
 
   const mountPoint = useRef<HTMLDivElement>(null);
-  const [apps, setApps] = useState<{ [appName: string]: AppDefinitionWithContainer }>({});
+  const [apps, setApps] = useState<AppDefinitionWithContainer[]>([]);
   const [currentMenu, setCurrentMenu] = useState<AppActionMenu[]>([]);
   const [activeApp, setActiveApp] = useState<AppState | null>(null);
   const [showFileSelector, setShowFileSelector] = useState(false);
@@ -206,9 +205,9 @@ export function HomePage() {
   }, []);
 
   useEffect(() => {
-    const unbind = appManager.onAppInstalled(debounce(() => {
-      setApps({ ...appManager.apps });
-    }));
+    const unbind = appManager.onAppInstalled(() => {
+      setApps([...appManager.apps]);
+    });
     if (!mountPoint.current) return;
     if (processManager.isInited) return;
     processManager.init(mountPoint.current);
@@ -221,7 +220,6 @@ export function HomePage() {
       unbind();
     }
   }, []);
-  const appNames = Object.keys(apps).sort();
   const deactiveApps = () => {
     processManager.blur();
   }
@@ -244,18 +242,17 @@ export function HomePage() {
       <div style={{ width: '100%' }} ref={mountPoint}></div>
       <div className={style['icons-grid']} onMouseDown={deactiveApps}>
         {
-          appNames.map(appName => {
-            let app = apps[appName]!;
+          apps.map(app => {
             let iconUrl = app.getAppInfo().iconUrl;
-            return <div key={appName} className={style['app-icon']} onClick={async (e) => {
+            return <div key={app.name} className={style['app-icon']} onClick={async (e) => {
               if (e.button === 0 && mountPoint.current) {
-                await processManager.startApp(appName);
+                await processManager.startApp(app.name);
               }
             }}>
               <div className={style['app-icon-img']}>
-                <img src={iconUrl} alt={appName} />
+                <img src={iconUrl} alt={app.name} />
               </div>
-              {appName}
+              {app.name}
             </div>
           })
         }

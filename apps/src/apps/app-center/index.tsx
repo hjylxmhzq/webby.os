@@ -1,32 +1,31 @@
 import ReactDom from 'react-dom/client';
-import { AppContext, AppInstallContext, defineApp } from '@webby/core/web-app';
+import { AppContext, AppInstallContext, defineApp, getSharedScope } from '@webby/core/web-app';
 import iconUrl from './icon.svg';
-import { http } from '@webby/core/tunnel';
-import { downloadLink } from '../../utils/download';
-import { formatFileSize, makeDefaultTemplate } from '../../utils/formatter';
-import Epub, { Rendition } from 'epubjs';
-import style from './index.module.less';
-import { KeyboardEvent, MouseEvent, WheelEvent, useEffect, useRef, useState } from 'react';
-import { systemPrompt, systemSelectFile } from '@webby/core/system';
-import { create_download_link_from_file_path } from '@webby/core/fs';
-import { availableFonts } from '../../utils/fonts';
-import Icon from '../../components/icon/icon';
-import classNames from 'classnames';
-import { Collection } from '@webby/core/kv-storage';
-import { PopButton } from '../../components/button';
 import { CachedEventEmitter } from '../../utils/events';
 import path from 'path-browserify';
+import { systemMessage } from '@webby/core/system';
 
 let reactRoot: ReactDom.Root;
 
+const appManager = getSharedScope().system.appManager;
+
+async function installApp(src: string, name: string) {
+  const handle = systemMessage({ title: `正在安装App`, type: 'info', content: `正在安装 ${name}`, timeout: 0 });
+  await appManager.installApp(src, name);
+  handle.close();
+  systemMessage({ title: `安装完成`, type: 'info', content: `${name}已安装`, timeout: 3000 });
+}
+
 async function mount(ctx: AppContext) {
-  
+
   const eventBus = new CachedEventEmitter();
 
   function Index() {
     return <div>
       <div>App Center</div>
-      <div>book reader</div>
+      <div onClick={() => {
+        installApp('/apps/book-reader.js', 'BookReader2');
+      }}>book reader</div>
     </div>
   }
 
@@ -46,7 +45,7 @@ async function unmount() {
 }
 
 async function installed(ctx: AppInstallContext) {
-  
+
 }
 
 defineApp({

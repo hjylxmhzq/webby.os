@@ -7,12 +7,14 @@ import processManager from "./process-manager";
 import { http } from "../tunnel";
 
 export type AppDefinitionWithContainer = AppDefinition & {
+  name: string,
   container: HTMLElement;
   hooks: SystemHooks
 };
 
 const builtinApps = [
   ['book-reader', 'BookReader'],
+  ['app-center', 'App Center'],
   ['vnc-viewer', 'VNCViewer'],
   ['chat-gpt', 'ChatGPT'],
   ['paint', 'Paint'],
@@ -29,13 +31,13 @@ const builtinApps = [
 ];
 
 export class AppManager {
-  apps: { [appName: string]: AppDefinitionWithContainer };
+  apps: AppDefinitionWithContainer[];
   downloadedApps: { [appName: string]: { scriptContent: string, scriptSrc: string } } = {};
   remote = commonCollection.appManager;
   eventBus = new EventEmitter();
   private readyPromise?: Promise<void>;
   constructor() {
-    this.apps = {};
+    this.apps = [];
   }
   init(selectedApps?: string[]) {
     this.readyPromise = (async () => {
@@ -50,11 +52,19 @@ export class AppManager {
     }
     return this.readyPromise;
   }
-  onAppInstalled(cb: (appName: string) => void): () => void {
+  onAppInstalled(cb: (appName?: string) => void): () => void {
     this.eventBus.on('app_installed', cb);
     return () => {
       this.eventBus.off('app_installed', cb);
     }
+  }
+  async installApp(appSrc: string, appName: string) {
+    const install = async (appScriptSrc: string, appName: string) => {
+      await this.download(appName, appScriptSrc);
+      await this.install(appName);
+    }
+    await install(appSrc, appName);
+    this.eventBus.emit('app_installed', appName);
   }
   async installBuiltinApps(selectedApps?: string[]) {
     const install = async (appScriptName: string, appName: string) => {
@@ -102,10 +112,10 @@ export class AppManager {
     if (app.installed) {
       app.installed(installCtx);
     }
-    this.apps[name] = app;
+    this.apps.push(app);
   }
   get(appName: string): undefined | AppDefinitionWithContainer {
-    return this.apps[appName];
+    return this.apps.find(app => app.name === appName);
   };
   getSupportedAppsByExt(ext: string): string[] {
     function normalize(ext: string) {
@@ -114,8 +124,7 @@ export class AppManager {
       }
       return ext;
     }
-    return Object.keys(this.apps).filter(appName => {
-      const app = this.apps[appName];
+    return this.apps.filter(app => {
       const info = app.getAppInfo();
       for (let e of info.supportExts) {
         if (normalize(e) === normalize(ext)) {
@@ -123,7 +132,7 @@ export class AppManager {
         }
       }
       return false;
-    })
+    }).map(app => app.name);
   }
   all() {
     return Object.keys(this.apps);
@@ -236,6 +245,7 @@ export async function loadModule(appScript: { scriptContent: string, scriptSrc: 
   if (app.getAppInfo().noSandbox) {
     app = await loadScript(noSandbox);
   }
+  app.name = moduleName;
   return app;
 }
 

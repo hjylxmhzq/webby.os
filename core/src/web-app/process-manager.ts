@@ -110,7 +110,7 @@ export class ProcessManager {
       if (appNameMatch && appNameMatch[1]) {
         const appName = appNameMatch[1];
         await appManager.init([appName]);
-        if (appManager.apps[appName]) {
+        if (appManager.get(appName)) {
           const app = await this.startApp(appName, true);
           app?.ctx.appWindow.showTitleBar(false);
           app?.ctx.appWindow.forceFullscreen();
@@ -154,7 +154,7 @@ export class ProcessManager {
       if (v) {
         this.cacheWindowState = v;
         let tasks = Object.keys(this.cacheWindowState).map(async appName => {
-          if (!appManager.apps[appName]) {
+          if (!appManager.get(appName)) {
             delete this.cacheWindowState[appName];
           } else if (this.cacheWindowState[appName].open) {
             console.log('cache', appName, this.cacheWindowState);
