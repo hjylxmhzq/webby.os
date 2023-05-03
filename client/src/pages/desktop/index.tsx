@@ -72,6 +72,13 @@ export function systemMessage(msg: SystemMessage, onClose?: () => void): SystemM
   };
   desktopEventBus.on(DeskTopEventType.SystemMessageClosed, onClosed);
   const handle = {
+    setMessage(msg: SystemMessage) {
+      if (!handle.isClosed) {
+        desktopEventBus.emit(DeskTopEventType.SystemMessage, { ...msg, id });
+      } else {
+        console.error('can not change closed message');
+      }
+    },
     isClosed: false,
     close() {
       desktopEventBus.emit(DeskTopEventType.CloseSystemMessage, id);
@@ -152,7 +159,14 @@ export function HomePage() {
       setShowFileSelector(true);
     };
     const onSystemMessage = (msg: IdMessage) => {
-      const msgs = [...msgsRef.current, msg];
+      const existed = msgsRef.current.find(m => m.id === msg.id);
+      let msgs;
+      if (existed) {
+        Object.assign(existed, msg);
+        msgs = [...msgsRef.current];
+      } else {
+        msgs = [...msgsRef.current, msg];
+      }
       setMessages(msgs);
       if (msg.timeout) {
         setTimeout(() => {

@@ -2,6 +2,7 @@ import { AxiosProgressEvent } from "axios";
 import path from "path-browserify";
 import { post, post_formdata, post_raw, Response } from "../utils/http";
 import localforage from "localforage";
+import { systemMessage } from "../system";
 
 export interface FileStat {
   name: string;
@@ -129,6 +130,7 @@ export async function read_text_file(dir: string, file: string) {
 
 export interface ReadFileOptions {
   localCache?: boolean,
+  showProgressMessage?: boolean,
 }
 
 interface LocalItem {
@@ -178,16 +180,49 @@ async function getLocalFS(file: string) {
 
 export async function read_file(file: string, options: ReadFileOptions = {}): Promise<Blob> {
   const file_path = path.join(file);
-  const cached = await getLocalFS(file_path);
-  if (cached) {
-    const fileStat = await file_stat(file);
-    if (fileStat.modified < cached.accessed_at) {
-      return cached.blob;
+  const filename = path.basename(file_path);
+  if (options.localCache) {
+    const cached = await getLocalFS(file_path);
+    if (cached) {
+      const fileStat = await file_stat(file);
+      if (fileStat.modified < cached.accessed_at) {
+        if (options.showProgressMessage) {
+          systemMessage({ title: '已从本地缓存加载文件', content: `${filename}`, type: 'info', timeout: 3000 })
+        }
+        return cached.blob;
+      }
     }
   }
   const url = new URL('/file/read', window.location.origin);
   let resp = await post_raw(url.toString(), { file: file_path }, file);
-  let content = await resp.blob();
+  const chunks = [];
+  let reader = resp.body?.getReader();
+  let content: Blob = new Blob();
+  const contentType = resp.headers.get('content-type') || '';
+  const total = parseInt(resp.headers.get('content-length') || '0', 10);
+  let loaded = 0;
+  let handle;
+  if (options.showProgressMessage) {
+    handle = systemMessage({ title: '正在加载文件', content: `${filename}`, type: 'info', timeout: 0 })
+  }
+  while (reader && true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    loaded += value.byteLength;
+    chunks.push(value);
+    if (handle) {
+      const percent = (loaded / total * 100).toFixed(1) + '%';
+      if (!handle.isClosed) {
+        handle.setMessage({ title: '正在加载文件', content: `${filename}: ${percent}`, type: 'info', timeout: 0 })
+      }
+    }
+  }
+  if (handle && !handle.isClosed) {
+    handle.setMessage({ title: '加载完成', content: `${filename}`, type: 'info', timeout: 2000 })
+  }
+  content = new Blob(chunks, { type: contentType });
   if (options.localCache) {
     saveLocalFs(file_path, content);
   }

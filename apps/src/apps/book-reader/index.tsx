@@ -190,7 +190,7 @@ async function mount(ctx: AppContext) {
           ctx.appWindow.setTitle(`Book - ${p}`);
           openByOther = true;
           store.set('open_file', file);
-          const r = await read_file(file, { localCache: true });
+          const r = await read_file(file, { localCache: true, showProgressMessage: true });
           const ab = await r.arrayBuffer();
           setResource(ab);
         }

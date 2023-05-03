@@ -22,7 +22,11 @@ export async function post(api: string, body: any, tag = 'default') {
 }
 
 // unique request by tag
-export async function post_raw(api: string, body: any, tag: string = 'default') {
+export async function post_raw(
+  api: string,
+  body: any,
+  tag: string = 'default',
+) {
   const handlers = httpGroupHandlers.get(tag);
   if (handlers) {
     return handlers[1].then((resp) => resp.clone());

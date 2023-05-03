@@ -134,6 +134,7 @@ export interface AppInstallContext {
 export interface SystemMessageHandle {
   isClosed: boolean;
   close(): void;
+  setMessage(msg: SystemMessage): void;
 }
 
 export interface AppDefinition {
@@ -231,10 +232,10 @@ export interface AppControlMenu {
 }
 
 export interface SystemMessage {
-  type: 'info' | 'error',
+  type?: 'info' | 'error',
   title: string,
   content: string,
-  timeout: number,
+  timeout?: number,
   isHtml?: boolean
 }
 
