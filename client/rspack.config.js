@@ -96,6 +96,9 @@ module.exports = {
           from: './public/favicon.ico',
         },
         {
+          from: './public/manifest.json',
+        },
+        {
           from: './public/robots.txt',
         },
       ],
