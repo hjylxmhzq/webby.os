@@ -7,7 +7,7 @@ import { Collection, commonCollection } from '@webby/core/kv-storage'
 import { getAppManager } from '@webby/core/system'
 import SystemFileSelector, { SelectFileProps } from "./components/system-file-selector";
 import EventEmitter from "events";
-import { create_download_link_from_file_path } from "@webby/core/fs";
+import { read_file_to_link } from "@webby/core/fs";
 import MessageLine from "./components/message";
 import { MessageQueue } from '@webby/core/message-queue';
 import { net } from '@webby/core/tunnel';
@@ -109,6 +109,8 @@ export function HomePage() {
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [fileSelectorOptioins, setFileSelectorOptioins] = useState<SelectFileProps>({});
   const [wallpaper, setWallpaper] = useState('');
+  const wallpaperRef = useRef(wallpaper);
+  wallpaperRef.current = wallpaper;
   const [messages, setMessages] = useState<({ id: string } & SystemMessage)[]>([]);
   const [prompt, setPrompt] = useState<PromptProps['prompt']>();
   const [bgFillMode, setBgFillMode] = useState<'fill' | 'contain' | 'cover'>('cover');
@@ -124,14 +126,21 @@ export function HomePage() {
     (async () => {
       const wp = await commonCollection.desktop.get<string>('wallpaper');
       if (wp) {
-        setWallpaper(wp);
+        const wallpaper = await read_file_to_link(wp, { localCache: true });
+        setWallpaper(wallpaper);
       }
       const _bgFillMode = await commonCollection.desktop.get<string>('bg-fill-mode');
       if (_bgFillMode) {
         setBgFillMode(_bgFillMode as 'contain' | 'cover' | 'fill');
       }
-      commonCollection.desktop.subscribe('wallpaper', (v) => {
-        setWallpaper(v || '');
+      commonCollection.desktop.subscribe('wallpaper', async (v) => {
+        if (v) {
+          if (wallpaperRef.current) {
+            URL.revokeObjectURL(wallpaperRef.current);
+          }
+          const _wallpaper = await read_file_to_link(v, { localCache: true });
+          setWallpaper(_wallpaper);
+        }
       });
       commonCollection.desktop.subscribe('bg-fill-mode', (v) => {
         setBgFillMode(v || 'contain');
@@ -240,7 +249,7 @@ export function HomePage() {
   }
 
   const [flowTitlebar, setTitlebarFlow] = useState(false);
-  
+
   return <div>
     <Header flow={flowTitlebar} menu={currentMenu} activeApp={activeApp}></Header>
     <div className={style['main-window']}>
@@ -249,7 +258,7 @@ export function HomePage() {
         <img
           className={style['desktop-bg']}
           onMouseDown={deactiveApps}
-          src={create_download_link_from_file_path(wallpaper, 3600 * 24 * 30)}
+          src={wallpaper}
           alt="background"
           style={{ objectFit: bgFillMode }}
         />
