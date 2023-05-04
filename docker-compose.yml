@@ -1,14 +1,9 @@
 services:
-  filego:
+  webbyos:
+    platform: linux/amd64
     build: .
-    image: filego
-    container_name: filego
+    container_name: webbyos
     restart: always
     tty: true
     ports:
       - "7001:7001"
-    environment:
-      - MYSQL_HOST=dbhost
-    volumes:
-      - .:/usr/src/myapp
-    command: "sh dev.sh"

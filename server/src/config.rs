@@ -10,7 +10,7 @@ pub struct AppConfig {
   pub port: Option<i32>,
   pub file_root: Option<String>,
   pub database_url: Option<String>,
-  pub upload_temp_dir: Option<Option<String>>,
+  pub upload_temp_dir: Option<String>,
   pub use_ffmpeg_trancode: Option<bool>,
   pub ffmpeg_bin_path: Option<String>,
   pub indexing_follow_link: Option<bool>,
@@ -51,22 +51,40 @@ impl AppConfig {
   }
 }
 
+macro_rules! default_str {
+  ($env_var:expr, $v: expr) => {
+    std::env::var($env_var).map_or(Some($v), |v| Some(v))
+  };
+}
+
+macro_rules! default_int {
+  ($env_var:expr, $v: expr) => {
+    std::env::var($env_var).map_or(Some($v), |v| Some(v.parse::<i32>().unwrap()))
+  };
+}
+
+macro_rules! default_bool {
+  ($env_var:expr, $v: expr) => {
+    std::env::var($env_var).map_or(Some($v), |v| Some(v.parse::<bool>().unwrap()))
+  };
+}
+
 impl Default for AppConfig {
   fn default() -> Self {
     Self {
-      host: Some("127.0.0.1".to_owned()),
-      port: Some(7001),
-      file_root: Some("./files".to_owned()),
-      database_url: Some("sqlite://./app.db".to_owned()),
-      upload_temp_dir: Some(Some("./files/upload_temp".to_owned())),
-      use_ffmpeg_trancode: Some(false),
-      ffmpeg_bin_path: Some("ffmpeg".to_owned()),
-      indexing_follow_link: Some(true),
+      host: default_str!("HOST", "127.0.0.1".to_owned()),
+      port: default_int!("PORT", 7001),
+      file_root: default_str!("FILE_ROOT", "./files".to_owned()),
+      database_url: default_str!("DATABASE_URL", "sqlite://./app.db".to_owned()),
+      upload_temp_dir: default_str!("UPLOAD_TEMP_DIR", "./files/upload_temp".to_owned()),
+      use_ffmpeg_trancode: default_bool!("USE_FFMPEG_TRANSCODE", false),
+      ffmpeg_bin_path: default_str!("FFMPEG_BIN_PATH", "ffmpeg".to_owned()),
+      indexing_follow_link: default_bool!("INDEXING_FOLLOW_LINK", true),
       search_index_path: Some("index".to_owned()),
-      authentication: Some("user".to_owned()),
-      static_dir: Some("./static".to_owned()),
-      shell: Some("zsh".to_owned()),
-      log_path: Some("log/system.log".to_owned()),
+      authentication: default_str!("AUTHENTICATION", "user".to_owned()),
+      static_dir: default_str!("STATIC_DIR", "./static".to_owned()),
+      shell: default_str!("SHELL", "zsh".to_owned()),
+      log_path: default_str!("LOG_PATH", "log/system.log".to_owned()),
     }
   }
 }

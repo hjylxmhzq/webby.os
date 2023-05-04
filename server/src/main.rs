@@ -94,13 +94,9 @@ async fn main() -> Result<(), AppError> {
 
   HttpServer::new(move || {
     let upload_temp_dir = config!(upload_temp_dir);
-    let awmp_config;
-    if let Some(upload_temp_dir) = upload_temp_dir {
-      utils::vfs::ensure_dir_sync(&upload_temp_dir).unwrap();
-      awmp_config = awmp::PartsConfig::default().with_temp_dir(&upload_temp_dir);
-    } else {
-      awmp_config = awmp::PartsConfig::default();
-    }
+    utils::vfs::ensure_dir_sync(&upload_temp_dir).unwrap();
+    let awmp_config = awmp::PartsConfig::default().with_temp_dir(&upload_temp_dir);
+
     App::new()
       .app_data(awmp_config)
       .app_data(web::Data::new(app_state.clone()))
@@ -188,15 +184,11 @@ fn init_log() {
   };
 
   let stdout = ConsoleAppender::builder()
-    .encoder(Box::new(PatternEncoder::new(
-      "[{l}] {d} - {t} - {m}{n}",
-    )))
+    .encoder(Box::new(PatternEncoder::new("[{l}] {d} - {t} - {m}{n}")))
     .build();
 
   let file = RollingFileAppender::builder()
-    .encoder(Box::new(PatternEncoder::new(
-      "[{l}] {d} - {t} - {m}{n}",
-    )))
+    .encoder(Box::new(PatternEncoder::new("[{l}] {d} - {t} - {m}{n}")))
     .build(
       config!(log_path),
       Box::new(CompoundPolicy::new(
