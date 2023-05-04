@@ -6,7 +6,7 @@
   "scripts": {
     "tsbuild": "tsc",
     "build": "webpack",
-    "start": "webpack --watch"
+    "start": "cross-env NODE_ENV=development webpack --watch"
   },
   "files": [
     "./dist"
@@ -55,6 +55,7 @@
   },
   "devDependencies": {
     "@types/wicg-file-system-access": "^2020.9.6",
+    "cross-env": "^7.0.3",
     "ts-loader": "^9.4.2",
     "typescript": "^5.0.2",
     "webpack": "^5.79.0",
