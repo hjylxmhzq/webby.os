@@ -41,6 +41,7 @@ export default function FilePage(props: { ctx: AppContext, openFile: (file: stri
 
 function FileList(props: { ctx: AppContext, dir: string, onClick: (name: FileStat) => void }) {
   const [files, setFiles] = useState<FileStat[]>([]);
+  const [search, setSearch] = useState<string>('');
   const [checkList, setCheckList] = useState<boolean[]>([]);
   const seqRef = useRef(0);
   const gotoDir = async (dir: string) => {
@@ -83,6 +84,7 @@ function FileList(props: { ctx: AppContext, dir: string, onClick: (name: FileSta
         {props.dir.split('/').join(' / ')}
       </span>
       <span className={style.right}>
+        <input className={style.search} placeholder="搜索当前目录" value={search} onChange={e => setSearch(e.target.value)}></input>
         <Button className={style['title-btn']} onClick={async () => {
           const promtpResult = await systemPrompt({ title: '文件夹名称' });
           const dirName = promtpResult?.default;
@@ -239,7 +241,7 @@ function FileList(props: { ctx: AppContext, dir: string, onClick: (name: FileSta
       <div onClick={() => props.onClick(parent)} key='..' className={style['file-item']}>..</div>
     }
     {
-      files.map((file, idx) => {
+      files.filter(f => f.name.includes(search)).map((file, idx) => {
         const create_link = file.is_dir ? create_compression_download_link : create_download_link;
         const downloadName = file.is_dir ? file.name + '.zip' : file.name;
         const link = create_link(props.dir, file.name);
