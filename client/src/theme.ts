@@ -19,6 +19,7 @@ export const lightVars = {
   '--font-color-light': '#555',
   '--bg-transparent-deep': '#1b1b1bbd',
   '--timing-fn-quick': 'cubic-bezier(0.230, 1.000, 0.320, 1.000)',
+  '--desktop-header-bg-color': '#f3f3f370'
 };
 
 export const darkVars = {
@@ -42,4 +43,5 @@ export const darkVars = {
   '--font-color-light': '#555',
   '--bg-transparent-deep': '#1b1b1bbd',
   '--timing-fn-quick': 'cubic-bezier(0.230, 1.000, 0.320, 1.000)',
+  '--desktop-header-bg-color': '#7373738c'
 };

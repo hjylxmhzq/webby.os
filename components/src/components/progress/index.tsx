@@ -1,15 +1,16 @@
-import { useRef } from 'react';
+import { HTMLAttributes, useRef } from 'react';
 import { formatFileSize } from '../../utils/formatter';
 import style from './index.module.less';
 import React from 'react';
+import classNames from 'classnames';
 
 interface Props {
   percent: number;
   text?: string;
 }
 
-export function Progress(props: Props) {
-  return <div className={style.progress}>
+export function Progress(props: Props & HTMLAttributes<HTMLDivElement>) {
+  return <div {...props} className={classNames(style.progress, props.className)}>
     <div style={{ position: 'absolute', left: 0, width: props.percent * 100 + '%', height: '100%', backgroundColor: '#d4d4d4' }}>
       <div className={style.text}>{props.text}</div>
     </div>

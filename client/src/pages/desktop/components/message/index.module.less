@@ -12,6 +12,10 @@
   z-index: 99999;
 }
 
+.progress {
+  padding-right: 50px;
+}
+
 .message {
   padding: 10px;
   white-space: break-spaces;
@@ -26,18 +30,22 @@
   opacity: 0;
   margin-bottom: 5px;
   box-shadow: var(--box-shadow);
+
   &:global(.enter-active) {
     transform: translateY(0px);
     opacity: 1;
   }
+
   &:global(.enter-done) {
     transform: translateY(0px);
     opacity: 1;
   }
+
   &:global(.exit-active) {
     transform: translateY(0px);
     opacity: 1;
   }
+
   &:global(.exit-done) {
     transform: translateY(0px);
     opacity: 1;
@@ -63,9 +71,11 @@
   top: 10px;
   right: 10px;
   bottom: 10px;
-  & > .btn {
+
+  &>.btn {
     background-color: var(--bg-light);
     border: 1px solid var(--border-color);
+
     &:hover {
       background-color: var(--bg-light-hover);
     }

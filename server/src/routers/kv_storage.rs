@@ -401,8 +401,14 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
             let conn_info = conn.get_mut(&self.user);
             if let Some(conn_info) = conn_info {
               if let Some(collections) = info.collections {
-                for key in collections {
-                  conn_info.collections.insert(key.0, key.1);
+                for mut key in collections {
+                  let conn_col = &mut conn_info.collections;
+                  let col = conn_col.get_mut(&key.0);
+                  if let Some(col) = col {
+                    col.append(&mut key.1);
+                  } else {
+                    conn_info.collections.insert(key.0, key.1);
+                  }
                 }
               }
             }

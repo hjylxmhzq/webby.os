@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
 use tokio_util::io::ReaderStream;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct GetFilesOfDirReq {
   file: Option<String>,
   expires: Option<u32>, // 要求返回的响应带上[expires]s时长的cache-control header
@@ -38,7 +38,7 @@ pub async fn fs_actions_get(
     .borrow()
     .file
     .clone()
-    .ok_or(AppError::new("query params error").with_status(StatusCode::BAD_REQUEST))?;
+    .ok_or_else(|| AppError::new("fs action : query params error").with_status(StatusCode::BAD_REQUEST))?;
   let expires = query.borrow().expires;
   fs_actions(path, &file, true, req_raw, state, sess, expires).await
 }
@@ -54,7 +54,7 @@ pub async fn fs_actions_post(
     .borrow()
     .file
     .clone()
-    .ok_or(AppError::new("query params error").with_status(StatusCode::BAD_REQUEST))?;
+    .ok_or_else(|| AppError::new("fs action post: query params error").with_status(StatusCode::BAD_REQUEST))?;
 
   fs_actions(path, &file, false, req_raw, state, sess, None).await
 }
@@ -166,7 +166,7 @@ pub async fn delete_batch(
     .borrow()
     .files
     .clone()
-    .ok_or(AppError::new("query params error").with_status(StatusCode::BAD_REQUEST))?;
+    .ok_or(AppError::new("delete: query params error").with_status(StatusCode::BAD_REQUEST))?;
   vfs::delete_batch(file_root, user_root, files).await?;
   Ok(create_resp(true, EmptyResponseData::new(), ""))
 }

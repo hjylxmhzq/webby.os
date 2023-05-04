@@ -178,9 +178,10 @@ export async function read_file(file: string, options: ReadFileOptions = {}): Pr
     loaded += value.byteLength;
     chunks.push(value);
     if (handle) {
-      const percent = (loaded / total * 100).toFixed(1) + '%';
+      const percent = loaded / total;
+      const percentStr = (percent * 100).toFixed(1) + '%';
       if (!handle.isClosed) {
-        handle.setMessage({ title: '正在加载文件', content: `${filename}: ${percent}`, type: 'info', timeout: 0 })
+        handle.setMessage({ title: '正在加载文件', content: `${filename}: ${percentStr}`, type: 'info', timeout: 0, progress: percent })
       }
     }
   }

@@ -15,7 +15,7 @@ pub fn is_login(sess: &Session) -> Result<bool, AppError> {
 pub fn get_user_data(sess: &Session) -> Result<UserSessionData, AppError> {
   let user_data = sess
     .get::<UserSessionData>("user")?
-    .ok_or(AppError::new("no user session data"))?;
+    .ok_or_else(|| AppError::new("no user session data"))?;
 
   return Ok(user_data);
 }

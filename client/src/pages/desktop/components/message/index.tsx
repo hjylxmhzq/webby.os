@@ -5,6 +5,7 @@ import { CSSTransition, TransitionGroup } from 'react-transition-group' // ES6
 import classNames from "classnames";
 import { useEffect, useState } from "react";
 import { xssFilter } from "src/utils/xss-filter";
+import { Progress } from "@webby/components";
 
 type Message = { id: string } & SystemMessage;
 
@@ -33,6 +34,11 @@ export default function MessageLine(props: { messages: Message[], onClose: (id: 
               <div className={style.title}>{msg.title}</div>
               <div className={style.content}>{msg.content}</div>
             </>
+        }
+        {
+          msg.progress !== undefined && <div className={style.progress}>
+            <Progress style={{ height: 2 }} percent={msg.progress} />
+          </div>
         }
         <div className={style.control}>
           <Button onClick={() => props.onClose(msg.id)} className={style.btn}>关闭</Button>
