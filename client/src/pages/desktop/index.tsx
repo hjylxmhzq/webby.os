@@ -2,8 +2,9 @@ import Header from "./components/header/header";
 import style from './index.module.less';
 import { useCallback, useEffect, useRef, useState } from "react";
 import { http } from '@webby/core/tunnel';
-import { AppActionMenu, AppDefinitionWithContainer, AppState, SystemMessage, SystemMessageHandle, appManager, initSharedScope, processManager } from "@webby/core/web-app";
+import { AppActionMenu, AppDefinitionWithContainer, AppState, SystemMessage, SystemMessageHandle, initSharedScope, processManager } from "@webby/core/web-app";
 import { Collection, commonCollection } from '@webby/core/kv-storage'
+import { getAppManager } from '@webby/core/system'
 import SystemFileSelector, { SelectFileProps } from "./components/system-file-selector";
 import EventEmitter from "events";
 import { create_download_link_from_file_path } from "@webby/core/fs";
@@ -13,7 +14,7 @@ import { net } from '@webby/core/tunnel';
 import { GlobalSearch } from "./components/global-search";
 import { PromptContent, PromptProps, PromptResult, SystemPrompt } from "./components/system-prompt";
 
-
+const appManager = getAppManager();
 (window as any)._http = http;
 (window as any)._Collection = Collection;
 (window as any)._MessageQueue = MessageQueue;

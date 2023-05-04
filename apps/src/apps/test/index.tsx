@@ -1,6 +1,5 @@
 import { AppContext, AppInfo, AppInstallContext } from '@webby/core/web-app';
-
-const iconUrl = 'https://v1.vuepress.vuejs.org/hero.png';
+import iconUrl from './icon.svg';
 
 export async function mount(ctx: AppContext) {
   const systemMenu = [{

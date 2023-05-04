@@ -142,6 +142,7 @@ export interface AppDefinition {
   unmount(ctx: AppContext): Promise<void>;
   getAppInfo(): AppInfo;
   installed?(ctx: AppInstallContext): Promise<void>;
+  beforeUninstall?(): Promise<void>;
 }
 
 export interface AppInfo {

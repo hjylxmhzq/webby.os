@@ -3,11 +3,10 @@ import { AppContext, AppMenuManager, AppState, AppWindow } from ".";
 import { commonCollection } from "../kv-storage";
 import style from './index.module.less';
 import { transformScale, transformTranslate } from "./animation";
-import appManager from "./app-manager";
 import { debounce } from "../utils/common";
 import path from "path-browserify";
 import windowManager from "./window-manager";
-import { setSystemTitleBarFlow, systemMessage, systemSelectFile } from "../system";
+import { getAppManager, setSystemTitleBarFlow, systemMessage, systemSelectFile } from "../system";
 import { Theme } from "../types/theme";
 
 interface DockApp {
@@ -109,8 +108,8 @@ export class ProcessManager {
       const appNameMatch = window.location.hash.match(/app=(.+)($|,)/);
       if (appNameMatch && appNameMatch[1]) {
         const appName = appNameMatch[1];
-        await appManager.init([appName]);
-        if (appManager.get(appName)) {
+        await getAppManager().init([appName]);
+        if (getAppManager().get(appName)) {
           const app = await this.startApp(appName, true);
           app?.ctx.appWindow.showTitleBar(false);
           app?.ctx.appWindow.forceFullscreen();
@@ -119,7 +118,7 @@ export class ProcessManager {
         }
       }
     }
-    await appManager.init();
+    await getAppManager().init();
 
     this.checkActiveTimer = window.setInterval(() => {
       if (document.activeElement && this.container.contains(document.activeElement)) {
@@ -154,7 +153,7 @@ export class ProcessManager {
       if (v) {
         this.cacheWindowState = v;
         let tasks = Object.keys(this.cacheWindowState).map(async appName => {
-          if (!appManager.get(appName)) {
+          if (!getAppManager().get(appName)) {
             delete this.cacheWindowState[appName];
           } else if (this.cacheWindowState[appName].open) {
             console.log('cache', appName, this.cacheWindowState);
@@ -176,7 +175,7 @@ export class ProcessManager {
   }
   async openFile(file: string) {
     const ext = path.parse(file).ext;
-    const apps = appManager.getSupportedAppsByExt(ext);
+    const apps = getAppManager().getSupportedAppsByExt(ext);
     if (apps.length) {
       await this.openFileBy(apps[0], file);
       return true;
@@ -325,7 +324,7 @@ export class ProcessManager {
 
 export async function startApp(container: HTMLElement, appName: string, resume: boolean, params: Record<string, string>): Promise<AppState | undefined> {
 
-  const app = appManager.get(appName);
+  const app = getAppManager().get(appName);
   if (!app) {
     console.error(`app not installed: ${appName}`);
     return;

@@ -32,6 +32,7 @@ const builtinApps = [
 
 export class AppManager {
   apps: AppDefinitionWithContainer[];
+  thirdPartyApps: { name: string, src: string }[] = []
   downloadedApps: { [appName: string]: { scriptContent: string, scriptSrc: string } } = {};
   remote = commonCollection.appManager;
   eventBus = new EventEmitter();
@@ -58,12 +59,29 @@ export class AppManager {
       this.eventBus.off('app_installed', cb);
     }
   }
+  async uninstallApp(appName: string) {
+    const idx = this.thirdPartyApps.findIndex(app => app.name === appName);
+    if (idx > -1) {
+      this.thirdPartyApps.splice(idx, 1);
+      const appIdx = this.apps.findIndex(app => app.name === appName);
+      if (appIdx > -1) {
+        const [app] = this.apps.splice(appIdx, 1);
+        if (app) {
+          this.remote.set('thridparty_apps', this.thirdPartyApps);
+          await app.beforeUninstall?.();
+        }
+        this.eventBus.emit('app_installed');
+      }
+    }
+  }
   async installApp(appSrc: string, appName: string) {
     const install = async (appScriptSrc: string, appName: string) => {
       await this.download(appName, appScriptSrc);
       await this.install(appName);
     }
     await install(appSrc, appName);
+    this.thirdPartyApps.push({ name: appName, src: appSrc });
+    this.remote.set('thridparty_apps', this.thirdPartyApps);
     this.eventBus.emit('app_installed', appName);
   }
   async installBuiltinApps(selectedApps?: string[]) {
@@ -80,6 +98,18 @@ export class AppManager {
         }
       } else {
         await install(appScriptName, appName);
+      }
+    }
+
+    const thirdPartyApps = await this.remote.get('thridparty_apps') as typeof this['thirdPartyApps'];
+    if (thirdPartyApps) {
+      const install = async (appScriptSrc: string, appName: string) => {
+        await this.download(appName, appScriptSrc);
+        await this.install(appName);
+      }
+      this.thirdPartyApps = thirdPartyApps;
+      for (let app of thirdPartyApps) {
+        await install(app.src, app.name);
       }
     }
   }

@@ -3,7 +3,7 @@ import Button from "./components/button";
 import { Popover } from "./components/popover";
 import style from './index.module.less';
 import ReactDom from 'react-dom/client';
-import { AppContext, AppDefinitionWithContainer, AppInfo } from '@webby/core/web-app';
+import { AppContext, AppDefinitionWithContainer, AppInfo, getSharedScope } from '@webby/core/web-app';
 import { http } from '@webby/core/utils';
 import iconUrl from './icon.svg';
 import { commonCollection } from "@webby/core/kv-storage";
@@ -13,6 +13,7 @@ import classNames from 'classnames';
 import { getAppManager, systemMessage, systemSelectFile } from "@webby/core/system";
 import { Switch } from "../../components/switch";
 import { formatFileSize } from "./utils";
+import { SmartImage } from "@webby/components";
 
 const localFSCache = getLocalFSCache();
 let reactRoot: ReactDom.Root;
@@ -38,6 +39,7 @@ const appManager = getAppManager();
 const menu = {
   '桌面与个性化': <DesktopSetting />,
   '用户与安全性': <UserSetting />,
+  '应用管理': <AppSetting />,
   '文件系统': <FileSetting />,
   '全局搜索': <GlobalSearchSetting />,
   '日志': <LogSetting />,
@@ -300,6 +302,49 @@ function FileSetting() {
             return <div style={{ display: 'flex', justifyContent: 'space-between', margin: '5px 0' }}>
               <span>{m.key}</span>
               <span>{formatFileSize(m.size)}</span>
+            </div>
+          })
+        }
+      </div>
+    </div>
+  </div>
+}
+
+function AppSetting() {
+  const [apps, setApps] = useState<AppDefinitionWithContainer[]>([]);
+  useEffect(() => {
+    setApps([...appManager.apps]);
+    appManager.onAppInstalled(() => {
+      setApps([...appManager.apps]);
+    });
+  }, []);
+
+  return <div>
+    <div>已安装应用</div>
+    <div className={style['setting-section']}>
+      <div className={style['setting-item']}>
+        {
+          appManager.apps.map((app, idx) => {
+            return <div
+              key={idx}
+              style={{ display: 'flex', alignItems: 'center', margin: '5px 0' }}>
+              <SmartImage src={app.getAppInfo().iconUrl} style={{ width: 20, marginRight: 10 }}></SmartImage>
+              <span>{app.name}</span>
+            </div>
+          })
+        }
+      </div>
+    </div>
+    <div>第三方应用</div>
+    <div className={style['setting-section']}>
+      <div className={style['setting-item']}>
+        {
+          appManager.thirdPartyApps.map((app, idx) => {
+            return <div key={idx}>
+              <span>{app.name}</span>
+              <Button onClick={async () => {
+                await appManager.uninstallApp(app.name);
+              }}>删除</Button>
             </div>
           })
         }
