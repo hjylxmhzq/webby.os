@@ -7,13 +7,14 @@ import { AppContext, AppDefinitionWithContainer, AppInfo } from '@webby/core/web
 import { http } from '@webby/core/utils';
 import iconUrl from './icon.svg';
 import { commonCollection } from "@webby/core/kv-storage";
-import { create_download_link_from_file_path } from "@webby/core/fs";
+import { create_download_link_from_file_path, getLocalFSCache, MetaAll } from "@webby/core/fs";
 import { auth } from "@webby/core/api";
 import classNames from 'classnames';
 import { getAppManager, systemMessage, systemSelectFile } from "@webby/core/system";
 import { Switch } from "../../components/switch";
+import { formatFileSize } from "./utils";
 
-
+const localFSCache = getLocalFSCache();
 let reactRoot: ReactDom.Root;
 
 export async function mount(ctx: AppContext) {
@@ -37,6 +38,7 @@ const appManager = getAppManager();
 const menu = {
   '桌面与个性化': <DesktopSetting />,
   '用户与安全性': <UserSetting />,
+  '文件系统': <FileSetting />,
   '全局搜索': <GlobalSearchSetting />,
   '日志': <LogSetting />,
 }
@@ -259,6 +261,50 @@ function LogSetting() {
   }, []);
   return <div className={style.log}>
     {log}
+  </div>
+}
+
+function FileSetting() {
+  const [localFSCacheMeta, setLocalFSCacheMeta] = useState<MetaAll>();
+  const loadMeta = async () => {
+    const metaAll = await localFSCache.getMetaAll();
+    setLocalFSCacheMeta(metaAll);
+  }
+  useEffect(() => {
+    loadMeta();
+  }, []);
+  return <div>
+    <div>本地文件缓存</div>
+    <div className={style['setting-section']}>
+      <div className={style['setting-item']}>
+        <span>空间占用：</span>
+        <span>{formatFileSize(localFSCacheMeta?.totalSize || 0)}</span>
+      </div>
+      <div className={style['setting-item']}>
+        <span>最大容量：</span>
+        <span>{formatFileSize(localFSCache.maxSize)}</span>
+      </div>
+      <div className={style['setting-item']}>
+        <span>清空缓存：</span>
+        <Button onClick={async () => {
+          localFSCache.drop();
+          loadMeta();
+        }}>清空</Button>
+      </div>
+    </div>
+    <div>缓存列表</div>
+    <div className={style['setting-section']}>
+      <div className={style['setting-item']}>
+        {
+          localFSCacheMeta?.metas.map(m => {
+            return <div style={{ display: 'flex', justifyContent: 'space-between', margin: '5px 0' }}>
+              <span>{m.key}</span>
+              <span>{formatFileSize(m.size)}</span>
+            </div>
+          })
+        }
+      </div>
+    </div>
   </div>
 }
 

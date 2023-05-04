@@ -1,7 +1,7 @@
-import { getDocument, GlobalWorkerOptions, PDFDocumentProxy, PDFPageProxy, renderTextLayer } from 'pdfjs-dist';
+import { getDocument, GlobalWorkerOptions, PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, renderTextLayer } from 'pdfjs-dist';
 import { useCallback, useEffect, useRef, useState } from "react";
 import style from './pdf-viewer.module.less';
-import { create_download_link_from_file_path } from '@webby/core/fs';
+import { create_download_link_from_file_path, read_file } from '@webby/core/fs';
 import { debounceThrottle, PromiseValue } from './utils';
 import Icon from '../../components/icon';
 import classNames from 'classnames';
@@ -85,16 +85,18 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
 
   useEffect(() => {
     if (!props.file) return;
-    const filePath = create_download_link_from_file_path(props.file);
-    const loadingTask = getDocument({
-      url: filePath,
-      cMapUrl: CMAP_URL,
-      cMapPacked: true,
-    });
 
     const pages: PDFPageProxy[] = [];
-
+    let loadingTask: PDFDocumentLoadingTask;
+    let stop = false;
     (async () => {
+      const file = await read_file(props.file, { localCache: true, showProgressMessage: true });
+      if (stop) return;
+      loadingTask = getDocument({
+        data: await file.arrayBuffer(),
+        cMapUrl: CMAP_URL,
+        cMapPacked: true,
+      });
       const pdf = await loadingTask.promise;
       setCurrentPdf(pdf);
       const numPages = pdf.numPages;
@@ -109,7 +111,8 @@ export default function PdfViewer(props: { onResize: (w: number) => void, onScro
     })();
 
     return () => {
-      loadingTask.destroy();
+      stop = true;
+      loadingTask?.destroy();
     }
   }, [props.file]);
 

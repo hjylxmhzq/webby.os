@@ -3,6 +3,16 @@ import path from "path-browserify";
 import { post, post_formdata, post_raw, Response } from "../utils/http";
 import localforage from "localforage";
 import { systemMessage } from "../system";
+import { LocalCache } from "./local-cache";
+export * from './local-cache';
+
+const localFSCache = new LocalCache('fs', { maxSize: 1024 * 1024 * 1024 });
+window.sharedScope.shared['localFSCache'] = localFSCache;
+
+export function getLocalFSCache() {
+  const cache = window.sharedScope.shared['localFSCache'];
+  return cache;
+}
 
 export interface FileStat {
   name: string;
@@ -133,63 +143,19 @@ export interface ReadFileOptions {
   showProgressMessage?: boolean,
 }
 
-interface LocalItem {
-  blob: Blob,
-  accessed_at: number,
-}
-
-async function clearLocalFs() {
-  const keys = (await localforage.keys()).filter(k => k.startsWith('time:')).map(k => k.slice(5));
-  if (keys.length > 50) {
-    const list: { file: string, time: number }[] = [];
-    for (let key of keys) {
-      list.push({
-        file: key,
-        time: await localforage.getItem(`time:${key}`) as number
-      });
-    }
-    list.sort((a, b) => {
-      return a.time - b.time;
-    });
-    const removed = list.slice(0, 5);
-    for (let item of removed) {
-      const p1 = localforage.removeItem(`size:${item.file}`);
-      const p2 = localforage.removeItem(`time:${item.file}`);
-      const p3 = localforage.removeItem(`data:${item.file}`);
-      await Promise.all([p1, p2, p3]);
-    }
-  }
-}
-
-async function saveLocalFs(file: string, data: Blob) {
-  const now = Date.now();
-  const item: LocalItem = {
-    blob: data,
-    accessed_at: now,
-  };
-  await localforage.setItem(`time:${file}`, now);
-  await localforage.setItem(`size:${file}`, data.size);
-  await localforage.setItem(`data:${file}`, item);
-  clearLocalFs();
-}
-
-async function getLocalFS(file: string) {
-  const data = await localforage.getItem<LocalItem>(`data:${file}`);
-  return data;
-}
-
 export async function read_file(file: string, options: ReadFileOptions = {}): Promise<Blob> {
   const file_path = path.join(file);
   const filename = path.basename(file_path);
   if (options.localCache) {
-    const cached = await getLocalFS(file_path);
-    if (cached) {
+    const cached = await localFSCache.get<Blob>(file);
+    const meta = await localFSCache.getMeta(file);
+    if (cached && meta) {
       const fileStat = await file_stat(file);
-      if (fileStat.modified < cached.accessed_at) {
+      if (fileStat.modified < meta.saved_at) {
         if (options.showProgressMessage) {
           systemMessage({ title: '已从本地缓存加载文件', content: `${filename}`, type: 'info', timeout: 3000 })
         }
-        return cached.blob;
+        return cached;
       }
     }
   }
@@ -224,7 +190,7 @@ export async function read_file(file: string, options: ReadFileOptions = {}): Pr
   }
   content = new Blob(chunks, { type: contentType });
   if (options.localCache) {
-    saveLocalFs(file_path, content);
+    localFSCache.set(file_path, content);
   }
   return content;
 }

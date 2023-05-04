@@ -18,22 +18,22 @@ export interface PromptResult {
 
 export function systemMessage(message: SystemMessage, onClose?: () => void): SystemMessageHandle {
   const sc = (window as any).sharedScope as SharedScope;;
-  return sc.system.systemMessage(message, onClose);
+  return sc.system.systemMessage!(message, onClose);
 }
 
 export function setSystemTitleBarFlow(isFlow: boolean): void {
   const sc = (window as any).sharedScope as SharedScope;
-  return sc.system.setSystemTitleBarFlow(isFlow);
+  return sc.system.setSystemTitleBarFlow!(isFlow);
 }
 
 export function systemPrompt(prompt: PromptContent): Promise<PromptResult | null> {
   const sc = (window as any).sharedScope as SharedScope;;
-  return sc.system.systemPrompt(prompt);
+  return sc.system.systemPrompt!(prompt);
 }
 
 export function systemSelectFile(options: SelectFileOptions): Promise<string[] | null> {
   const sc = (window as any).sharedScope as SharedScope;;
-  return sc.system.systemSelectFile(options);
+  return sc.system.systemSelectFile!(options);
 }
 
 export async function openFile(file: string): Promise<boolean> {

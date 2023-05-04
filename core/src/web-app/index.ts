@@ -261,10 +261,10 @@ export interface PromptResult {
 }
 
 export interface SystemSharedScope {
-  systemSelectFile(options: SelectFileProps): Promise<string[] | null>,
-  systemMessage(msg: SystemMessage, onClose?: () => void): SystemMessageHandle,
-  systemPrompt(prompt: PromptContent): Promise<PromptResult | null>,
-  setSystemTitleBarFlow(isFlow: boolean): void;
+  systemSelectFile?(options: SelectFileProps): Promise<string[] | null>,
+  systemMessage?(msg: SystemMessage, onClose?: () => void): SystemMessageHandle,
+  systemPrompt?(prompt: PromptContent): Promise<PromptResult | null>,
+  setSystemTitleBarFlow?(isFlow: boolean): void;
   processManager: ProcessManager,
   windowManager: WindowManager,
   appManager: AppManager,
@@ -272,6 +272,7 @@ export interface SystemSharedScope {
 
 export interface SharedScope {
   system: SystemSharedScope,
+  shared: { [key: string]: any }
 }
 
 declare global {
@@ -279,15 +280,16 @@ declare global {
 }
 
 export function initSharedScope(system: Pick<SystemSharedScope, 'setSystemTitleBarFlow' | 'systemSelectFile' | 'systemMessage' | 'systemPrompt'>) {
-  const sharedScope: SharedScope = {
-    system: {
-      appManager: appManager,
-      windowManager: windowManager,
-      processManager: processManager,
-      ...system,
-    }
-  }
-  window.sharedScope = sharedScope;
+  Object.assign(window.sharedScope.system, system);
+}
+
+window.sharedScope = {
+  system: {
+    appManager: appManager,
+    windowManager: windowManager,
+    processManager: processManager,
+  },
+  shared: {},
 }
 
 export function getSharedScope() {
