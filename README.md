@@ -8,6 +8,8 @@ A Web based os support third-party apps and many native capabilities.
 
 ## Download
 
+### Run binary
+
 You can get the prebuilt binary from [release page](https://github.com/hjylxmhzq/webby.os/releases)
 
 Prebuilt version currently supports Linux_x86_64 & Windows_x86_64
@@ -18,6 +20,18 @@ Source code build worflow is passed in env as follow:
 - Windows_aarch64
 - Macos_aarch64
 - Linux_x86_64
+
+### Run in Docker
+
+A more simple way is to run webbyos in docker
+
+[docker hub](https://hub.docker.com/r/hjylxmhzq/webbyos)
+
+An example:
+
+```sh
+docker run -p 0.0.0.0:7002:7001 -it hjylxmhzq/webbyos
+```
 
 ## Dependencies
 
