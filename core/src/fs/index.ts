@@ -1,7 +1,6 @@
 import { AxiosProgressEvent } from "axios";
 import path from "path-browserify";
 import { post, post_formdata, post_raw, Response } from "../utils/http";
-import localforage from "localforage";
 import { systemMessage } from "../system";
 import { LocalCache } from "./local-cache";
 export * from './local-cache';
