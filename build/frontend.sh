@@ -1,3 +1,3 @@
 yarn
-yarn build
+yarn build-frontend
 

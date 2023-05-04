@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "./components/button";
 import { Popover } from "./components/popover";
 import style from './index.module.less';
 import ReactDom from 'react-dom/client';
-import { AppContext, AppDefinitionWithContainer, AppInfo, getSharedScope } from '@webby/core/web-app';
+import { AppContext, AppDefinitionWithContainer, AppInfo } from '@webby/core/web-app';
 import { http } from '@webby/core/utils';
 import iconUrl from './icon.svg';
 import { commonCollection } from "@webby/core/kv-storage";

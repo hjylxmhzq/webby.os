@@ -10,6 +10,7 @@
     "server"
   ],
   "scripts": {
+    "build-frontend": "lerna run build --ignore @webby/server",
     "build": "lerna run build",
     "start": "lerna run start --parallel --scope @webby/server --scope @webby/components --scope @webby/apps --scope @webby/core --scope @webby/client",
     "server": "cd server && cargo watch -x run",
