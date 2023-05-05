@@ -250,7 +250,7 @@ pub fn search_files(
 
     let file_name = path
       .file_name()
-      .ok_or(AppError::new("file error"))?
+      .ok_or_else(|| AppError::new("search file error"))?
       .to_string_lossy()
       .to_string();
     let stat = FileStatNameDir {

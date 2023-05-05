@@ -6,8 +6,11 @@ import { debounce } from "src/utils/common";
 import LoadingBar from "src/pages/file/components/loading-bar";
 import { CSSTransition, TransitionGroup } from "react-transition-group";
 import { FileThumbnailIcon, SmartImage } from "@webby/components";
-import { GlobalSearchResult, appManager, processManager } from "@webby/core/web-app";
+import { GlobalSearchResult, processManager } from "@webby/core/web-app";
+import { getAppManager } from '@webby/core/system';
 import { xssFilter } from "src/utils/xss-filter";
+
+const appManager = getAppManager();
 
 export function GlobalSearch(props: { onClose?(): void }) {
   const [search, setSearch] = useState('');
