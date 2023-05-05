@@ -8,7 +8,7 @@ export * from './local-cache';
 const localFSCache = new LocalCache('fs', { maxSize: 1024 * 1024 * 1024 });
 window.sharedScope.shared['localFSCache'] = localFSCache;
 
-export function getLocalFSCache() {
+export function getLocalFSCache(): LocalCache {
   const cache = window.sharedScope.shared['localFSCache'];
   return cache;
 }

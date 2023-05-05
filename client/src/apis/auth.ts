@@ -1,3 +1,4 @@
+import { getLocalFSCache } from "@webby/core/fs";
 import { post } from "./utils";
 
 export async function login(username: string, password: string) {
@@ -10,9 +11,14 @@ export async function login(username: string, password: string) {
     return false;
 }
 
-export async function logout() {
+export async function logout(cleanup = true) {
     let resp = await post('/auth/logout', {});
     if (resp.status === 0) {
+        if (cleanup) {
+            const localFSCache = getLocalFSCache();
+            localFSCache.drop();
+            localStorage.clear();
+        }
         return true;
     }
     return false;
