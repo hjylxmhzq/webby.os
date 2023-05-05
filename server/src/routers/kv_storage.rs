@@ -278,6 +278,33 @@ async fn values(
   Ok(resp)
 }
 
+async fn entries(
+  body: web::Json<KvValues>,
+  sess: Session,
+) -> Result<actix_web::HttpResponse, AppError> {
+  use crate::schema::kv_storage::dsl::*;
+  use diesel::prelude::*;
+  let user_data = sess.get::<UserSessionData>("user")?.unwrap();
+
+  let _username = &user_data.username;
+  let body = body.borrow();
+  let _collection = &body.collection;
+
+  let mut conn = SHARED_DB_CONN.lock().unwrap();
+  let result = kv_storage
+    .filter(username.eq(_username).and(collection.eq(_collection)))
+    .load::<KvStorageDoc>(&mut *conn)?;
+
+  let result: Vec<_> = result
+    .into_iter()
+    .map(|doc| return (doc.key, doc.value))
+    .collect();
+
+  let resp = create_resp(true, result, "Done");
+
+  Ok(resp)
+}
+
 #[derive(Debug)]
 struct ConnInfo {
   addr: Addr<MyWs>,
@@ -311,7 +338,12 @@ struct WsMsg {
   value: Option<String>,
   old_value: Option<String>,
 }
-fn ws_msg(collection: &str, key: &str, value: Option<&str>, old_value: Option<&str>) -> WsTextMessage {
+fn ws_msg(
+  collection: &str,
+  key: &str,
+  value: Option<&str>,
+  old_value: Option<&str>,
+) -> WsTextMessage {
   let msg = WsMsg {
     collection: collection.to_owned(),
     key: key.to_owned(),
@@ -445,6 +477,7 @@ pub fn kv_storage_routers() -> Scope {
     .route("/collections", web::post().to(collections))
     .route("/keys", web::post().to(keys))
     .route("/values", web::post().to(values))
+    .route("/entries", web::post().to(entries))
 }
 
 pub fn kv_storage_ws_routers() -> Scope {

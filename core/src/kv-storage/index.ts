@@ -1,5 +1,6 @@
 import { post } from "../utils/http";
 import EventEmitter from 'events';
+import { makeReactive } from "./reactive";
 
 let allowBuiltIn = false;
 
@@ -10,6 +11,60 @@ interface StorageOptions {
 export class Collection {
   private eventBus = new EventEmitter();
   initedKeys = new Set();
+  async getReactiveState(key: string): Promise<{ state: Record<string | number, any>, subscribe: (state: Record<string | number, any>) => () => void }>;
+  async getReactiveState<T>(key: string, defaultState: T): Promise<{ state: T, subscribe: (state: T) => () => void }>;
+  async getReactiveState(key: string, defaultState: any = {}): Promise<any> {
+    let _state = await this.get(key) || defaultState;
+    if (typeof _state !== 'object' || _state === null) {
+      _state = defaultState;
+    }
+    const state = makeReactive(_state, () => {
+      eventBus.emit('change');
+      this.set(key, _state);
+    });
+    const eventBus = new EventEmitter();
+    return {
+      state,
+      subscribe(cb: (state: any) => void, options: { once?: boolean } = {}) {
+        if (options.once) {
+          eventBus.once('change', cb);
+        } else {
+          eventBus.on('change', cb);
+        }
+        return () => {
+          eventBus.off('change', cb);
+        }
+      }
+    };
+  }
+  getReactiveStateImmediatelly(key: string): { state: Record<string | number, any>, subscribe: (state: Record<string | number, any>) => () => void };
+  getReactiveStateImmediatelly<T>(key: string, defaultState: T): { state: T, subscribe: (state: T) => () => void };
+  getReactiveStateImmediatelly(key: string, defaultState: any = {}): any {
+    let _state = defaultState;
+    const state = makeReactive(_state, () => {
+      eventBus.emit('change');
+      this.set(key, _state);
+    });
+    this.get(key).then((v) => {
+      if (typeof v === 'object' && v !== null) {
+        Object.assign(state, v);
+      }
+    });
+    const eventBus = new EventEmitter();
+    return {
+      state,
+      subscribe(cb: (state: any) => void, options: { once?: boolean } = {}) {
+        if (options.once) {
+          eventBus.once('change', cb);
+        } else {
+          eventBus.on('change', cb);
+        }
+        return () => {
+          eventBus.off('change', cb);
+        }
+      }
+    };
+  }
   constructor(public collection: string, public options: StorageOptions = {}) {
     if (!allowBuiltIn && collection.startsWith('_')) {
       throw new Error('collection with name starts with "_" is reserved by system');
@@ -67,9 +122,9 @@ export class Collection {
     let d = r.data;
     return d;
   }
-  async keys(key: string): Promise<string[]> {
+  async keys(): Promise<string[]> {
     const r = await post('/kv_storage/keys', {
-      key, collection: this.collection
+      collection: this.collection
     });
     if (r.data.length) {
       return r.data;
@@ -89,12 +144,21 @@ export class Collection {
     }
     return [];
   }
-  async values(key: string) {
+  async values() {
     const r = await post('/kv_storage/values', {
-      key, collection: this.collection
+      collection: this.collection
     });
     if (r.data.length) {
       return r.data.map((v: string) => JSON.parse(v));
+    }
+    return [];
+  }
+  async entries() {
+    const r = await post('/kv_storage/entries', {
+      collection: this.collection
+    });
+    if (r.data.length) {
+      return r.data.map((entry: [string, string]) => [entry[0], JSON.parse(entry[1])]);
     }
     return [];
   }

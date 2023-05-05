@@ -19,9 +19,19 @@ import path from 'path-browserify';
 
 let reactRoot: ReactDom.Root;
 
-const store = new Collection('book-reader');
+const _store = new Collection('book-reader');
+
+interface Config {
+  font: string,
+  fontSize: number,
+  theme: 'dark' | 'warn' | 'light',
+  file?: string,
+  location?: string,
+}
+
 async function mount(ctx: AppContext) {
   const fonts = await availableFonts();
+  const state = await _store.getReactiveState<Config>('config', { font: 'Arial', fontSize: 18, theme: 'dark' });
 
   ctx.onOpenFile(file => {
     eventBus.emit('open', file);
@@ -71,7 +81,7 @@ async function mount(ctx: AppContext) {
                 fontSize += 2;
                 rendition.themes.fontSize(fontSize + 'px');
                 menu.parent()!.name = `字体大小(${fontSize}px)`
-                store.set('fontSize', fontSize);
+                state.state.fontSize = fontSize;
               }
             }
           }, {
@@ -81,7 +91,7 @@ async function mount(ctx: AppContext) {
                 fontSize -= 2;
                 rendition.themes.fontSize(fontSize + 'px')
                 menu.parent()!.name = `字体大小(${fontSize}px)`
-                store.set('fontSize', fontSize);
+                state.state.fontSize = fontSize;
               }
             }
           }]
@@ -96,7 +106,7 @@ async function mount(ctx: AppContext) {
               onClick(menu) {
                 if (rendition) {
                   rendition.themes.select('light');
-                  store.set('theme', 'light');
+                  state.state.theme = 'light';
                   menu.setChecked(true, true);
                 }
               }
@@ -107,7 +117,7 @@ async function mount(ctx: AppContext) {
               onClick(menu) {
                 if (rendition) {
                   rendition.themes.select('dark');
-                  store.set('theme', 'dark');
+                  state.state.theme = 'dark';
                   menu.setChecked(true, true);
                 }
               }
@@ -118,7 +128,7 @@ async function mount(ctx: AppContext) {
               onClick(menu) {
                 if (rendition) {
                   rendition.themes.select('warm');
-                  store.set('theme', 'warm');
+                  state.state.theme = 'warn';
                   menu.setChecked(true, true);
                 }
               }
@@ -177,19 +187,15 @@ async function mount(ctx: AppContext) {
     });
 
     useEffect(() => {
-      let openByOther = false;
-      store.get<string>('open_file').then(file => {
-        if (file && !openByOther) {
-          eventBus.emit('open', file);
-        }
-      });
+      if (state.state.file) {
+        eventBus.emit('open', state.state.file);
+      }
 
       const open = async (file: string) => {
         if (file) {
           const p = path.parse(file).base;
           ctx.appWindow.setTitle(`Book - ${p}`);
-          openByOther = true;
-          store.set('open_file', file);
+          state.state.file = file;
           const r = await read_file(file, { localCache: true, showProgressMessage: true });
           const ab = await r.arrayBuffer();
           setResource(ab);
@@ -211,18 +217,17 @@ async function mount(ctx: AppContext) {
         rendition.themes.register("light", { "body": { "background-color": "#FFFFFF", "color": "#000000" }, 'p': { 'line-height': '160% !important' }, font: 'Arial' });
         rendition.themes.register("dark", { "body": { "background-color": "#1e1e1e", "color": "#D9D9D9" }, 'p': { 'line-height': '160% !important' }, font: 'Arial' });
         rendition.themes.register("warm", { "body": { "background-color": "#98b087", "color": "#333" }, 'p': { 'line-height': '160% !important' }, font: 'Arial' });
-        store.get<string>('theme').then(v => {
-          let theme = v || 'light';
-          rendition.themes.select(theme);
-          ctx.systemMenu.getById(theme)?.setChecked(true, true);
-        });
-        store.get<number>('fontSize').then(v => {
-          fontSize = v || fontSize;
-          rendition.themes.fontSize(fontSize + 'px');
-          ctx.systemMenu.getById('fontsize')!.name = `字体大小(${fontSize}px)`;
-        });
+
+        const theme = state.state.theme;
+        rendition.themes.select(theme);
+        ctx.systemMenu.getById(theme)?.setChecked(true, true);
+
+        const fontSize = state.state.fontSize;
+        rendition.themes.fontSize(fontSize + 'px');
+        ctx.systemMenu.getById('fontsize')!.name = `字体大小(${fontSize}px)`;
+
         rendition.on("relocated", function (location: any) {
-          store.set('location', location.start?.cfi);
+          state.state.location = location.start?.cfi;
 
           if (location.atEnd) {
             setShowNext(false);
@@ -238,8 +243,8 @@ async function mount(ctx: AppContext) {
 
         });
 
-        store.get('location').then(async l => {
-          await rendition.display(l || undefined);
+        const lastLocatioin = state.state.location;
+        rendition.display(lastLocatioin || undefined).then(() => {
           focus();
           (rendition as any).manager.on('added', (e: any) => {
             const iframe = e.element?.firstElementChild;
@@ -252,6 +257,7 @@ async function mount(ctx: AppContext) {
         rendition.on('keydown', (e: KeyboardEvent) => {
           keydown(e);
         });
+
         book.loaded.navigation.then(function (toc) {
 
           const treeNodes: TreeNode[] = [];
@@ -406,8 +412,7 @@ async function mount(ctx: AppContext) {
               onKeyDown={keydown} tabIndex={0} ref={maskRef} className={style.mask}></div>
           </>
           : <OpenFile onSelectFile={file => {
-            store.set('open_file', file);
-            eventBus.emit('open', file);
+            state.state.file = file;
           }} />
       }
     </div>
