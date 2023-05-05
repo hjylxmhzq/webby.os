@@ -14,7 +14,7 @@ use std::{
   net::SocketAddr,
   path::PathBuf,
   str::FromStr,
-  sync::{Arc, RwLock},
+  sync::{Arc, RwLock}, time::{SystemTime, UNIX_EPOCH},
 };
 use tokio::sync::Mutex;
 use tracing::log::info;
@@ -40,16 +40,22 @@ pub struct UserSessionData {
   last_login: u64,
   user_root: String,
   csrf_token: String,
+  ip: String,
 }
 
 impl UserSessionData {
   pub fn new(username: &str, user_root: &str) -> UserSessionData {
+    let last_login = SystemTime::now()
+      .duration_since(UNIX_EPOCH)
+      .unwrap()
+      .as_secs();
     UserSessionData {
       is_login: true,
       username: username.to_string(),
-      last_login: 0,
+      last_login,
       user_root: user_root.to_string(),
       csrf_token: uuid::Uuid::new_v4().to_string(),
+      ip: "unknown".to_owned(),
     }
   }
 }

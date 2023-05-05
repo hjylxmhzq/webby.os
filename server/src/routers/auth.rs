@@ -5,11 +5,12 @@ use std::{
   time::{SystemTime, UNIX_EPOCH},
 };
 
-use actix_web::{http::StatusCode, web, HttpResponse, Scope};
+use actix_web::{http::StatusCode, web, HttpRequest, HttpResponse, Scope};
 use serde::Deserialize;
 
 use crate::{
   db::SHARED_DB_CONN,
+  middlewares::session::SESSION_STATE,
   models::NewUser,
   models::User as TUser,
   schema,
@@ -60,8 +61,14 @@ pub async fn login(
   body: web::Json<User>,
   data: web::Data<AppData>,
   sess: Session,
+  req: HttpRequest,
 ) -> Result<HttpResponse, AppError> {
   use crate::schema::users::dsl::*;
+
+  let ip = req
+    .connection_info()
+    .realip_remote_addr()
+    .map_or_else(|| "unknown".to_owned(), |v| v.to_owned());
 
   let name = &body.borrow().name;
   let pwd = &body.borrow().password;
@@ -98,10 +105,12 @@ pub async fn login(
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs();
+      user_data.ip = ip;
       sess.insert("user", user_data)?;
     }
     None => {
-      let new_user_data = UserSessionData::new(&user.username, &user.user_root);
+      let mut new_user_data = UserSessionData::new(&user.username, &user.user_root);
+      new_user_data.ip = ip;
       sess.insert("user", new_user_data)?;
     }
   }
@@ -151,6 +160,12 @@ pub async fn reset_password(
     .execute(db)?;
 
   return logout(sess).await;
+}
+
+pub async fn get_session_state() -> Result<HttpResponse, AppError> {
+  let state = SESSION_STATE.read().unwrap();
+  let resp = create_resp(true, state.clone(), "done");
+  Ok(resp)
 }
 
 pub async fn logout(sess: Session) -> Result<HttpResponse, AppError> {
@@ -304,6 +319,7 @@ pub fn auth_routers() -> Scope {
     .route("/reset_password", web::post().to(reset_password))
     .route("/register", web::post().to(register))
     .route("/delete_user", web::post().to(delete_user))
+    .route("/get_session_state", web::post().to(get_session_state))
     .route("/logout", web::post().to(logout))
     .route("/get_all_users", web::post().to(get_all_users))
     .route("/get_all_groups", web::post().to(get_all_groups))

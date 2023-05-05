@@ -12,7 +12,7 @@ import { auth } from "@webby/core/api";
 import classNames from 'classnames';
 import { getAppManager, systemMessage, systemSelectFile } from "@webby/core/system";
 import { Switch } from "../../components/switch";
-import { formatFileSize } from "./utils";
+import { formatFileSize, formatTime } from "./utils";
 import { SmartImage } from "@webby/components";
 
 const localFSCache = getLocalFSCache();
@@ -114,6 +114,7 @@ function UserSetting() {
   const [pwds, setPwds] = useState(['', ''] as [string, string]); // [old_password, new_password]
   const [users, setUsers] = useState<auth.UserInfo[]>([]);
   const [groups, setGroups] = useState<auth.GroupInfo[]>([]);
+  const [sessions, setSessions] = useState<auth.SessionState[]>([]);
   const [adding, setAdding] = useState(false);
   const [newUser, setNewUser] = useState({ username: '', password: '', email: '', group: '' });
   const [lastAdmin, setLastAdmin] = useState(true);
@@ -121,6 +122,7 @@ function UserSetting() {
   async function refresh() {
     const users = await auth.getAllUsers();
     const groups = await auth.getAllGroups();
+    const sessions = await auth.getSessionState();
     const admins = users.filter(u => u.group_name === 'admin').length;
     if (admins > 1) {
       setLastAdmin(false);
@@ -130,6 +132,7 @@ function UserSetting() {
     if (groups.length > 0) {
       setNewUser({ ...newUser, group: groups[0].name });
     }
+    sessions && setSessions(sessions);
     setUsers(users);
     setGroups(groups);
   }
@@ -225,7 +228,8 @@ function UserSetting() {
           }
         </div>
       </div>
-    </div><div className={style['setting-section']}>
+    </div>
+    <div className={style['setting-section']}>
       <div className={style['setting-item']}>
         <div>
           用户组列表
@@ -242,6 +246,31 @@ function UserSetting() {
                 <span>{group.name}</span>
                 <span>{group.desc}</span>
                 <span>{group.permissions}</span>
+              </div>
+            })
+          }
+        </div>
+      </div>
+    </div>
+    <div className={style['setting-section']}>
+      <div className={style['setting-item']}>
+        <div>
+          会话列表
+        </div>
+        <div className={style['user-list']}>
+          <div className={classNames(style['user-list-item'], style.head)}>
+            <span>用户</span>
+            <span>登录时间</span>
+            <span>IP</span>
+            <span>状态</span>
+          </div>
+          {
+            sessions.map(sess => {
+              return <div className={style['user-list-item']}>
+                <span>{sess.state.user.username}</span>
+                <span>{formatTime(sess.state.user.last_login * 1000)}</span>
+                <span>{sess.state.user.ip}</span>
+                <span>{sess.state.user.is_login ? '已登陆' : '未登录'}</span>
               </div>
             })
           }

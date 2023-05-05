@@ -18,6 +18,42 @@ export async function logout() {
     return false;
 }
 
+export interface SessionState {
+    ttl: number,
+    state: {
+        user: {
+            username: string,
+            is_login: boolean,
+            last_login: number,
+            user_root: string,
+            ip: string,
+        }
+    }
+}
+
+export async function getSessionState() {
+    let resp = await post('/auth/get_session_state', {});
+    if (resp.status === 0) {
+        const data = resp.data;
+        const sessions = Object.values(data).map((d: any) => {
+            let user = {};
+            try {
+                user = JSON.parse(d.state.user)
+            } catch (err) {
+                console.error(err);
+            }
+            return {
+                ttl: d.ttl,
+                state: {
+                    user,
+                },
+            } as SessionState;
+        }).filter(s => !!s.state.user.username);
+        return sessions;
+    }
+    return null;
+}
+
 export async function resetPassword(oldPwd: string, newPwd: string) {
     let resp = await post('/auth/reset_password', {
         old_password: oldPwd,

@@ -5,6 +5,7 @@ use actix_session::{
 };
 use actix_web::{cookie::Key, http::header::InvalidHeaderValue};
 use chrono::Utc;
+use serde::{Serialize, ser::SerializeStruct};
 use std::{collections::HashMap, sync::RwLock};
 use time::Duration;
 
@@ -26,14 +27,27 @@ pub fn session() -> SessionMiddleware<MemorySessionStore> {
 pub struct MemorySessionStore {}
 
 lazy_static::lazy_static! {
-  static ref STATE: RwLock<HashMap<String, InternalState>> = {
+  pub static ref SESSION_STATE: RwLock<HashMap<String, InternalState>> = {
     RwLock::new(HashMap::new())
   };
 }
 
-struct InternalState {
+#[derive(Clone)]
+pub struct InternalState {
   ttl: chrono::DateTime<Utc>,
   state: SessionState,
+}
+
+impl Serialize for InternalState {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+      where
+          S: serde::Serializer {
+            let mut state = serializer.serialize_struct("state", 2)?;
+            let ttl = self.ttl.timestamp_micros();
+            state.serialize_field("ttl", &ttl)?;
+            state.serialize_field("state", &self.state)?;
+            state.end()
+  }
 }
 
 impl InternalState {
@@ -72,7 +86,7 @@ impl SessionStore for MemorySessionStore {
   {
     Box::pin(async move {
       let key = uuid::Uuid::new_v4().to_string();
-      let mut state = STATE.write().unwrap();
+      let mut state = SESSION_STATE.write().unwrap();
 
       state.insert(key.clone(), InternalState::new(ttl, session_state.clone()));
 
@@ -107,7 +121,7 @@ impl SessionStore for MemorySessionStore {
     Self: 'async_trait,
   {
     Box::pin(async move {
-      let state = STATE.read().unwrap();
+      let state = SESSION_STATE.read().unwrap();
       let internal_state = state.get(session_key.as_ref());
       if let Some(internal_state) = internal_state {
         return Ok(Some(internal_state.state.clone()));
@@ -128,7 +142,7 @@ impl SessionStore for MemorySessionStore {
     Self: 'async_trait,
   {
     Box::pin(async move {
-      let mut state = STATE.write().unwrap();
+      let mut state = SESSION_STATE.write().unwrap();
 
       state.remove(session_key.as_ref());
 
@@ -162,7 +176,7 @@ impl SessionStore for MemorySessionStore {
   {
     Box::pin(async move {
       let key = session_key.as_ref();
-      let mut state = STATE.write().unwrap();
+      let mut state = SESSION_STATE.write().unwrap();
       let internal_state = state.entry(key.to_owned());
       let expires = ttl_to_expires(ttl);
       internal_state.and_modify(|s| {
@@ -188,7 +202,7 @@ impl SessionStore for MemorySessionStore {
   {
     Box::pin(async move {
       let key = session_key.as_ref();
-      let mut state = STATE.write().unwrap();
+      let mut state = SESSION_STATE.write().unwrap();
       let internal_state = state.entry(key.to_owned());
       let expires = ttl_to_expires(ttl);
       internal_state.and_modify(|s| s.ttl = expires);
