@@ -8,6 +8,9 @@ import { AppActionMenu, AppMenu, AppMenuManager, AppState, processManager } from
 import { logout } from 'src/apis/auth';
 import { showGlobalSearch } from '../..';
 import classNames from 'classnames';
+import { getAppManager } from '@webby/core/system';
+
+const appManager = getAppManager();
 
 const _luanchMenu: AppMenu = {
   name: 'Desktop',
@@ -17,6 +20,18 @@ const _luanchMenu: AppMenu = {
       processManager.startApp('Setting');
     }
   }, {
+    name: '所有应用',
+    id: 'all-app',
+    children: appManager.apps.map(app => {
+      return {
+        name: app.name,
+        icon: app.getAppInfo().iconUrl,
+        onClick() {
+          processManager.startApp(app.name);
+        }
+      }
+    }),
+  }, {
     name: '退出登录',
     async onClick() {
       await logout();
@@ -25,8 +40,22 @@ const _luanchMenu: AppMenu = {
   }]
 };
 
-const luanchMenu = new AppMenuManager();
-luanchMenu.set([_luanchMenu]);
+const luanchMenuManager = new AppMenuManager();
+luanchMenuManager.set([_luanchMenu]);
+
+const luanchMenu = luanchMenuManager.get()[0];
+appManager.onAppInstalled(() => {
+  const menu = luanchMenuManager.getById('all-app')!;
+  menu.setChildren(appManager.apps.map(app => {
+    return {
+      name: app.name,
+      icon: app.getAppInfo().iconUrl,
+      onClick() {
+        processManager.startApp(app.name);
+      }
+    }
+  }));
+});
 
 export default function Header(props: { flow: boolean, menu: AppActionMenu[], activeApp?: AppState | null }) {
   const [time, setTime] = useState('');
@@ -39,7 +68,7 @@ export default function Header(props: { flow: boolean, menu: AppActionMenu[], ac
       let d = '上午';
       if (h >= 12) {
         d = '下午';
-        h -= 12;
+        h = h === 12 ? 12 : h - 12;
       }
       setTime(`${d}${h}:${m}`);
     }
@@ -55,9 +84,18 @@ export default function Header(props: { flow: boolean, menu: AppActionMenu[], ac
   const [theme, toggleTheme] = useTheme();
   const el = useRef<HTMLDivElement>(null);
 
+  const [lmenu, setLMenu] = useState(luanchMenu)
+  useEffect(() => {
+    const unbind = lmenu.onChange((m) => {
+      setLMenu(luanchMenu);
+    });
+    return unbind;
+    // eslint-disable-next-line
+  }, []);
+
   return <div className={classNames(style.header, { [style.flow]: props.flow })} ref={el}>
     <nav className={style.left}>
-      <DropdownMenu menu={luanchMenu.get()[0]} />
+      <DropdownMenu menu={lmenu} />
       {
         props.menu.map((onemenu) => {
           return <DropdownMenu key={onemenu.name} menu={onemenu} />;

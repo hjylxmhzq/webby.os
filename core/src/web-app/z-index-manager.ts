@@ -1,5 +1,6 @@
 export class ZIndexManager {
-  public zIndex = 1;
+  public startIdx = 100;
+  public zIndex = this.startIdx;
   public mapping: ([HTMLElement, number])[] = [];
   setTop(el: HTMLElement) {
     this.zIndex += 1;
@@ -21,10 +22,10 @@ export class ZIndexManager {
     });
     this.mapping.sort((a, b) => { return a[1] - b[1] });
     this.mapping.forEach(([el], idx) => {
-      this.mapping[idx][1] = idx + 1;
-      el.style.zIndex = idx + 1 + '';
+      this.mapping[idx][1] = idx + this.startIdx;
+      el.style.zIndex = idx + this.startIdx + '';
     });
-    this.zIndex = this.mapping.length;
+    this.zIndex = this.mapping.length + this.startIdx;
   }
 }
 

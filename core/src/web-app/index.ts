@@ -54,6 +54,12 @@ export class AppMenuManager {
           parent() {
             return parent;
           },
+          setChildren(menu: AppMenu[]) {
+            const m = new AppMenuManager();
+            m.set(menu);
+            actionMenu.children = m.get();
+            eventBus.emit('change', actionMenu);
+          },
           setChecked(checked: boolean, onlyOne = false) {
             if (onlyOne) {
               actionMenus.forEach(m => m.checked = false);
@@ -211,7 +217,7 @@ export interface AppMenu {
   id?: string;
   name: string;
   checked?: boolean;
-  icon?: string | URL | HTMLElement,
+  icon?: string,
   onClick?(name: AppActionMenu): void;
   children?: AppMenu[];
   shortcut?: string[];
@@ -222,6 +228,7 @@ export type AppActionMenu = Omit<AppMenu, 'children'> & {
   setName(name: string): void;
   onChange(cb: (menu: AppActionMenu) => void): () => void;
   setChecked(checked: boolean, onlyOne?: boolean): void;
+  setChildren(menu: AppMenu[]): void;
   children?: AppActionMenu[];
 }
 
@@ -284,13 +291,15 @@ export function initSharedScope(system: Pick<SystemSharedScope, 'setSystemTitleB
   Object.assign(window.sharedScope.system, system);
 }
 
-window.sharedScope = {
-  system: {
-    appManager: appManager,
-    windowManager: windowManager,
-    processManager: processManager,
-  },
-  shared: {},
+if (!window.sharedScope) {
+  window.sharedScope = {
+    system: {
+      appManager: appManager,
+      windowManager: windowManager,
+      processManager: processManager,
+    },
+    shared: {},
+  }
 }
 
 export function getSharedScope() {

@@ -75,6 +75,9 @@ export class AppManager {
     }
   }
   async installApp(appSrc: string, appName: string) {
+    if (this.apps.find(app => app.name === appName)) {
+      return false;
+    }
     const install = async (appScriptSrc: string, appName: string) => {
       await this.download(appName, appScriptSrc);
       await this.install(appName);
@@ -83,6 +86,7 @@ export class AppManager {
     this.thirdPartyApps.push({ name: appName, src: appSrc });
     this.remote.set('thridparty_apps', this.thirdPartyApps);
     this.eventBus.emit('app_installed', appName);
+    return true;
   }
   async installBuiltinApps(selectedApps?: string[]) {
     const install = async (appScriptName: string, appName: string) => {

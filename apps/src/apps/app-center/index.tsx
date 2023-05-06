@@ -11,9 +11,12 @@ const appManager = getSharedScope().system.appManager;
 
 async function installApp(src: string, name: string) {
   const handle = systemMessage({ title: `正在安装App`, type: 'info', content: `正在安装 ${name}`, timeout: 0 });
-  await appManager.installApp(src, name);
-  handle.close();
-  systemMessage({ title: `安装完成`, type: 'info', content: `${name}已安装`, timeout: 3000 });
+  const success = await appManager.installApp(src, name);
+  if (!success) {
+    handle.setMessage({ title: '安装失败', content: 'App已存在', timeout: 5000 });
+    return;
+  }
+  handle.setMessage({ title: `安装完成`, type: 'info', content: `${name}已安装`, timeout: 3000 });
 }
 
 async function mount(ctx: AppContext) {

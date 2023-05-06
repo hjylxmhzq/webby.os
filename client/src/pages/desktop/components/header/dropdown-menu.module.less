@@ -30,6 +30,11 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+    text-align: left;
+
+    &>.name {
+      line-height: 20px;
+    }
   }
 
   &>.arrow {
@@ -77,6 +82,15 @@
 
 .up-arrow {
   transform: rotate(180deg);
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  margin: 1px 7px 1px 0;
+  vertical-align: bottom;
+  line-height: 20px;
 }
 
 .tick {

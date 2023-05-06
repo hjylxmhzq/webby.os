@@ -13,8 +13,8 @@ import { MessageQueue } from '@webby/core/message-queue';
 import { net } from '@webby/core/tunnel';
 import { GlobalSearch } from "./components/global-search";
 import { PromptContent, PromptProps, PromptResult, SystemPrompt } from "./components/system-prompt";
+import { DesktopIconGrid } from "./components/grid";
 
-const appManager = getAppManager();
 (window as any)._http = http;
 (window as any)._Collection = Collection;
 (window as any)._MessageQueue = MessageQueue;
@@ -28,6 +28,8 @@ initSharedScope({
   systemPrompt,
   setSystemTitleBarFlow,
 });
+
+const appManager = getAppManager();
 
 export enum DeskTopEventType {
   SelectFile = 'selectFile',
@@ -265,7 +267,7 @@ export function HomePage() {
       }
       <div style={{ width: '100%' }} ref={mountPoint}></div>
       <div className={style['icons-grid']} onMouseDown={deactiveApps}>
-        {
+        {/* {
           apps.map(app => {
             let iconUrl = app.getAppInfo().iconUrl;
             return <div key={app.name} className={style['app-icon']} onClick={async (e) => {
@@ -279,7 +281,18 @@ export function HomePage() {
               {app.name}
             </div>
           })
-        }
+        } */}
+        <DesktopIconGrid
+          onStartApp={async (app) => {
+            await processManager.startApp(app);
+          }}
+          apps={apps.map(app => {
+            return {
+              name: app.name,
+              text: app.name,
+              icon: app.getAppInfo().iconUrl,
+            }
+          })} />
       </div>
     </div>
     {

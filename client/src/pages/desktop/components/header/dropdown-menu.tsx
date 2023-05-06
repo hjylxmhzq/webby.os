@@ -3,6 +3,7 @@ import { WheelEvent, useEffect, useRef, useState } from 'react';
 import style from './dropdown-menu.module.less';
 import classNames from 'classnames';
 import Icon from 'src/components/icon/icon';
+import { SmartImage } from '@webby/components';
 
 export function DropdownMenu({ menu }: { menu: AppActionMenu }) {
   const el = useRef<HTMLSpanElement>(null);
@@ -96,7 +97,12 @@ function MenuItem({ morePadding, item, onClick }: { morePadding?: boolean, item:
         }
       </span>
       <span className={style.text}>
-        {item.name}
+        {
+          !!item.icon && <SmartImage className={style.icon} src={item.icon}></SmartImage>
+        }
+        <span className={style.name}>
+          {item.name}
+        </span>
       </span>
       <span className={style.arrow}>
         {
