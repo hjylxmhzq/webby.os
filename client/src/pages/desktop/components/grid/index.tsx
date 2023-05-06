@@ -7,6 +7,7 @@ import { commonCollection } from "@webby/core/kv-storage";
 import { debounce } from "src/utils/common";
 
 interface Props {
+  itemSize: number,
   apps: {
     name: string,
     icon: string,
@@ -23,7 +24,6 @@ interface AppItem {
   text: string,
 }
 
-const itemSize = 100;
 const springSetting = { stiffness: 120, damping: 15 };
 
 type InnerAppItem = AppItem & { moving?: { offsetX: number, offsetY: number } };
@@ -31,6 +31,8 @@ type InnerAppItem = AppItem & { moving?: { offsetX: number, offsetY: number } };
 const store = commonCollection.desktop;
 
 export function DesktopIconGrid(props: Props) {
+  const itemSize = props.itemSize;
+
   const container = useRef<HTMLDivElement>(null);
   const preventClick = useRef(false);
   const [appItems, setAppItems] = useState<InnerAppItem[]>([]);
@@ -63,7 +65,7 @@ export function DesktopIconGrid(props: Props) {
       });
     }
     setAppItems(_appItems);
-  }, [props.apps, grid, appOrder]);
+  }, [props.apps, grid, appOrder, itemSize]);
 
   useEffect(() => {
 
@@ -103,7 +105,7 @@ export function DesktopIconGrid(props: Props) {
     return () => {
       window.removeEventListener('resize', debounced);
     };
-  }, []);
+  }, [itemSize]);
 
   useEffect(() => {
     placeApps();
@@ -180,12 +182,13 @@ export function DesktopIconGrid(props: Props) {
       window.removeEventListener('mouseup', mouseUp);
       window.removeEventListener('mousemove', mouseMove);
     }
-  }, [pressedApp, placeApps, grid, appOrder, appItems]);
+  }, [pressedApp, placeApps, grid, appOrder, appItems, itemSize]);
 
   return <div ref={container} className={style['grid-container']}>
     {
       appItems.map(app => {
         const onMouseDown = (e: React.MouseEvent) => {
+          if (e.button !== 0) return;
           insertedIdx.current = -1;
           const { screenX, screenY } = e;
           const offsetX = app.x - screenX;
@@ -246,8 +249,9 @@ function GridItem(props: GridItemProps) {
     tabIndex={0}
     className={style['grid-item']}
     style={{ width: props.size, height: props.size, transform: `translate(${props.x}px,${props.y}px)` }}>
-    <div className={style['grid-item-img']}>
+    <div className={style['grid-item-img']} style={{ height: props.size - 20 }}>
       <SmartImage
+        style={{ width: props.size * 0.6, height: props.size * 0.6 }}
         draggable="false"
         src={props.icon}>
       </SmartImage>

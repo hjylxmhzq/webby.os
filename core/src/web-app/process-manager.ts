@@ -110,7 +110,7 @@ export class ProcessManager {
         const appName = appNameMatch[1];
         await getAppManager().init([appName]);
         if (getAppManager().get(appName)) {
-          const app = await this.startApp(appName, true);
+          const app = await this.startApp(appName, { resume: true });
           app?.ctx.appWindow.showTitleBar(false);
           app?.ctx.appWindow.forceFullscreen();
           setSystemTitleBarFlow(true);
@@ -157,7 +157,7 @@ export class ProcessManager {
             delete this.cacheWindowState[appName];
           } else if (this.cacheWindowState[appName].open) {
             console.log('cache', appName, this.cacheWindowState);
-            const app = await this.startApp(appName, true);
+            const app = await this.startApp(appName, { resume: true });
             if (app && this.cacheWindowState[appName].isMinimized) {
               toDockApp.push(app);
             }
@@ -223,7 +223,7 @@ export class ProcessManager {
       console.error('app not opened');
     }
   }
-  async startApp(appName: string, resume: boolean = false, params: Record<string, string> = {}) {
+  async startApp(appName: string, options: { isFullscreen?: boolean, params?: Record<string, string>, resume?: boolean } = { isFullscreen: false, params: {}, resume: false }) {
     let existApp = this.getAppByName(appName);
     if (existApp) {
       this.updateActiveApp(existApp);
@@ -233,7 +233,12 @@ export class ProcessManager {
       }
       return;
     }
-    let app = await startApp(this.container, appName, resume, params);
+    let app = await startApp(this.container, appName, !!options.resume, options.params || {});
+    if (options.isFullscreen) {
+      app?.ctx.appWindow.showTitleBar(false);
+      app?.ctx.appWindow.forceFullscreen();
+      setSystemTitleBarFlow(true);
+    }
     if (!app) return;
     let isClose = false;
     const beforeClose = (force = false) => {

@@ -163,6 +163,9 @@ export class Collection {
     return [];
   }
   async remove(key: string): Promise<boolean> {
+    if (this.options.localFirst) {
+      localStorage.removeItem(`_collection_${this.collection}|${key}`);
+    }
     const r = await post('/kv_storage/remove', {
       key, collection: this.collection
     });

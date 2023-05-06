@@ -20,13 +20,13 @@ let reactRoot: ReactDom.Root;
 
 export async function mount(ctx: AppContext) {
 
+  ctx.appWindow.noBackground(true);
   setTimeout(() => {
     ctx.appWindow.setSize(900, 600);
   });
   const root = ctx.appRootEl;
   root.style.position = 'absolute';
   root.style.inset = '0';
-
 
   reactRoot = ReactDom.createRoot(root);
   reactRoot.render(<SettingPage />)
@@ -348,7 +348,7 @@ function FileSetting() {
           !!localFSCacheMeta?.metas.length ? localFSCacheMeta?.metas.map(m => {
             return <div key={m.key} style={{ display: 'flex', justifyContent: 'space-between', margin: '5px 0' }}>
               <span>{m.key}</span>
-              <span>{formatFileSize(m.size)}</span>
+              <span style={{ flex: '0 0 75px', textAlign: 'right' }}>{formatFileSize(m.size)}</span>
             </div>
           })
             : '无本地缓存文件'
@@ -434,7 +434,7 @@ function DesktopSetting() {
     <div className={style['section-title']}>壁纸</div>
     <div className={style['setting-section']}>
       <div className={classNames(style['setting-item'], style.justify)}>
-        <span>{wallpaper || '未设置壁纸'}</span>
+        <span>{wallpaper ? '当前壁纸: ' + wallpaper : '未设置壁纸'}</span>
         <span>
           <Button onClick={async () => {
             const files = await systemSelectFile({ allowedExts: ['jpg', 'png', 'jpeg'] });
