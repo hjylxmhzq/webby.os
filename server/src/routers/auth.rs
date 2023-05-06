@@ -168,6 +168,21 @@ pub async fn get_session_state() -> Result<HttpResponse, AppError> {
   Ok(resp)
 }
 
+#[derive(Deserialize)]
+pub struct DeleteSessionDataReq {
+  pub key: String,
+}
+
+pub async fn delete_session_state(
+  body: web::Json<DeleteSessionDataReq>,
+) -> Result<HttpResponse, AppError> {
+  let key = body.key.clone();
+  let mut state = SESSION_STATE.write().unwrap();
+  state.remove(&key);
+  let resp = create_resp(true, state.clone(), "done");
+  Ok(resp)
+}
+
 pub async fn logout(sess: Session) -> Result<HttpResponse, AppError> {
   let user_data = sess.get::<UserSessionData>("user")?;
 
@@ -320,6 +335,7 @@ pub fn auth_routers() -> Scope {
     .route("/register", web::post().to(register))
     .route("/delete_user", web::post().to(delete_user))
     .route("/get_session_state", web::post().to(get_session_state))
+    .route("/delete_session_state", web::post().to(delete_session_state))
     .route("/logout", web::post().to(logout))
     .route("/get_all_users", web::post().to(get_all_users))
     .route("/get_all_groups", web::post().to(get_all_groups))

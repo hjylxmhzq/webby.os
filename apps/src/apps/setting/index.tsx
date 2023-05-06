@@ -52,14 +52,14 @@ function SettingPage() {
       <div style={{ lineHeight: '40px' }}>设置</div>
       {
         Object.keys(menu).map((name: any) => {
-          return <div key={name} className={style['menu-item']} onClick={() => setTabName(name)}>{name}</div>
+          return <div key={name} className={classNames(style['menu-item'], { [style['active-tab']]: name === tabName })} onClick={() => setTabName(name)}>{name}</div>
         })
       }
     </div>
     <div className={classNames(style['info-page'])}>
       {menu[tabName]}
     </div>
-  </div>
+  </div >
 }
 
 
@@ -91,13 +91,16 @@ function GlobalSearchSetting() {
   }, []);
 
   return <div>
-    <div>将App加入全局搜索</div>
+    <div className={style['section-title']}>将App加入全局搜索<span style={{ fontWeight: 100, fontStyle: 'italic' }}>(Ctrl/Cmd+F)</span></div>
     <div className={style['setting-section']}>
       <div className={style['setting-item']}>
         {
           searchStatus.map(({ enabled, appName, app }, idx) => {
-            return <div key={appName} className={style['setting-item-row']}>
-              <span>{appName}</span>
+            return <div key={appName} className={classNames(style['setting-item-row'], style.justify)}>
+              <span style={{ display: 'flex', alignItems: 'center' }}>
+                <SmartImage src={app.getAppInfo().iconUrl} style={{ height: 18, width: 18, objectFit: 'contain', marginRight: 5 }} />
+                <span>{appName}</span>
+              </span>
               <Switch enabled={enabled} onChange={(enabled) => {
                 app.hooks.globalSearch.setEnabled(enabled);
               }}></Switch>
@@ -141,7 +144,7 @@ function UserSetting() {
   }, []);
 
   return <div>
-    <div>权限</div>
+    <div className={style['section-title']}>权限</div>
     <div className={style['setting-section']}>
       <div className={style['setting-item']}>
         <span>重置密码</span>
@@ -162,7 +165,7 @@ function UserSetting() {
         </Popover>
       </div>
     </div>
-    <div>用户管理</div>
+    <div className={style['section-title']}>用户管理</div>
     <div className={style['setting-section']}>
       <div className={style['setting-item']}>
         <div>
@@ -270,7 +273,22 @@ function UserSetting() {
                 <span>{sess.state.user.username}</span>
                 <span>{formatTime(sess.state.user.last_login * 1000)}</span>
                 <span>{sess.state.user.ip}</span>
-                <span>{sess.state.user.is_login ? '已登陆' : '未登录'}</span>
+                <span>
+                  {sess.state.user.is_login ? '已登陆' : '未登录'}
+                  <Popover inline auto content={
+                    <div style={{ lineHeight: '35px', fontSize: 12, padding: '0 10px' }}>
+                      此操作可能导致当前连接中断，确认删除会话吗？
+                      <Button
+                        type="danger"
+                        onClick={async () => {
+                          const sessions = await auth.deleteSessionState(sess.key);
+                          sessions && setSessions(sessions);
+                        }}
+                        style={{ fontSize: 12 }}>确认</Button>
+                    </div>
+                  }>
+                    <Button type="danger" style={{ fontSize: 12, color: 'red', padding: '2px 5px', margin: '0 5px' }}>删除</Button>
+                  </Popover></span>
               </div>
             })
           }
@@ -305,7 +323,7 @@ function FileSetting() {
     loadMeta();
   }, []);
   return <div>
-    <div>本地文件缓存</div>
+    <div className={style['section-title']}>本地文件缓存</div>
     <div className={style['setting-section']}>
       <div className={style['setting-item']}>
         <span>空间占用：</span>
@@ -323,16 +341,17 @@ function FileSetting() {
         }}>清空</Button>
       </div>
     </div>
-    <div>缓存列表</div>
+    <div className={style['section-title']}>缓存列表</div>
     <div className={style['setting-section']}>
       <div className={style['setting-item']}>
         {
-          localFSCacheMeta?.metas.map(m => {
-            return <div style={{ display: 'flex', justifyContent: 'space-between', margin: '5px 0' }}>
+          !!localFSCacheMeta?.metas.length ? localFSCacheMeta?.metas.map(m => {
+            return <div key={m.key} style={{ display: 'flex', justifyContent: 'space-between', margin: '5px 0' }}>
               <span>{m.key}</span>
               <span>{formatFileSize(m.size)}</span>
             </div>
           })
+            : '无本地缓存文件'
         }
       </div>
     </div>
@@ -349,7 +368,7 @@ function AppSetting() {
   }, []);
 
   return <div>
-    <div>已安装应用</div>
+    <div className={style['section-title']}>已安装应用</div>
     <div className={style['setting-section']}>
       <div className={style['setting-item']}>
         {
@@ -364,11 +383,11 @@ function AppSetting() {
         }
       </div>
     </div>
-    <div>第三方应用</div>
+    <div className={style['section-title']}>第三方应用</div>
     <div className={style['setting-section']}>
       <div className={style['setting-item']}>
         {
-          appManager.thirdPartyApps.map((app, idx) => {
+          !!appManager.thirdPartyApps.length ? appManager.thirdPartyApps.map((app, idx) => {
             return <div key={idx}>
               <span>{app.name}</span>
               <Button onClick={async () => {
@@ -376,6 +395,7 @@ function AppSetting() {
               }}>删除</Button>
             </div>
           })
+            : '未安装第三方应用'
         }
       </div>
     </div>
@@ -411,51 +431,61 @@ function DesktopSetting() {
   }, []);
 
   return <div>
-    <div>壁纸</div>
+    <div className={style['section-title']}>壁纸</div>
     <div className={style['setting-section']}>
-      <div className={style['setting-item']}>
+      <div className={classNames(style['setting-item'], style.justify)}>
         <span>{wallpaper || '未设置壁纸'}</span>
-        <Button onClick={async () => {
-          const files = await systemSelectFile({ allowedExts: ['jpg', 'png', 'jpeg'] });
-          if (files && files.length) {
-            commonCollection.desktop.set('wallpaper', files[0]);
+        <span>
+          <Button onClick={async () => {
+            const files = await systemSelectFile({ allowedExts: ['jpg', 'png', 'jpeg'] });
+            if (files && files.length) {
+              commonCollection.desktop.set('wallpaper', files[0]);
+            }
+          }} style={{ fontSize: 12 }}>设置壁纸</Button>
+          {
+            wallpaper && <Popover inline auto content={
+              <div style={{ lineHeight: '35px', fontSize: 12, padding: '0 10px' }}>
+                确认删除当前壁纸
+                <Button type="danger" onClick={async () => {
+                  await commonCollection.desktop.remove('wallpaper');
+                  setWallpaper('');
+                }} style={{ fontSize: 12 }}>确认</Button>
+              </div>
+            }>
+              <Button style={{ fontSize: 12 }}>删除壁纸</Button>
+            </Popover>
           }
-        }} style={{ fontSize: 12 }}>设置壁纸</Button>
-        {
-          wallpaper && <Popover inline auto content={
-            <div style={{ lineHeight: '35px', fontSize: 12, padding: '0 10px' }}>
-              确认删除当前壁纸
-              <Button type="danger" onClick={async () => {
-                await commonCollection.desktop.remove('wallpaper');
-                setWallpaper('');
-              }} style={{ fontSize: 12 }}>确认</Button>
-            </div>
-          }>
-            <Button style={{ fontSize: 12 }}>删除壁纸</Button>
-          </Popover>
-        }
+        </span>
       </div>
-      <div className={style['setting-item']}>
+      <Sep />
+      <div className={classNames(style['setting-item'], style.justify)}>
         <span>壁纸填充方法</span>
         <select
           onChange={async e => {
             setBgFillMode(e.target.value as any);
             await commonCollection.desktop.set('bg-fill-mode', e.target.value);
           }}
+          style={{ width: 125 }}
           value={bgFillMode}
         >
-          <option value={'contain'}>contain</option>
-          <option value={'cover'}>cover</option>
-          <option value={'fill'}>fill</option>
+          <option value={'contain'}>完整包含</option>
+          <option value={'cover'}>完整覆盖</option>
+          <option value={'fill'}>缩放</option>
         </select>
       </div>
+      <Sep />
       <div className={style['setting-item']}>
+        <div className={style['section-title']}>预览</div>
         {
           wallpaper && <img style={{ width: 300, height: 'auto' }} src={create_download_link_from_file_path(wallpaper)}></img>
         }
       </div>
     </div>
   </div>
+}
+
+function Sep() {
+  return <div className={style.sep}></div>
 }
 
 export async function unmount(ctx: AppContext) {

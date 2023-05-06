@@ -19,6 +19,7 @@ export async function logout() {
 }
 
 export interface SessionState {
+    key: string,
     ttl: number,
     state: {
         user: {
@@ -33,6 +34,30 @@ export interface SessionState {
 
 export async function getSessionState() {
     let resp = await post('/auth/get_session_state', {});
+    if (resp.status === 0) {
+        const data = resp.data;
+        const sessions = Object.entries(data).map(([key, d]: any) => {
+            let user = {};
+            try {
+                user = JSON.parse(d.state.user)
+            } catch (err) {
+                console.error(err);
+            }
+            return {
+                key,
+                ttl: d.ttl,
+                state: {
+                    user,
+                },
+            } as SessionState;
+        }).filter(s => !!s.state.user.username);
+        return sessions;
+    }
+    return null;
+}
+
+export async function deleteSessionState(key: string) {
+    let resp = await post('/auth/delete_session_state', { key });
     if (resp.status === 0) {
         const data = resp.data;
         const sessions = Object.values(data).map((d: any) => {

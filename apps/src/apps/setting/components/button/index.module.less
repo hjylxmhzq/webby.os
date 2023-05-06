@@ -8,13 +8,13 @@
   font-size: inherit;
   color: var(--font-color);
 
+  &.danger {
+    color: #b72727;
+  }
+
   &:hover {
     background-color: var(--bg-heavy-hover);
   }
-}
-
-.danger {
-  color: #b72727;
 }
 
 .animation {
@@ -28,6 +28,7 @@
     max-width: 0px;
     padding: 5px 0;
   }
+
   to {
     max-width: 50px;
     padding: 5px;
@@ -71,9 +72,11 @@
       opacity: 0;
       pointer-events: none;
     }
+
     .pop-content {
       opacity: 1;
     }
+
     padding: 10px;
     border-radius: 5px;
   }

@@ -3,16 +3,23 @@
 
   .menu-item {
     transition: background-color 0.2s;
-    height: 35px;
-    line-height: 35px;
+    height: 30px;
+    line-height: 30px;
+    font-size: 14px;
+    text-align: left;
+    padding: 0 20px;
     background-color: var(--bg-heavy-hover);
     box-shadow: var(--box-shadow);
     border-radius: 5px;
     margin-bottom: 10px;
     cursor: pointer;
 
+    &.active-tab {
+      background-color: var(--bg-transparent);
+    }
+
     &:hover {
-      background-color: var(--bg-heavy);
+      background-color: var(--bg-transparent);
     }
   }
 }
@@ -27,6 +34,12 @@
   box-shadow: var(--box-shadow);
   border-radius: 5px;
   overflow: auto;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 900;
+  padding: 5px 10px;
 }
 
 .setting-page {
@@ -68,9 +81,22 @@
   color: var(--font-color);
 }
 
+.sep {
+  width: 98%;
+  margin: auto;
+  height: 1px;
+  background-color: var(--border-color);
+}
+
 .setting-item {
   margin: 10px;
   font-size: 14px;
+
+  &.justify {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
 
   & select {
     background-color: var(--bg-light);
@@ -86,8 +112,10 @@
 }
 
 .setting-section {
-  padding-left: 10px;
-  border-left: 1px solid var(--border-color-strong);
+  padding: 0 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  margin-bottom: 10px;
 }
 
 .user-list {
@@ -109,14 +137,15 @@
 
   &>span {
     display: inline-block;
-    width: 160px;
+    width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
 .setting-item-row {
   display: flex;
   justify-content: space-between;
-  width: 250px;
   align-items: center;
   padding: 5px;
 }

@@ -58,7 +58,7 @@ function MenuItem({ morePadding, item, onClick }: { morePadding?: boolean, item:
   const _onClick = () => {
     onClick(item);
   };
-  const maxItems = (document.documentElement.clientHeight - 30) / 26 >> 0;
+  const maxItems = (document.documentElement.clientHeight - 100) / 26 >> 0;
 
   const endIdx = startIdx + maxItems;
 
