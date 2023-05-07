@@ -120,6 +120,10 @@ module.exports = {
         target: 'http://127.0.0.1:7001',
         changeOrigin: true,
       },
+      '/system_info': {
+        target: 'http://127.0.0.1:7001',
+        changeOrigin: true,
+      },
       '/shell/start': {
         target: 'ws://127.0.0.1:7001',
         changeOrigin: true,

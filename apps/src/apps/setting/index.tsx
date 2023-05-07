@@ -8,12 +8,13 @@ import { http } from '@webby/core/utils';
 import iconUrl from './icon.svg';
 import { commonCollection } from "@webby/core/kv-storage";
 import { create_download_link_from_file_path, getLocalFSCache, MetaAll } from "@webby/core/fs";
-import { auth } from "@webby/core/api";
+import { auth, systemInfo } from "@webby/core/api";
 import classNames from 'classnames';
 import { getAppManager, systemMessage, systemSelectFile } from "@webby/core/system";
 import { Switch } from "../../components/switch";
 import { formatFileSize, formatTime } from "./utils";
 import { SmartImage } from "@webby/components";
+import RecordBlock from "./components/record-block";
 
 const localFSCache = getLocalFSCache();
 let reactRoot: ReactDom.Root;
@@ -42,6 +43,7 @@ const menu = {
   '应用管理': <AppSetting />,
   '文件系统': <FileSetting />,
   '全局搜索': <GlobalSearchSetting />,
+  '系统状态': <SystemInfo />,
   '日志': <LogSetting />,
 }
 
@@ -398,6 +400,41 @@ function AppSetting() {
             : '未安装第三方应用'
         }
       </div>
+    </div>
+  </div>
+}
+
+function SystemInfo() {
+
+  const [si, setSystemInfo] = useState<systemInfo.SystemInfo>();
+
+  useEffect(() => {
+    (async () => {
+      const si = await systemInfo.getSystemInfo();
+      setSystemInfo(si);
+    })();
+  }, []);
+
+  return <div>
+    <div className={style['section-title']}>存储空间</div>
+    <div className={style['setting-section']}>
+      {si?.mounts ? <RecordBlock record={si.mounts as any} /> : '无数据'}
+    </div>
+    <div className={style['section-title']}>网络设备</div>
+    <div className={style['setting-section']}>
+      {si?.networks ? <RecordBlock record={si.networks as any} /> : '无数据'}
+    </div>
+    <div className={style['section-title']}>内存</div>
+    <div className={style['setting-section']}>
+      {si?.memory ? <RecordBlock record={si.memory as any} /> : '无数据'}
+    </div>
+    <div className={style['section-title']}>Swap</div>
+    <div className={style['setting-section']}>
+      {si?.swap ? <RecordBlock record={si.swap as any} /> : '无数据'}
+    </div>
+    <div className={style['section-title']}>Socket状态</div>
+    <div className={style['setting-section']}>
+      {si?.socket_stats ? <RecordBlock record={si.socket_stats as any} /> : '无数据'}
     </div>
   </div>
 }

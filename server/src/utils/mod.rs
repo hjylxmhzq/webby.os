@@ -13,5 +13,6 @@ pub mod search_engine;
 pub mod doc_parser;
 pub mod eventbus;
 pub mod log;
+pub mod system_info;
 #[cfg(debug_assertions)]
 pub mod performance;

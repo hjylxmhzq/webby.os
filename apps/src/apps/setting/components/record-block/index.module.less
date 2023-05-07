@@ -1,0 +1,44 @@
+.record-rec {
+  padding: 5px;
+  font-size: 12px;
+}
+
+.row {
+  position: relative;
+
+  &::before {
+    position: absolute;
+    content: '';
+    width: 10px;
+    top: 6px;
+    left: -15px;
+    height: 1px;
+    background-color: var(--border-color);
+  }
+}
+
+.key {
+  margin-right: 5px;
+}
+
+.title {
+  position: relative;
+  font-weight: 900;
+
+  &::before {
+    position: absolute;
+    content: '';
+    width: 10px;
+    top: 6px;
+    left: -15px;
+    height: 1px;
+    background-color: var(--border-color);
+  }
+}
+
+.block {
+  position: relative;
+  border-left: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  padding-left: 10px;
+}

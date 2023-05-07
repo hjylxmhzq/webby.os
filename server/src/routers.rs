@@ -5,6 +5,7 @@ pub mod index;
 pub mod kv_storage;
 pub mod tunnel;
 pub mod log;
+pub mod system_info;
 
 #[cfg(target_os="windows")]
 pub mod win_shell;

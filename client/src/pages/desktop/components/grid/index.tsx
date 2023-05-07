@@ -272,7 +272,7 @@ function GridItem(props: GridItemProps) {
       width: props.size, height: props.size, transform: `translate(${props.x}px,${props.y}px)`
     }}>
     <div
-      {...props}
+      onClick={props.onClick}
       draggable="false"
       tabIndex={0}
       className={style['grid-item']}
