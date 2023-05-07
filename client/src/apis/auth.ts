@@ -1,14 +1,25 @@
 import { getLocalFSCache } from "@webby/core/fs";
 import { post } from "./utils";
 
-export async function login(username: string, password: string) {
+export enum LoginStatus {
+    Success = 'success',
+    NeedOTPCode = 'needotp',
+    Error = 'error',
+}
+
+export async function login(username: string, password: string, totpCode?: string) {
     let resp = await post('/auth/login', {
-        name: username, password,
+        name: username,
+        password,
+        otp_code: totpCode,
     });
     if (resp.status === 0) {
-        return true;
+        return LoginStatus.Success;
     }
-    return false;
+    if (resp.message.includes('otp error')) {
+        return LoginStatus.NeedOTPCode;
+    }
+    return LoginStatus.Error;
 }
 
 export async function logout(cleanup = true) {

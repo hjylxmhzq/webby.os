@@ -40,6 +40,7 @@ diesel::table! {
         user_type -> Integer,
         user_root -> Text,
         group_name -> Text,
+        otp_secret -> Nullable<Text>,
     }
 }
 

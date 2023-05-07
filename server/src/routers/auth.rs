@@ -15,7 +15,8 @@ use crate::{
   models::User as TUser,
   schema,
   utils::{
-    auth::create_one_time_token,
+    self,
+    auth::{create_one_time_token, verify_otp},
     crypto::hash_pwd,
     error::AppError,
     response::{create_resp, EmptyResponseData},
@@ -28,6 +29,7 @@ use crate::{
 pub struct User {
   name: String,
   password: String,
+  otp_code: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -96,6 +98,13 @@ pub async fn login(
   let user_data = sess.get::<UserSessionData>("user")?;
 
   let user = user.get(0).unwrap();
+  
+  let otp_code = body.otp_code.clone().map_or(String::new(), |v| v);
+  let success = verify_otp(&user.username, &otp_code)?;
+  if !success {
+    return Ok(create_resp(false, false, "otp error"));
+  }
+
   match user_data {
     Some(mut user_data) => {
       user_data.is_login = true;
@@ -116,6 +125,51 @@ pub async fn login(
   }
 
   Ok(create_resp(true, EmptyResponseData::new(), "done"))
+}
+
+#[derive(Deserialize)]
+pub struct EnableOtpReq {
+  secret: String,
+  code: String,
+}
+
+pub async fn enable_otp(
+  body: web::Json<EnableOtpReq>,
+  sess: Session,
+) -> Result<HttpResponse, AppError> {
+  let user_data = sess
+    .get::<UserSessionData>("user")?
+    .ok_or_else(|| AppError::new("no use session data"))?;
+  let username = user_data.username;
+
+  let secret = &body.secret;
+  let code = &body.code;
+
+  let result = utils::auth::enable_otp(&username, secret, code)?;
+  Ok(create_resp(true, result, "done"))
+}
+
+pub async fn is_otp_enabled(
+  sess: Session,
+) -> Result<HttpResponse, AppError> {
+  let user_data = sess
+    .get::<UserSessionData>("user")?
+    .ok_or_else(|| AppError::new("no use session data"))?;
+  let username = user_data.username;
+
+  let enabled = utils::auth::is_otp_enabled(&username)?;
+
+  Ok(create_resp(true, enabled, "done"))
+}
+
+pub async fn disbale_otp(sess: Session) -> Result<HttpResponse, AppError> {
+  let user_data = sess
+    .get::<UserSessionData>("user")?
+    .ok_or_else(|| AppError::new("no use session data"))?;
+  let username = user_data.username;
+
+  let result = utils::auth::disbale_otp(&username)?;
+  Ok(create_resp(true, result, "done"))
 }
 
 #[derive(Deserialize)]
@@ -331,11 +385,17 @@ pub async fn request_one_time_token(
 pub fn auth_routers() -> Scope {
   web::scope("/auth")
     .route("/login", web::post().to(login))
+    .route("/enable_otp", web::post().to(enable_otp))
+    .route("/disable_otp", web::post().to(disbale_otp))
+    .route("/is_otp_enabled", web::post().to(is_otp_enabled))
     .route("/reset_password", web::post().to(reset_password))
     .route("/register", web::post().to(register))
     .route("/delete_user", web::post().to(delete_user))
     .route("/get_session_state", web::post().to(get_session_state))
-    .route("/delete_session_state", web::post().to(delete_session_state))
+    .route(
+      "/delete_session_state",
+      web::post().to(delete_session_state),
+    )
     .route("/logout", web::post().to(logout))
     .route("/get_all_users", web::post().to(get_all_users))
     .route("/get_all_groups", web::post().to(get_all_groups))

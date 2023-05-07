@@ -75,13 +75,18 @@
 }
 
 .input {
-  border: 1px solid var(--border-color-strong);
+  border: 1px solid var(--border-color);
   outline: none;
   font-size: 12px;
   padding: 3px;
   margin: 2px;
   background-color: var(--bg-light);
   color: var(--font-color);
+  border-radius: 3px;
+  transition: all 0.2s;
+  &:focus {
+    border-color: var(--border-color-strong);
+  }
 }
 
 .sep {

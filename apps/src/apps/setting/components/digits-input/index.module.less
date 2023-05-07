@@ -1,0 +1,21 @@
+.digit {
+  background-color: var(--bg-light);
+  color: var(--font-color);
+  width: 20px;
+  height: 25px;
+  border: 1px solid var(--border-color-strong);
+  border-radius: 5px;
+  outline: none;
+  margin: 0 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: text;
+  &:active {
+    border-color: #7979fe;
+  }
+  &:focus {
+    box-shadow: var(--box-shadow-strong);
+    border-color: #7979fe;
+  }
+}

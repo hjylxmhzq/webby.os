@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Button from "./components/button";
 import { Popover } from "./components/popover";
 import style from './index.module.less';
@@ -15,6 +15,8 @@ import { Switch } from "../../components/switch";
 import { formatFileSize, formatTime } from "./utils";
 import { SmartImage } from "@webby/components";
 import RecordBlock from "./components/record-block";
+import qrCode from 'qrcode';
+import DigitInput from "./components/digits-input";
 
 const localFSCache = getLocalFSCache();
 let reactRoot: ReactDom.Root;
@@ -123,11 +125,18 @@ function UserSetting() {
   const [adding, setAdding] = useState(false);
   const [newUser, setNewUser] = useState({ username: '', password: '', email: '', group: '' });
   const [lastAdmin, setLastAdmin] = useState(true);
+  const [otpEnabled, setOtpEnabled] = useState(false);
+  const [showOtpForm, setShowOtpForm] = useState(false);
+  const qrCodeCanvas = useRef<HTMLCanvasElement>(null);
+  const [verifyCode, setVerifyCode] = useState('');
+  const [secret, setSecret] = useState('');
 
   async function refresh() {
     const users = await auth.getAllUsers();
     const groups = await auth.getAllGroups();
     const sessions = await auth.getSessionState();
+    const otpEnabled = await auth.isOtpEnabled();
+    setOtpEnabled(otpEnabled);
     const admins = users.filter(u => u.group_name === 'admin').length;
     if (admins > 1) {
       setLastAdmin(false);
@@ -146,12 +155,12 @@ function UserSetting() {
   }, []);
 
   return <div>
-    <div className={style['section-title']}>权限</div>
+    <div className={style['section-title']}>账户安全</div>
     <div className={style['setting-section']}>
       <div className={style['setting-item']}>
         <span>重置密码</span>
-        <input className={style.input} type="text" placeholder="old password" value={pwds[0]} onChange={e => setPwds([e.target.value, pwds[1]])} />
-        <input className={style.input} type="text" placeholder="new password" value={pwds[1]} onChange={e => setPwds([pwds[0], e.target.value])} />
+        <input className={style.input} type="text" placeholder="请输入旧密码" value={pwds[0]} onChange={e => setPwds([e.target.value, pwds[1]])} />
+        <input className={style.input} type="text" placeholder="请输入新密码" value={pwds[1]} onChange={e => setPwds([pwds[0], e.target.value])} />
         <Popover inline auto content={
           <div style={{ lineHeight: '35px', fontSize: 12, padding: '0 10px' }}>
             This operation requires to refresh page and login again
@@ -163,8 +172,58 @@ function UserSetting() {
             }} style={{ fontSize: 12 }}>Yes</Button>
           </div>
         }>
-          <Button style={{ fontSize: 12 }}>Confirm</Button>
+          <Button style={{ fontSize: 12 }}>修改</Button>
         </Popover>
+      </div>
+    </div>
+    <div className={style['setting-section']}>
+      <div className={classNames(style['setting-item'], style.justify)}>
+        <span>两步验证<span style={{ fontWeight: 100, fontStyle: 'italic' }}>(TOTP)</span></span>
+        <Switch enabled={otpEnabled} onChange={async (enabled) => {
+          if (enabled) {
+            const nanoid = await import('nanoid');
+            const base32Encode = (await import('base32-encode')).default;
+            const secret = nanoid.customAlphabet('1234567890abcdefghijklnmopqrstuvwxyz', 25)();
+            setSecret(secret);
+            const uint8 = new TextEncoder().encode(secret);
+            const encoded = base32Encode(uint8, 'RFC4648');
+            const url = `otpauth://totp/${"webbyos"}:${window.location.hostname}?secret=${encoded}&issuer=x-gateway`
+            qrCode.toCanvas(qrCodeCanvas.current, url, { width: 250, margin: 2 }, (err) => {
+              if (err) {
+                console.error(err);
+              }
+            });
+            setShowOtpForm(true);
+            systemMessage({ title: '两步验证设置', content: '扫描二维码并输入验证码', timeout: 5000 });
+          } else {
+            await auth.disableOtp();
+            setOtpEnabled(false);
+            systemMessage({ title: '两步验证设置', content: '已关闭两步验证', timeout: 5000 });
+          }
+        }} />
+      </div>
+      <div style={{ display: showOtpForm ? 'block' : 'none' }} className={classNames(style['setting-item'])}>
+        <div style={{ textAlign: 'center' }}>
+          <canvas ref={qrCodeCanvas}></canvas>
+        </div>
+        <div style={{ textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <DigitInput length={6} onChange={(r) => setVerifyCode(r.filter(r => typeof r === 'number').join(''))} />
+          <Button
+            style={{ opacity: verifyCode.length === 6 ? 1 : 0.5, pointerEvents: verifyCode.length === 6 ? 'all' : 'none', }}
+            onClick={async () => {
+              const success = await auth.enableOtp(secret, verifyCode);
+              if (!success) {
+                systemMessage({ title: '两步验证设置', content: '检查验错误', timeout: 5000 });
+              } else {
+                setOtpEnabled(true);
+                setShowOtpForm(false);
+                systemMessage({ title: '两步验证设置', content: '已开启两步验证', timeout: 5000 });
+              }
+            }}>确定</Button>
+          <Button onClick={async () => {
+            setShowOtpForm(false);
+          }}>取消</Button>
+        </div>
       </div>
     </div>
     <div className={style['section-title']}>用户管理</div>

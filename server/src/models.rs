@@ -12,6 +12,7 @@ pub struct User {
   pub user_type: i32,
   pub user_root: String,
   pub group_name: String,
+  pub otp_secret: Option<String>,
 }
 
 #[derive(Serialize, Queryable)]

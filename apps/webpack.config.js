@@ -93,7 +93,7 @@ module.exports = {
   output: {
     filename: '[name].js',
     path: outputDir,
-    publicPath: '/static/apps',
+    publicPath: '/apps/',
     library: {
       type: 'commonjs',
     }

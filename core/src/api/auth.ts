@@ -104,6 +104,30 @@ export async function getAllUsers(): Promise<UserInfo[]> {
     return [];
 }
 
+export async function enableOtp(secret: string, code: string): Promise<boolean> {
+    let resp = await post('/auth/enable_otp', { secret, code });
+    if (resp.status === 0) {
+        return resp.data;
+    }
+    return false;
+}
+
+export async function disableOtp(): Promise<boolean> {
+    let resp = await post('/auth/disable_otp', {});
+    if (resp.status === 0) {
+        return resp.data;
+    }
+    return false;
+}
+
+export async function isOtpEnabled(): Promise<boolean> {
+    let resp = await post('/auth/is_otp_enabled', {});
+    if (resp.status === 0) {
+        return resp.data;
+    }
+    return false;
+}
+
 export interface GroupInfo {
     name: string,
     desc: string,
