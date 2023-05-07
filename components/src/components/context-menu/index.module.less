@@ -1,0 +1,31 @@
+.menu {
+  z-index: 999;
+  width: 200px;
+  min-height: 10px;
+  background-color: var(--bg-transparent-deep);
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  box-shadow: var(--box-shadow);
+  color: var(--font-color);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  padding: 3px 0;
+}
+
+.menu-row {
+  transition: all 0.2s;
+  line-height: 25px;
+  font-size: 12px;
+  padding: 0 10px;
+  cursor: pointer;
+  margin: 0 3px;
+  border-radius: 3px;
+
+  &:hover {
+    background-color: var(--bg-transparent);
+  }
+}
+
+.icon {
+  margin-right: 5px;
+}

@@ -289,8 +289,8 @@ export function HomePage() {
         } */}
         <DesktopIconGrid
           itemSize={isMobile ? 80 : 100}
-          onStartApp={async (app) => {
-            if (isMobile) {
+          onStartApp={async (app, newWindow = false) => {
+            if (isMobile || newWindow) {
               const url = new URL(window.location.href);
               url.hash = `#app=${app}`;
               let strWindowFeatures = `menubar=no,location=no,resizable=yes,scrollbars=no,status=no`;

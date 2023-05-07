@@ -4826,6 +4826,7 @@ __metadata:
   resolution: "@webby/components@workspace:components"
   dependencies:
     "@webby/core": "*"
+    cross-env: ^7.0.3
     mini-css-extract-plugin: ^2.7.5
     ts-loader: ^9.4.2
     typescript: ^5.0.4

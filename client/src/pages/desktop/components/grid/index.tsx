@@ -1,6 +1,6 @@
 import React, { HTMLAttributes, useEffect, useRef, useState } from "react";
 import style from './index.module.less';
-import { SmartImage } from "@webby/components";
+import { ContextMenu, SmartImage } from "@webby/components";
 import { Motion, spring } from 'react-motion';
 import { useCallback } from "react";
 import { commonCollection } from "@webby/core/kv-storage";
@@ -13,7 +13,7 @@ interface Props {
     icon: string,
     text: string,
   }[];
-  onStartApp: (app: string) => void;
+  onStartApp: (app: string, newWindow?: boolean) => void;
 }
 
 interface AppItem {
@@ -215,6 +215,12 @@ export function DesktopIconGrid(props: Props) {
           {
             ({ translateX, translateY }) => {
               return <GridItem
+                onStartInNewWindow={() => {
+                  props.onStartApp(app.name, true)
+                }}
+                onStartApp={() => {
+                  props.onStartApp(app.name)
+                }}
                 onMouseDown={onMouseDown}
                 onClick={() => {
                   if (preventClick.current) {
@@ -240,22 +246,46 @@ export function DesktopIconGrid(props: Props) {
 
 type GridItemProps = {
   size: number;
+  onStartApp(): void;
+  onStartInNewWindow(): void;
 } & AppItem & HTMLAttributes<HTMLDivElement>;
 
 function GridItem(props: GridItemProps) {
-  return <div
-    {...props}
-    draggable="false"
-    tabIndex={0}
-    className={style['grid-item']}
-    style={{ width: props.size, height: props.size, transform: `translate(${props.x}px,${props.y}px)` }}>
-    <div className={style['grid-item-img']} style={{ height: props.size - 20 }}>
-      <SmartImage
-        style={{ width: props.size * 0.6, height: props.size * 0.6 }}
-        draggable="false"
-        src={props.icon}>
-      </SmartImage>
+  return <ContextMenu
+    menu={[{
+      name: '打开应用',
+      icon: 'play',
+      onClick() {
+        props.onStartApp();
+      },
+    }, {
+      name: '在独立窗口中打开',
+      icon: 'windows',
+      onClick() {
+        props.onStartInNewWindow();
+      }
+    }]}
+    style={{
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      width: props.size, height: props.size, transform: `translate(${props.x}px,${props.y}px)`
+    }}>
+    <div
+      {...props}
+      draggable="false"
+      tabIndex={0}
+      className={style['grid-item']}
+      style={{ width: '100%', height: '100%' }}
+    >
+      <div className={style['grid-item-img']} style={{ height: props.size - 20 }}>
+        <SmartImage
+          style={{ width: props.size * 0.6, height: props.size * 0.6 }}
+          draggable="false"
+          src={props.icon}>
+        </SmartImage>
+      </div>
+      <div className={style['grid-item-text']}>{props.text}</div>
     </div>
-    <div className={style['grid-item-text']}>{props.text}</div>
-  </div>
+  </ContextMenu>
 }
