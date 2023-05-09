@@ -1,3 +1,5 @@
+/// A web shell backend
+/// which implements a pseudo terminal
 use std::{
   io::{BufReader, Read, Write},
   process::Command,
@@ -9,7 +11,7 @@ use actix::{Actor, AsyncContext, Handler, StreamHandler};
 use actix_web::{web, Error, HttpRequest, HttpResponse, Scope};
 use actix_web_actors::ws;
 use ptyprocess::PtyProcess;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{config, utils::error::AppError};
 
@@ -68,10 +70,32 @@ struct ClientMessage {
   payload: String,
 }
 
+// use for resize pty size
 #[derive(Deserialize)]
 struct SetTTYSizePayload {
   rows: u16,
   cols: u16,
+}
+
+#[derive(Serialize)]
+struct ShellErrorMsg<T: Serialize> {
+  r#type: String,
+  payload: T,
+}
+
+impl<T: Serialize> ShellErrorMsg<T> {
+  fn new(t: &str, payload: T) -> Self {
+    Self {
+      r#type: t.to_string(),
+      payload,
+    }
+  }
+}
+
+impl<T: Serialize> ToString for ShellErrorMsg<T> {
+  fn to_string(&self) -> String {
+      serde_json::to_string(self).unwrap()
+  }
 }
 
 fn find_shell() -> Result<String, AppError> {
@@ -80,13 +104,18 @@ fn find_shell() -> Result<String, AppError> {
     return Ok(shell.to_string_lossy().to_string());
   }
   let candidates = vec!["zsh", "bash", "sh"];
-  let list: Vec<String> = candidates.into_iter().map(|c| {
-    return which::which(c);
-  }).filter(|c| {
-    return c.is_ok();
-  }).map(|c| {
-    return c.unwrap().to_string_lossy().to_string();
-  }).collect();
+  let list: Vec<String> = candidates
+    .into_iter()
+    .map(|c| {
+      return which::which(c);
+    })
+    .filter(|c| {
+      return c.is_ok();
+    })
+    .map(|c| {
+      return c.unwrap().to_string_lossy().to_string();
+    })
+    .collect();
   if list.len() > 0 {
     return Ok(list[0].clone());
   }
@@ -115,7 +144,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
 
     let shell = find_shell();
     if shell.is_err() {
-      ctx.text(r#"{ "type": "spawn_shell_error", "payload": "can not find shell" }"#.to_owned());
+      ctx.text(ShellErrorMsg::new("spawn_shell_error", "can not find shell").to_string());
       ctx.close(None);
       return;
     }
@@ -140,14 +169,14 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
             addr.do_send(WsMessage(buf[0..s].to_vec()));
           }
           addr.do_send(WsTextMessage(
-            r#"{ "type": "shell_closed", "payload": "" }"#.to_owned(),
+            ShellErrorMsg::new("shell_closed", "").to_string()
           ));
         });
       } else {
-        ctx.text(r#"{ "type": "spawn_shell_error", "payload": "" }"#.to_owned());
+        ctx.text(ShellErrorMsg::new("spawn_shell_error", "").to_string());
       }
     } else {
-      ctx.text(r#"{ "type": "spawn_shell_error", "payload": "" }"#.to_owned());
+      ctx.text(ShellErrorMsg::new("spawn_shell_error", "").to_string());
     }
   }
 
@@ -170,7 +199,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
               let mut pty_handler = process.get_raw_handle().unwrap();
               pty_handler.write_all(cmd.as_bytes()).unwrap();
             } else {
-              ctx.text(r#"{ "type": "error", "payload": "shell_is_not_start" }"#.to_owned());
+              ctx.text(ShellErrorMsg::new("error", "shell_is_not_started").to_string());
               ctx.close(None);
             }
           } else if msg.r#type == "set_size" {
@@ -181,11 +210,11 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
                 process.set_window_size(sizes.cols, sizes.rows).unwrap();
               }
             } else {
-              ctx.text(r#"{ "type": "error", "payload": "message format error" }"#.to_owned());    
+              ctx.text(ShellErrorMsg::new("error", "message_format_error").to_string());
             }
           }
         } else {
-          ctx.text(r#"{ "type": "error", "payload": "message format error" }"#.to_owned());
+          ctx.text(ShellErrorMsg::new("error", "message_format_error").to_string());
         }
         ctx.text("");
       }

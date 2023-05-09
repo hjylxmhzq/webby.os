@@ -1,9 +1,15 @@
-use actix_web::{web, Scope};
+/// The tunnel is some methods used to proxy browser requests.
+/// As cross-domain resources without the CORS response header cannot be accessed in a browser,
+/// server-side proxying is required to enable requests for any resource in the browser.
+/// The tunnel also implements the ability to proxy TCP connections by implementing the websockify protocol.
 
-use self::http::{tunnel_delete, tunnel_get, tunnel_head, tunnel_patch, tunnel_post, tunnel_put};
+
+use actix_web::{web, Scope};
 
 pub mod http;
 pub mod websockify;
+
+use http::{tunnel_delete, tunnel_get, tunnel_head, tunnel_patch, tunnel_post, tunnel_put};
 
 pub fn tunnel_routers() -> Scope {
   web::scope("/tunnel")

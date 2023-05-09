@@ -243,7 +243,8 @@ pub async fn logout(sess: Session) -> Result<HttpResponse, AppError> {
   match user_data {
     Some(mut user_data) => {
       user_data.is_login = false;
-      sess.insert("user", user_data)?;
+      sess.remove("user");
+      // sess.insert("user", user_data)?;
     }
     None => {
       return Err(AppError::new("user is not login").with_status(StatusCode::FORBIDDEN));

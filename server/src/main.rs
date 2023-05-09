@@ -131,6 +131,7 @@ async fn main() -> Result<(), AppError> {
   Ok(())
 }
 
+// init global static config, database connection etc.
 fn init() -> AppState {
   APP_CONFIG.lock().unwrap().init();
 
@@ -167,6 +168,7 @@ fn init() -> AppState {
   state
 }
 
+// run database migration in runtime, the migration files are included in binary
 pub fn run_migrations(conn: &mut SqliteConnection) {
   info!("database is connected");
   info!("running migrations");
@@ -174,6 +176,7 @@ pub fn run_migrations(conn: &mut SqliteConnection) {
   info!("migrations finished");
 }
 
+// create databse connection
 pub fn connect_db() -> SqliteConnection {
   let database_url = config!(database_url);
   let conn =
@@ -181,6 +184,7 @@ pub fn connect_db() -> SqliteConnection {
   conn
 }
 
+// init log and print to log directory
 fn init_log() {
   use log4rs::{
     append::{
