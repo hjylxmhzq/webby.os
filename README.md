@@ -86,21 +86,28 @@ yarn build
 yarn build-frontend
 ```
 
-### Start server
-
-```sh
-yarn server
-```
-
-Which is alias of command below:
+### Build backend code only
 
 ```sh
 cd server
-cargo watch -x run
+cargo build --release
 ```
 
-Make sure you have installed cargo-watch
+
+## Cross compile
+
+Build Linux executable binary on Windows/MacOS
+
+a. Built for the same architecture as the host platform
 
 ```sh
-cargo install cargo-watch
+yarn build_linux_native
 ```
+
+b. Built for the Linux_x86 from other architecture (e.g. arm64 mac)
+
+```sh
+yarn build_linux_x86
+```
+
+Be aware that cross compile uses docker as virtualization layer, so you should make sure docker is available in your environment.

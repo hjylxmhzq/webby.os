@@ -12,4 +12,4 @@ docker build --tag $image_name - < ./docker/build-env.native.dockerfile
 #     docker start $container_name
 # fi
 
-docker run --rm --name $container_name -v $(pwd):/app -it $image_name /bin/bash -c "bash /app/build/build-in-docker.sh"
+docker run --rm --name $container_name -v $(pwd):/app -it $image_name /bin/bash -c "bash /app/build/build-in-docker.sh native"

@@ -11,4 +11,5 @@ cd /temp_app
 
 source ./build/init-env.sh
 source ./build/build.sh
-cp dist/webbyos /app/dist/cross_webbyos
+mkdir /app/${1}
+cp dist/webbyos /app/${1}/webbyos
