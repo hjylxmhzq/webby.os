@@ -41,6 +41,8 @@ docker run -p 0.0.0.0:7002:7001 -it hjylxmhzq/webbyos
 
 - @webby/server: backend
 
+- @webby/components: ui components
+
 
 ## Build binary from source code
 
@@ -70,7 +72,35 @@ cd ./dist
 ./webbyos
 ```
 
-### TODO
+## Development
 
-1. App Store
+### Build entire project
 
+```sh
+yarn build
+```
+
+### Build frontend code only
+
+```sh
+yarn build-frontend
+```
+
+### Start server
+
+```sh
+yarn server
+```
+
+Which is alias of command below:
+
+```sh
+cd server
+cargo watch -x run
+```
+
+Make sure you have installed cargo-watch
+
+```sh
+cargo install cargo-watch
+```
