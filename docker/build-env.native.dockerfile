@@ -3,7 +3,8 @@ FROM ubuntu:20.04
 SHELL ["/bin/bash", "-c"] 
 
 ARG DEBIAN_FRONTEND=noninteractive
-
+ADD build/apt-sources.list /root/apt-sources.list
+RUN cp /root/apt-sources.list /etc/apt/sources.list
 RUN apt update -y
 RUN apt install -y curl
 RUN apt install -y git

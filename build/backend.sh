@@ -6,5 +6,5 @@ cd ../server
 cargo build --release
 mkdir ../dist
 mkdir ../dist/files
-cp target/release/server ../dist/webbyos
+cp target/release/webbyos ../dist/webbyos
 cd ..

@@ -6,7 +6,7 @@ cd ..
 container_name=build_env_native
 image_name=build_env_native
 
-docker build --tag $image_name - < ./docker/build-env.native.dockerfile
+docker build --tag $image_name -f ./docker/build-env.native.dockerfile .
 
 # if [ "$(docker ps -a -q -f name=$container_name)" ]; then
 #     docker start $container_name
