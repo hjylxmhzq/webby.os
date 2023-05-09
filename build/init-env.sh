@@ -1,7 +1,7 @@
-# install rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+#!/bin/bash
 
-# npm install -g yarn
+cd "$(dirname "$0")"
+cd ..
 
 # use yarn v3
 corepack enable
