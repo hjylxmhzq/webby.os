@@ -4,9 +4,15 @@ use super::error::AppError;
 use std::path::PathBuf;
 
 /// make sure the joined path is a sub path of root
-/// e.g. join("a", "b") -> "a/b"
-///      join("a", "../b") -> error
+/// 
+/// e.g. 
+/// 
+/// join("a", "b") -> "a/b"
+/// 
+/// join("a", "../b") -> error
+/// 
 /// this function only care about '..', but ignore link
+/// 
 /// for example: link /a/b/c -> /c, then join("/a/b", "c") -> "a/b/c"
 pub fn secure_join(root: &PathBuf, unsafe_path: &PathBuf) -> Result<PathBuf, AppError> {
   if unsafe_path.has_root() {
@@ -26,8 +32,9 @@ pub fn secure_join(root: &PathBuf, unsafe_path: &PathBuf) -> Result<PathBuf, App
   Ok(new_path)
 }
 
-/// this function care about ".." but also link
 /// A strict version of secure_join(..)
+/// 
+/// this function care about ".." but also link
 #[allow(unused)]
 pub fn secure_join_strict(root: &PathBuf, unsafe_path: &PathBuf) -> Result<PathBuf, AppError> {
   if unsafe_path.has_root() {
