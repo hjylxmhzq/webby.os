@@ -4,6 +4,19 @@ use clap::Parser;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize)]
+pub struct DynamicConfig {
+  smtp: Option<SMTPConfig>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SMTPConfig {
+  user: String,
+  secret: String,
+  host: String,
+  port: u32,
+}
+
 #[derive(Deserialize, Debug, Serialize)]
 pub struct AppConfig {
   pub host: Option<String>,
@@ -92,6 +105,10 @@ impl Default for AppConfig {
 lazy_static! {
   pub static ref APP_CONFIG: Mutex<AppConfig> = {
     let default_config = AppConfig::default();
+    Mutex::new(default_config)
+  };
+  pub static ref DYNAMIC_CONFIG: Mutex<DynamicConfig> = {
+    let default_config = DynamicConfig { smtp: None };
     Mutex::new(default_config)
   };
 }
