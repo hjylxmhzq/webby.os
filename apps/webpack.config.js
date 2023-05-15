@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const CopyPlugin = require('copy-webpack-plugin');
+const { EsbuildPlugin } = require('esbuild-loader')
 
 const appDir = './src/apps';
 const apps = fs.readdirSync(appDir);
@@ -32,9 +33,12 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.tsx?$/,
-        use: 'ts-loader',
-        exclude: /node_modules/,
+        test: /\.[jt]sx?$/,
+        loader: 'esbuild-loader',
+        options: {
+          // JavaScript version to compile to
+          target: 'ESNext'
+        }
       },
       {
         test: /\.(png|jpg|gif|ico|svg)$/i,
@@ -80,14 +84,20 @@ module.exports = {
       patterns: [
         { from: "../node_modules/pdfjs-dist/build/pdf.worker.min.js", to: path.join(outputDir, 'pdf-viewer') },
         { from: "../node_modules/pdfjs-dist/cmaps", to: path.join(outputDir, 'pdf-viewer', 'cmaps') },
-        { from: "./src/apps/3d-editor/editor", to: path.join(outputDir, '3d-editor') },
-        { from: "./src/apps/paint/jspaint", to: path.join(outputDir, 'paint') },
-        { from: "./src/apps/vnc-viewer/novnc", to: path.join(outputDir, 'vnc-viewer') },
+        { from: "./third-party/threejs-editor", to: path.join(outputDir, '3d-editor') },
+        { from: "./third-party/jspaint", to: path.join(outputDir, 'paint') },
+        { from: "./third-party/novnc", to: path.join(outputDir, 'vnc-viewer') },
       ],
     }),
   ],
   optimization: {
     minimize: isProd ? true : false,
+    minimizer: [
+      new EsbuildPlugin({
+        target: 'ESNext',
+        css: true
+      })
+    ]
   },
   devtool: isProd ? false : 'inline-source-map',
   output: {
