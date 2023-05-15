@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const DtsBundleWebpack = require('dts-bundle-webpack')
 
 const appDir = './src/components';
 const apps = fs.readdirSync(appDir);
@@ -27,6 +28,15 @@ const entries = apps.map((app) => {
 const outputDir = path.resolve(__dirname, 'dist');
 
 const isProd = process.env.NODE_ENV === 'production';
+
+const dtsBundles = apps.map(comp => {
+  const compName = path.parse(comp).name;
+  return new DtsBundleWebpack({
+    name: `@webby/components/dist/${compName}`,
+    main: path.resolve(__dirname, `dist/components/${compName}/index.d.ts`),
+    out: path.resolve(__dirname, `dist/${compName}.d.ts`),
+  })
+});
 
 module.exports = {
   mode: isProd ? 'production' : 'development',
@@ -86,7 +96,7 @@ module.exports = {
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
   },
-  plugins: [new MiniCssExtractPlugin()],
+  plugins: [new MiniCssExtractPlugin(), ...dtsBundles],
   optimization: {
     minimize: isProd ? true : false,
   },
