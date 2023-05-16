@@ -147,6 +147,8 @@ export function HomePage() {
           }
           const _wallpaper = await read_file_to_link(v, { localCache: true });
           setWallpaper(_wallpaper);
+        } else {
+          setWallpaper('');
         }
       });
       commonCollection.desktop.subscribe('bg-fill-mode', (v) => {
