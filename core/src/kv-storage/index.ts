@@ -8,11 +8,13 @@ interface StorageOptions {
   localFirst?: boolean,
 }
 
+export type SubscribeFn = (cb: (state: any) => void, options?: { once?: boolean }) => void;
+
 export class Collection {
   private eventBus = new EventEmitter();
   initedKeys = new Set();
-  async getReactiveState(key: string): Promise<{ state: Record<string | number, any>, subscribe: (state: Record<string | number, any>) => () => void }>;
-  async getReactiveState<T>(key: string, defaultState: T): Promise<{ state: T, subscribe: (state: T) => () => void }>;
+  async getReactiveState(key: string): Promise<{ state: Record<string | number, any>, subscribe: SubscribeFn }>;
+  async getReactiveState<T>(key: string, defaultState: T): Promise<{ state: T, subscribe: SubscribeFn }>;
   async getReactiveState(key: string, defaultState: any = {}): Promise<any> {
     let _state = await this.get(key) || defaultState;
     if (typeof _state !== 'object' || _state === null) {
@@ -37,8 +39,8 @@ export class Collection {
       }
     };
   }
-  getReactiveStateImmediatelly(key: string): { state: Record<string | number, any>, subscribe: (state: Record<string | number, any>) => () => void };
-  getReactiveStateImmediatelly<T>(key: string, defaultState: T): { state: T, subscribe: (state: T) => () => void };
+  getReactiveStateImmediatelly(key: string): { state: Record<string | number, any>, subscribe: SubscribeFn };
+  getReactiveStateImmediatelly<T>(key: string, defaultState: T): { state: T, subscribe: SubscribeFn };
   getReactiveStateImmediatelly(key: string, defaultState: any = {}): any {
     let _state = defaultState;
     const state = makeReactive(_state, () => {
