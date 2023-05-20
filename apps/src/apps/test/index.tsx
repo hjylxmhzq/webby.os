@@ -1,4 +1,4 @@
-import { AppContext, AppInfo, AppInstallContext } from '@webby/core/web-app';
+import { AppContext, AppInfo, AppInstallContext, defineApp } from '@webby/core/web-app';
 import iconUrl from './icon.svg';
 
 export async function mount(ctx: AppContext) {
@@ -58,3 +58,8 @@ export function getAppInfo(): AppInfo {
   }
 }
 
+defineApp({
+  mount,
+  unmount,
+  getAppInfo
+})

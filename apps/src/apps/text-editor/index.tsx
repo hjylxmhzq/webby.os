@@ -1,5 +1,5 @@
 import { read_file } from '@webby/core/fs';
-import { AppContext, AppInfo } from '@webby/core/web-app';
+import { AppContext, AppInfo, defineApp } from '@webby/core/web-app';
 import iconUrl from './icon.svg';
 import { type CherryOptions } from 'cherry-markdown/types/cherry';
 import type Cherry from 'cherry-markdown';
@@ -126,3 +126,9 @@ export function getAppInfo(): AppInfo {
     supportExts: ['txt', 'json', 'md', 'toml', 'js', 'py', 'ts'],
   }
 }
+
+defineApp({
+  mount,
+  unmount,
+  getAppInfo
+})

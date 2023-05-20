@@ -1,10 +1,10 @@
 import { MessageQueue } from '@webby/core/message-queue';
-import { AppContext, AppInfo } from '@webby/core/web-app';
+import { AppContext, AppInfo, defineApp } from '@webby/core/web-app';
 
 import iconUrl from './icon.svg';
 
 let mq: MessageQueue;
-export async function mount(ctx: AppContext) {
+async function mount(ctx: AppContext) {
   let key = Math.random().toString(16).substring(2);
   mq = new MessageQueue(key);
 
@@ -95,14 +95,14 @@ export async function mount(ctx: AppContext) {
   }, 100);
 }
 
-export async function unmount(ctx: AppContext) {
+async function unmount(ctx: AppContext) {
   ctx.appRootEl.innerHTML = '';
   if (mq) {
     mq.close();
   }
 }
 
-export function getAppInfo(): AppInfo {
+function getAppInfo(): AppInfo {
   return {
     name: '3DEditor',
     iconUrl,
@@ -111,3 +111,9 @@ export function getAppInfo(): AppInfo {
     supportExts: [],
   }
 }
+
+defineApp({
+  mount,
+  getAppInfo,
+  unmount,
+})

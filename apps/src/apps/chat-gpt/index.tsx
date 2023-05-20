@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ReactDom from 'react-dom/client';
-import { AppContext, AppInfo, AppInstallContext } from '@webby/core/web-app';
+import { AppContext, AppInfo, AppInstallContext, defineApp } from '@webby/core/web-app';
 import Chat from './chat';
 import iconUrl from './icon.svg';
 import { Collection } from '@webby/core/kv-storage';
@@ -13,7 +13,7 @@ let reactRoot: ReactDom.Root;
 const store = new Collection('built_in_app_chat');
 
 let enabledGlobalSearch = false;
-export async function mount(ctx: AppContext) {
+async function mount(ctx: AppContext) {
   let token = '';
   const systemMenu = [
     {
@@ -285,7 +285,7 @@ export async function mount(ctx: AppContext) {
   }
 }
 
-export async function installed(ctx: AppInstallContext) {
+async function installed(ctx: AppInstallContext) {
   ctx.hooks.globalSearch.register(async ({ keyword: search, cb }) => {
     cb([{
       title: '发送以下问题',
@@ -357,11 +357,11 @@ interface RespBody {
 }
 
 
-export async function unmount(ctx: AppContext) {
+async function unmount(ctx: AppContext) {
   reactRoot.unmount();
 }
 
-export function getAppInfo(): AppInfo {
+function getAppInfo(): AppInfo {
   return {
     name: 'Chat',
     iconUrl,
@@ -370,3 +370,10 @@ export function getAppInfo(): AppInfo {
     supportExts: [],
   }
 }
+
+defineApp({
+  mount,
+  unmount,
+  installed,
+  getAppInfo
+})

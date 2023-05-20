@@ -1,4 +1,4 @@
-import { AppContext, AppInfo, AppInstallContext } from '@webby/core/web-app';
+import { AppContext, AppInfo, AppInstallContext, defineApp } from '@webby/core/web-app';
 import { Shell } from '@webby/core/shell';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
@@ -279,3 +279,10 @@ class Term {
     this.promtp();
   }
 }
+
+defineApp({
+  mount,
+  unmount,
+  installed,
+  getAppInfo
+})

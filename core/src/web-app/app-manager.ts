@@ -140,13 +140,18 @@ export class AppManager {
     if (!appScript) {
       throw new Error(`app ${name} is not downloaded`);
     }
-    const app = await loadModule(appScript, name);
-    const installCtx = createAppInstallContext();
-    app.hooks = installCtx.hooks;
-    if (app.installed) {
-      app.installed(installCtx);
+    try {
+      const app = await loadModule(appScript, name);
+      const installCtx = createAppInstallContext();
+      app.hooks = installCtx.hooks;
+      if (app.installed) {
+        app.installed(installCtx);
+      }
+      this.apps.push(app);
+    } catch (err) {
+      systemMessage({ title: `App[${name}]安装出现错误`, content: String(err), type: 'error', timeout: 5000 });
+      console.error(err);
     }
-    this.apps.push(app);
   }
   get(appName: string): undefined | AppDefinitionWithContainer {
     return this.apps.find(app => app.name === appName);

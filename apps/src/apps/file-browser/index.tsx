@@ -1,4 +1,4 @@
-import { AppContext, AppInfo } from '@webby/core/web-app';
+import { AppContext, AppInfo, defineApp } from '@webby/core/web-app';
 import React from 'react';
 import ReactDom from 'react-dom/client';
 import FileBrowser from './file';
@@ -24,3 +24,9 @@ export function getAppInfo(): AppInfo {
     supportExts: [],
   }
 }
+
+defineApp({
+  mount,
+  unmount,
+  getAppInfo
+})

@@ -1,7 +1,7 @@
 {
   "name": "root",
   "private": true,
-  "version": "0.2.3",
+  "version": "0.2.4",
   "workspaces": [
     "components",
     "apps",
@@ -17,7 +17,7 @@
     "start": "lerna run start --parallel --scope @webby/server --scope @webby/components --scope @webby/apps --scope @webby/core --scope @webby/client",
     "server": "cd server && cargo watch -x run",
     "update-assets": "cd client && bash scripts/update-icon.sh",
-    "update-version": "node build/update-version.js"
+    "update-tag": "node build/update-version.js"
   },
   "devDependencies": {
     "@types/tinymce": "^4.6.5",

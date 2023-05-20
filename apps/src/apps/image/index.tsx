@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReactDom from 'react-dom/client';
-import { AppContext, AppInfo, SelectFileOptions } from '@webby/core/web-app';
+import { AppContext, AppInfo, SelectFileOptions, defineApp } from '@webby/core/web-app';
 import ImagePreview from './image-viewer';
 import { FileStat, readdir } from '@webby/core/fs';
 import path from 'path-browserify';
@@ -99,3 +99,9 @@ export function getAppInfo(): AppInfo {
     supportExts: allowedExts,
   }
 }
+
+defineApp({
+  mount,
+  unmount,
+  getAppInfo
+})

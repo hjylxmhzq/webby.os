@@ -1,4 +1,4 @@
-import { AppContext, AppInfo, AppInstallContext } from '@webby/core/web-app';
+import { AppContext, AppInfo, AppInstallContext, defineApp } from '@webby/core/web-app';
 import ReactDom from 'react-dom/client';
 import PdfViewer from './pdf-viewer';
 import iconUrl from './icon.svg';
@@ -137,3 +137,10 @@ export async function installed(ctx: AppInstallContext) {
     })));
   });
 }
+
+defineApp({
+  mount,
+  unmount,
+  installed,
+  getAppInfo
+})

@@ -1,4 +1,4 @@
-import { AppContext, AppInfo } from '@webby/core/web-app';
+import { AppContext, AppInfo, defineApp } from '@webby/core/web-app';
 
 import iconUrl from './icon.svg';
 
@@ -30,3 +30,9 @@ export function getAppInfo(): AppInfo {
     supportExts: [],
   }
 }
+
+defineApp({
+  mount,
+  unmount,
+  getAppInfo
+})
