@@ -61,14 +61,18 @@ pub fn create_resp<T: Serialize>(success: bool, data: T, message: &str) -> HttpR
   );
   r
 }
-#[allow(unused)]
-pub fn create_binary_resp(data: Vec<u8>, mime_type: Option<String>) -> HttpResponse {
+
+pub fn create_binary_resp(data: Vec<u8>, mime_type: Option<String>, expires: Option<u32>) -> HttpResponse {
   let mut resp = HttpResponse::Ok();
   resp.content_type(if let Some(mime) = mime_type {
     mime
   } else {
     "".to_owned()
   });
+  if let Some(expires) = expires {
+    let cache_header = header::CacheControl(vec![header::CacheDirective::MaxAge(expires)]);
+    resp.insert_header(cache_header);
+  }
   resp.body(data)
 }
 

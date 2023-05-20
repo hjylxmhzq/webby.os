@@ -4,6 +4,7 @@ import classnames from 'classnames';
 import { create_download_link, create_thumbnail_link, FileStat } from "@webby/core/fs";
 import style from './image-viewer.module.less';
 import { AppContext } from "@webby/core/web-app";
+import { SmartImage } from "@webby/components";
 
 function debounce<T extends Function>(fn: T, delay = 500, mw?: (...args: any[]) => any) {
   let timer: number | undefined;
@@ -256,12 +257,12 @@ export default function ImagePreview({ ctx, dir, files, file, onPreviewingChange
 }
 
 const Thumbnails = memo(({ pics, dir }: { pics: FileStat[], dir: string }) => {
-  const createLink = create_download_link;
+  const createLink = create_thumbnail_link;
   return <>
     {
       pics.map((p, idx) => {
         return <div key={p.name} data-idx={idx} className={classnames(style.thumbnail)}>
-          <img loading="lazy" src={createLink(dir, p.name)} alt=""></img>
+          <SmartImage src={createLink(dir, p.name)} alt="" />
         </div>
       })
     }

@@ -16,10 +16,11 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
 use tokio_util::io::ReaderStream;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct GetFilesOfDirReq {
   file: Option<String>,
-  expires: Option<u32>, // 要求返回的响应带上[expires]s时长的cache-control header
+  param_expires: Option<u32>, // 要求返回的响应带上[expires]s时长的cache-control header
+  param_resize: Option<u32>,
 }
 
 #[derive(Serialize)]
@@ -34,13 +35,11 @@ pub async fn fs_actions_get(
   state: web::Data<AppData>,
   sess: Session,
 ) -> Result<HttpResponse, AppError> {
-  let file = query
-    .borrow()
-    .file
-    .clone()
-    .ok_or_else(|| AppError::new("fs action : query params error").with_status(StatusCode::BAD_REQUEST))?;
-  let expires = query.borrow().expires;
-  fs_actions(path, &file, true, req_raw, state, sess, expires).await
+  let file = query.borrow().file.clone().ok_or_else(|| {
+    AppError::new("fs action : query params error").with_status(StatusCode::BAD_REQUEST)
+  })?;
+  let query = query.into_inner();
+  fs_actions(path, &file, true, req_raw, state, sess, query).await
 }
 
 pub async fn fs_actions_post(
@@ -50,13 +49,12 @@ pub async fn fs_actions_post(
   state: web::Data<AppData>,
   sess: Session,
 ) -> Result<HttpResponse, AppError> {
-  let file = query
-    .borrow()
-    .file
-    .clone()
-    .ok_or_else(|| AppError::new("fs action post: query params error").with_status(StatusCode::BAD_REQUEST))?;
+  let file = query.borrow().file.clone().ok_or_else(|| {
+    AppError::new("fs action post: query params error").with_status(StatusCode::BAD_REQUEST)
+  })?;
+  let query = query.into_inner();
 
-  fs_actions(path, &file, false, req_raw, state, sess, None).await
+  fs_actions(path, &file, false, req_raw, state, sess, query).await
 }
 
 pub async fn fs_actions(
@@ -66,7 +64,7 @@ pub async fn fs_actions(
   req_raw: HttpRequest,
   state: web::Data<AppData>,
   sess: Session,
-  expires: Option<u32>,
+  query: GetFilesOfDirReq,
 ) -> Result<HttpResponse, AppError> {
   let file_root = &state.read().unwrap().config.file_root;
   let user_root = &sess.get_user_root()?;
@@ -113,27 +111,33 @@ pub async fn fs_actions(
       let mime = mime_guess::from_path(file.to_owned())
         .first()
         .map(|m| m.to_string());
-      let resp = if is_download {
-        create_stream_resp(
-          stream,
-          mime,
-          Some(file),
-          (range_start, range_end),
-          file_stat.size,
-          is_range,
-          expires,
-        )
-      } else {
-        create_stream_resp(
-          stream,
-          mime,
-          None,
-          (range_start, range_end),
-          file_stat.size,
-          is_range,
-          expires,
-        )
-      };
+
+      let resp =
+        if query.param_resize.is_some() && mime.clone().map_or(false, |v| v.contains("image")) {
+          let thumbnail =
+            vfs::create_thumbnail(file_root, user_root, file, query.param_resize.unwrap())?;
+          create_binary_resp(thumbnail, mime.clone(), query.param_expires)
+        } else if is_download {
+          create_stream_resp(
+            stream,
+            mime,
+            Some(file),
+            (range_start, range_end),
+            file_stat.size,
+            is_range,
+            query.param_expires,
+          )
+        } else {
+          create_stream_resp(
+            stream,
+            mime,
+            None,
+            (range_start, range_end),
+            file_stat.size,
+            is_range,
+            query.param_expires,
+          )
+        };
       Ok(resp)
     }
 
@@ -319,7 +323,7 @@ pub async fn read_image(
   )
   .await?;
 
-  Ok(create_binary_resp(img, mime))
+  Ok(create_binary_resp(img, mime, None))
 }
 
 pub async fn read_video_transcode_get(

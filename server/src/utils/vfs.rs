@@ -32,7 +32,7 @@ use super::eventbus::EventEmitter;
 use super::path::secure_join;
 use super::search_engine::search_docs;
 use super::stream::RangeStream;
-use super::transcode::ffmpeg_scale;
+use super::transcode::{ffmpeg_scale, self};
 
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub enum FSHookType {
@@ -175,14 +175,24 @@ pub async fn create_dir(file_root: &PathBuf, user_root: &str, file: &str) -> Res
   Ok(result)
 }
 
-pub async fn move_file(file_root: &PathBuf, user_root: &str, from_file: &str, to_file: &str) -> Result<(), AppError> {
+pub async fn move_file(
+  file_root: &PathBuf,
+  user_root: &str,
+  from_file: &str,
+  to_file: &str,
+) -> Result<(), AppError> {
   let from_file = normailze_path(&file_root, &user_root, &from_file)?;
   let to_file = normailze_path(&file_root, &user_root, &to_file)?;
   let result = fs::rename(from_file, to_file).await?;
   Ok(result)
 }
 
-pub async fn copy_file(file_root: &PathBuf, user_root: &str, from_file: &str, to_file: &str) -> Result<u64, AppError> {
+pub async fn copy_file(
+  file_root: &PathBuf,
+  user_root: &str,
+  from_file: &str,
+  to_file: &str,
+) -> Result<u64, AppError> {
   let from_file = normailze_path(&file_root, &user_root, &from_file)?;
   let to_file = normailze_path(&file_root, &user_root, &to_file)?;
   let result = fs::copy(from_file, to_file).await?;
@@ -383,7 +393,11 @@ pub fn ensure_parent_dir_sync(file: &PathBuf) -> Result<(), AppError> {
   Ok(())
 }
 
-pub fn normailze_path(file_root: &PathBuf, user_root: &str, file: &str) -> Result<PathBuf, AppError> {
+pub fn normailze_path(
+  file_root: &PathBuf,
+  user_root: &str,
+  file: &str,
+) -> Result<PathBuf, AppError> {
   let user_abs_root = file_root.join(user_root);
   Ok(secure_join(&user_abs_root, &PathBuf::from(file))?)
 }
@@ -446,7 +460,7 @@ pub async fn read_entries_in_zip(
   user_root: &str,
   file: &str,
 ) -> Result<Rc<RefCell<FileStatTreeInner>>, AppError> {
-  let file = normailze_path(file_root, user_root, file)?;
+  let file: PathBuf = normailze_path(file_root, user_root, file)?;
   let mut file = File::open(file).await?;
   let zip_file = async_zip::read::seek::ZipFileReader::new(&mut file).await?;
   let mut file_map = HashMap::<String, Rc<RefCell<FileStatTreeInner>>>::new();
@@ -530,3 +544,8 @@ pub async fn read_entries_in_zip(
   Ok(root)
 }
 
+pub fn create_thumbnail(file_root: &PathBuf, user_root: &str, file: &str, size: u32) -> Result<Vec<u8>, AppError> {
+  let file: PathBuf = normailze_path(file_root, user_root, file)?;
+  let thumbnail = transcode::create_image_thumbnail(&file, size);
+  thumbnail
+}

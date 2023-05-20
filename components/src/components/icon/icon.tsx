@@ -42,7 +42,8 @@ export function FileThumbnailIcon(props: { imgStyle?: React.CSSProperties, noThu
 
   if (!props.noThumbnail && guess?.includes('image')) {
     const absFile = path.join(props.dir, filename);
-    const src = create_download_link_from_file_path(absFile);
+    const dpr = window.devicePixelRatio || 1;
+    const src = create_download_link_from_file_path(absFile, { resize: 150 * dpr, expires: 0 });
     return <SmartImage className={props.className} style={{ width: props.imgWidth || 16, height: props.imgHeight || 16, ...props.imgStyle || {} }} src={src} alt={filename}></SmartImage>;
   }
 

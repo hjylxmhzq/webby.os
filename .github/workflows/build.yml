@@ -18,6 +18,10 @@ defaults:
     # necessary for windows
     shell: bash
 
+concurrency:
+  group: build-workflow
+  cancel-in-progress: true
+
 jobs:
   cross_build:
     strategy:

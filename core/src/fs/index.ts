@@ -80,11 +80,19 @@ export function create_download_link(dir: string, file: string, params: Record<s
   return url.toString();
 }
 
-export function create_download_link_from_file_path(abs_file: string, expires?: number) {
+export interface GetFileOptions {
+  expires?: number;
+  resize?: number;
+}
+
+export function create_download_link_from_file_path(abs_file: string, options: GetFileOptions = {}) {
   const url = new URL('/file/read', window.location.origin);
   url.searchParams.set('file', abs_file);
-  if (expires) {
-    url.searchParams.set('expires', expires + '');
+  if (options.expires !== undefined) {
+    url.searchParams.set('param_expires', options.expires + '');
+  }
+  if (options.resize !== undefined) {
+    url.searchParams.set('param_resize', options.resize + '');
   }
   return url.toString();
 }
@@ -112,13 +120,13 @@ export async function copy_file(from_file: string, to_file: string): Promise<boo
   return resp.status === 0;
 }
 
-export function create_thumbnail_link(dir: string, file: string) {
-  const url = new URL('/file/read_image', window.location.origin);
+export function create_thumbnail_link(dir: string, file: string, size: number = 200) {
+  const url = new URL('/file/read', window.location.origin);
   const file_path = path.join(dir, file);
   const dpr = window.devicePixelRatio || 1;
-  const size = dpr * 200;
+  size = dpr * size;
   url.searchParams.set('file', file_path);
-  url.searchParams.set('resize', size.toString());
+  url.searchParams.set('param_resize', size.toString());
   return url.toString();
 }
 
@@ -137,7 +145,7 @@ export async function read_text_file(dir: string, file: string) {
   return content;
 }
 
-export interface ReadFileOptions {
+export interface ReadFileOptions extends GetFileOptions {
   localCache?: boolean,
   showProgressMessage?: boolean,
 }
@@ -158,8 +166,12 @@ export async function read_file(file: string, options: ReadFileOptions = {}): Pr
       }
     }
   }
+  let body = {
+    file: file_path,
+    ...(options.resize ? { param_resize: options.resize } : {}),
+  }
   const url = new URL('/file/read', window.location.origin);
-  let resp = await post_raw(url.toString(), { file: file_path }, file);
+  let resp = await post_raw(url.toString(), body, file);
   const chunks = [];
   let reader = resp.body?.getReader();
   let content: Blob = new Blob();
