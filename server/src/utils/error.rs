@@ -54,6 +54,7 @@ conv_err!(SessionInsertError);
 conv_err!(SessionGetError);
 conv_err!(SystemTimeError);
 conv_err!(std::io::Error);
+conv_err!(etag::ParseError);
 
 impl ResponseError for AppError {
   fn error_response(&self) -> actix_web::HttpResponse<actix_web::body::BoxBody> {

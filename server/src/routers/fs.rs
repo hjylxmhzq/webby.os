@@ -10,10 +10,12 @@ use crate::utils::vfs::{
 use crate::utils::{response::create_resp, vfs};
 use crate::AppData;
 use actix_session::Session;
-use actix_web::http::StatusCode;
+use actix_web::http::{header, StatusCode};
 use actix_web::{web, HttpRequest, HttpResponse, Scope};
+use reqwest::header::HeaderValue;
 use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
+use std::str::FromStr;
 use tokio_util::io::ReaderStream;
 
 #[derive(Deserialize, Debug, Clone)]
@@ -105,6 +107,18 @@ pub async fn fs_actions(
     }
 
     "read" => {
+      let header_etag = req_raw.headers().get(header::IF_NONE_MATCH);
+      if header_etag.is_some() {
+        let meta = vfs::metadata(file_root, user_root, file).await?;
+        let tag = etag::EntityTag::from_file_meta(&meta);
+        let header_tag = header_etag.unwrap().to_str()?.to_string();
+        let header_tag = etag::EntityTag::from_str(&header_tag)?;
+        let matched = tag.weak_eq(&header_tag);
+        if matched {
+          return Ok(HttpResponse::NotModified().append_header((header::ETAG, tag.to_string())).finish());
+        }
+      }
+
       let file_stat = vfs::stat(file_root, user_root, file).await?;
       let (range_start, range_end, is_range) = parse_range(headers, file_stat.size)?;
       let stream = read_file_stream(file_root, user_root, file, (range_start, range_end)).await?;
@@ -112,7 +126,7 @@ pub async fn fs_actions(
         .first()
         .map(|m| m.to_string());
 
-      let resp =
+      let mut resp =
         if query.param_resize.is_some() && mime.clone().map_or(false, |v| v.contains("image")) {
           let thumbnail =
             vfs::create_thumbnail(file_root, user_root, file, query.param_resize.unwrap())?;
@@ -138,6 +152,14 @@ pub async fn fs_actions(
             query.param_expires,
           )
         };
+
+      if let Some(_) = query.param_expires {
+        let meta = vfs::metadata(file_root, user_root, file).await?;
+        let tag = etag::EntityTag::from_file_meta(&meta);
+        resp
+          .headers_mut()
+          .insert(header::ETAG, HeaderValue::from_str(&tag.to_string())?);
+      }
       Ok(resp)
     }
 

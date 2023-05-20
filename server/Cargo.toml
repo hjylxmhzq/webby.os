@@ -57,6 +57,7 @@ which = "4.4.0"
 log4rs = "1.2.0"
 systemstat = { version = "0.2.3", features = ["serde"] }
 thotp = "0.1.11"
+etag = { version = "4.0.0", features = ["std"] }
 
 [target.'cfg(not(target_os = "windows"))'.dependencies]
 ptyprocess = "0.4.1"

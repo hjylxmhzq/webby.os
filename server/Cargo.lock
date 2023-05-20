@@ -1206,6 +1206,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "etag"
+version = "4.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4b3d0661a2ccddc26cba0b834e9b717959ed6fdd76c7129ee159c170a875bf44"
+dependencies = [
+ "str-buf",
+ "xxhash-rust",
+]
+
+[[package]]
 name = "exr"
 version = "1.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3251,6 +3261,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
+name = "str-buf"
+version = "3.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e75b72ee54e2f93c3ea1354066162be893ee5e25773ab743de3e088cecbb4f31"
+
+[[package]]
 name = "stringprep"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4024,6 +4040,7 @@ dependencies = [
  "diesel",
  "diesel_migrations",
  "env_logger",
+ "etag",
  "ffmpeg_cli_utils",
  "futures",
  "futures-util",
@@ -4283,6 +4300,12 @@ checksum = "80d0f4e272c85def139476380b12f9ac60926689dd2e01d4923222f40580869d"
 dependencies = [
  "winapi",
 ]
+
+[[package]]
+name = "xxhash-rust"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "735a71d46c4d68d71d4b24d03fdc2b98e38cea81730595801db779c04fe80d70"
 
 [[package]]
 name = "xz2"

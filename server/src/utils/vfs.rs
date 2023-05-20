@@ -109,11 +109,17 @@ pub async fn read_image(
   Ok(result)
 }
 
-pub async fn stat(file_root: &PathBuf, user_root: &str, file: &str) -> Result<FileStat, AppError> {
+pub async fn metadata(file_root: &PathBuf, user_root: &str, file: &str) -> Result<Metadata, AppError> {
   let dir = normailze_path(file_root, user_root, file)?;
   let meta = fs::metadata(dir).await?;
+  Ok(meta)
+}
+
+pub async fn stat(file_root: &PathBuf, user_root: &str, file: &str) -> Result<FileStat, AppError> {
+  let meta = metadata(file_root, user_root, file).await?;
   convert_meta_to_struct(meta)
 }
+
 #[allow(unused)]
 pub async fn create(
   file_root: PathBuf,
