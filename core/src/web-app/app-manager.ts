@@ -95,20 +95,28 @@ export class AppManager {
   }
   async installBuiltinApps(selectedApps?: string[]) {
     const install = async (appScriptName: string, appName: string) => {
-      const appScriptSrc = '/apps/' + appScriptName + '.js';
-      await this.download(appName, appScriptSrc);
-      await this.install(appName);
+      try {
+        const appScriptSrc = '/apps/' + appScriptName + '.js';
+        await this.download(appName, appScriptSrc);
+        await this.install(appName);
+      } catch (err) {
+        systemMessage({ title: `App ${appName}安装出现错误`, content: String(err), type: 'error', timeout: 5000 });
+      }
     }
 
+    const installPromises = [];
     for (let [appScriptName, appName] of builtinApps) {
       if (selectedApps) {
         if (selectedApps.includes(appName)) {
-          await install(appScriptName, appName);
+          const p = install(appScriptName, appName);
+          installPromises.push(p);
         }
       } else {
-        await install(appScriptName, appName);
+        const p = install(appScriptName, appName);
+        installPromises.push(p);
       }
     }
+    await Promise.all(installPromises);
 
     const thirdPartyApps = await this.remote.get('thridparty_apps') as typeof this['thirdPartyApps'];
     if (thirdPartyApps) {
@@ -154,8 +162,7 @@ export class AppManager {
       }
       this.apps.push(app);
     } catch (err) {
-      systemMessage({ title: `App[${name}]安装出现错误`, content: String(err), type: 'error', timeout: 5000 });
-      console.error(err);
+      throw err;
     }
   }
   get(appName: string): undefined | AppDefinitionWithContainer {
