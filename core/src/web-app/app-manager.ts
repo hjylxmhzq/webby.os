@@ -8,6 +8,11 @@ import { http } from "../tunnel";
 
 export type AppDefinitionWithContainer = AppDefinition & {
   name: string,
+  scoped: {
+    window: Window,
+    document: Document,
+    console: Console,
+  },
   container: HTMLElement;
   hooks: SystemHooks
 };
@@ -215,49 +220,18 @@ export async function loadModule(appScript: { scriptContent: string, scriptSrc: 
         })(fakeWindow, fakeWindow, fakeDocument, scopedConsole, __module, __module.exports, __import);
         
         const app = fakeWindow.__app || __module.exports;
+        app.name = ${escapedModuleName};
+        app.scoped = {
+          window: fakeWindow,
+          document: fakeDocument,
+          console: scopedConsole,
+        };
         console.log('install app: ${escapedModuleName}', app);
         
         app.container = container;
         const apps = window.__apps || {};
         apps[${escapedModuleName}] = app;
         window.__apps = apps;
-
-        // document.body.appendChild(container);
-
-      })();
-    `;
-
-  const noSandbox = `
-      (function() {
-        
-        const container = document.createElement('div');
-        const shadow = container.attachShadow({mode: 'open'});
-        const fakeFrame = document.createElement('div');
-        const head = document.createElement('div');
-        fakeFrame.appendChild(head);
-        shadow.appendChild(fakeFrame);
-
-        const scopedConsole = __createScopeConsole(${escapedModuleName});
-
-        const __module = window.__modules[${escapedModuleName}];
-        const __import = { meta: { url: ${JSON.stringify(appScript.scriptSrc)} }};
-        
-        (function (console, module, exports, __import){
-          try {
-            
-            ${appScript.scriptContent}
-          
-          } catch (e) {
-
-            console.error('Error occurs in', ${escapedModuleName}, e);
-
-          }
-  
-        })(scopedConsole, __module, __module.exports, __import);
-        
-        console.log('install app: ${escapedModuleName}', __module);
-        
-        __module.exports.container = container;
 
         // document.body.appendChild(container);
 
@@ -281,10 +255,6 @@ export async function loadModule(appScript: { scriptContent: string, scriptSrc: 
     })
   }
   let app = await loadScript(sandbox);
-  if (app.getAppInfo().noSandbox) {
-    app = await loadScript(noSandbox);
-  }
-  app.name = moduleName;
   return app;
 }
 

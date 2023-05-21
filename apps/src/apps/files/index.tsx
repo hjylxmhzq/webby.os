@@ -5,6 +5,7 @@ import ReactDom from 'react-dom/client';
 import FilePage from './src/file-page';
 import iconUrl from './icon.ico';
 import { CachedEventEmitter } from '../../utils/events';
+import { systemMessage } from '@webby/core/system';
 
 let root: ReactDom.Root;
 export async function mount(ctx: AppContext) {
@@ -19,7 +20,7 @@ export async function mount(ctx: AppContext) {
     const is_open = await ctx.openFile(file);
     if (!is_open) {
       const ext = path.parse(file).ext;
-      ctx.systemMessage({ title: '无法打开文件', content: `未找到可打开${ext}后缀文件的App`, timeout: 3000, type: 'error' });
+      systemMessage({ title: '无法打开文件', content: `未找到可打开${ext}后缀文件的App`, timeout: 0, type: 'error' });
     }
   };
   ctx.onOpenFile((file) => {

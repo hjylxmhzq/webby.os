@@ -2,7 +2,6 @@ import { post } from "../utils/http";
 import EventEmitter from 'events';
 import { makeReactive } from "./reactive";
 
-let allowBuiltIn = false;
 
 interface StorageOptions {
   localFirst?: boolean,
@@ -11,6 +10,7 @@ interface StorageOptions {
 export type SubscribeFn = (cb: (state: any) => void, options?: { once?: boolean }) => void;
 
 export class Collection {
+  static allowBuiltIn = false;
   private eventBus = new EventEmitter();
   initedKeys = new Set();
   async getReactiveState(key: string): Promise<{ state: Record<string | number, any>, subscribe: SubscribeFn }>;
@@ -68,7 +68,7 @@ export class Collection {
     };
   }
   constructor(public collection: string, public options: StorageOptions = {}) {
-    if (!allowBuiltIn && collection.startsWith('_')) {
+    if (!Collection.allowBuiltIn && collection.startsWith('_')) {
       throw new Error('collection with name starts with "_" is reserved by system');
     }
   }
@@ -155,7 +155,7 @@ export class Collection {
     }
     return [];
   }
-  async entries() {
+  async entries(): Promise<[string, any][]> {
     const r = await post('/kv_storage/entries', {
       collection: this.collection
     });
@@ -212,7 +212,7 @@ async function waitForWs(ws: WebSocket): Promise<WebSocket> {
     });
   });
 }
-allowBuiltIn = true;
+Collection.allowBuiltIn = true;
 export const commonCollection = {
   desktop: new Collection('_desktop_config', { localFirst: true }),
   windowManager: new Collection('_window_manager'),
@@ -220,4 +220,4 @@ export const commonCollection = {
   appManager: new Collection('_app_manager'),
   systemHook: new Collection('_system_hook'),
 }
-allowBuiltIn = false;
+Collection.allowBuiltIn = false;

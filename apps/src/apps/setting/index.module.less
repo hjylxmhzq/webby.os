@@ -50,7 +50,7 @@
   background-color: #383838e3;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  
+
   *::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -84,6 +84,7 @@
   color: var(--font-color);
   border-radius: 3px;
   transition: all 0.2s;
+
   &:focus {
     border-color: var(--border-color-strong);
   }
@@ -125,6 +126,17 @@
   border-radius: 10px;
   margin-bottom: 10px;
   font-size: 14px;
+
+}
+
+.limit-height {
+  max-height: 500px;
+  overflow: auto;
+}
+
+.collection-entries {
+  padding-left: 10px;
+  border: 1px solid var(--border-color);
 }
 
 .user-list {

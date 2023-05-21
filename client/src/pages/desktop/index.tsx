@@ -45,12 +45,15 @@ export enum DeskTopEventType {
 
 export const desktopEventBus = new EventEmitter();
 
-export function systemSelectFile(options: SelectFileProps): Promise<string[] | null> {
+export function systemSelectFile(app: AppDefinitionWithContainer, options: SelectFileProps): Promise<string[] | null> {
   return new Promise((resolve) => {
     desktopEventBus.once(DeskTopEventType.SelectFileFinished, (files: string[] | null) => {
       resolve(files);
     })
-    desktopEventBus.emit(DeskTopEventType.SelectFile, options);
+    if (!app) {
+      throw new Error('app is not defined, systemMessage can not be used outside app scope');
+    }
+    desktopEventBus.emit(DeskTopEventType.SelectFile, options, app);
   });
 }
 
@@ -62,10 +65,13 @@ export function showGlobalSearch() {
   desktopEventBus.emit(DeskTopEventType.ShowGlobalSearch);
 }
 
-export function systemMessage(msg: SystemMessage, onClose?: () => void): SystemMessageHandle {
-
+export function systemMessage(app: AppDefinitionWithContainer, msg: SystemMessage, onClose?: () => void): SystemMessageHandle {
+  console.log('system message from app: ', app);
+  if (!app) {
+    throw new Error('app is not defined, systemMessage can not be used outside app scope');
+  }
   const id = Math.random().toString();
-  desktopEventBus.emit(DeskTopEventType.SystemMessage, { ...msg, id });
+  desktopEventBus.emit(DeskTopEventType.SystemMessage, { ...msg, id, app });
   const onClosed = (_id: string) => {
     if (_id === id) {
       onClose?.();
@@ -90,7 +96,7 @@ export function systemMessage(msg: SystemMessage, onClose?: () => void): SystemM
   return handle;
 }
 
-export function systemPrompt(prompt: PromptContent): Promise<PromptResult | null> {
+export function systemPrompt(app: AppDefinitionWithContainer, prompt: PromptContent): Promise<PromptResult | null> {
   return new Promise((resolve, _reject) => {
     desktopEventBus.once(DeskTopEventType.PromptFinished, (result: PromptResult | null) => {
       resolve(result);
@@ -104,7 +110,7 @@ let isMobile = (function () {
   return check;
 })();
 
-type IdMessage = { id: string } & SystemMessage;
+export type IdMessage = { id: string, app: AppDefinitionWithContainer } & SystemMessage;
 
 export function HomePage() {
 
@@ -118,7 +124,7 @@ export function HomePage() {
   const [wallpaper, setWallpaper] = useState('');
   const wallpaperRef = useRef(wallpaper);
   wallpaperRef.current = wallpaper;
-  const [messages, setMessages] = useState<({ id: string } & SystemMessage)[]>([]);
+  const [messages, setMessages] = useState<(IdMessage)[]>([]);
   const [prompt, setPrompt] = useState<PromptProps['prompt']>();
   const [bgFillMode, setBgFillMode] = useState<'fill' | 'contain' | 'cover'>('cover');
   const msgsRef = useRef(messages);
@@ -172,8 +178,7 @@ export function HomePage() {
   };
 
   useEffect(() => {
-
-    const selectFiles = (options: SelectFileProps) => {
+    const selectFiles = (options: SelectFileProps, app: AppDefinitionWithContainer) => {
       setFileSelectorOptioins(options);
       setShowFileSelector(true);
     };

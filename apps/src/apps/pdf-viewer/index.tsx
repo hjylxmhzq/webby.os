@@ -6,6 +6,7 @@ import { Collection } from '@webby/core/kv-storage';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { debounce, debounceThrottle } from './utils';
 import { CachedEventEmitter } from '../../utils/events';
+import { systemSelectFile } from '@webby/core/system';
 
 let reactRoot: ReactDom.Root;
 
@@ -37,7 +38,7 @@ export async function mount(ctx: AppContext) {
         {
           name: '打开',
           async onClick() {
-            const file = await ctx.selectFile({ allowedExts: ['pdf'] });
+            const file = await systemSelectFile({ allowedExts: ['pdf'] });
             if (file && file.length) {
               eventBus.emit('openfile', file[0]);
             }

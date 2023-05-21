@@ -58,7 +58,7 @@ async function mount(ctx: AppContext) {
         {
           name: '显示当前API Token',
           onClick() {
-            ctx.systemMessage({ type: 'info', title: 'API Token', content: token ? token : '未设置', timeout: 5000 });
+            systemMessage({ type: 'info', title: 'API Token', content: token ? token : '未设置', timeout: 5000 });
           }
         }
       ]
@@ -104,7 +104,7 @@ async function mount(ctx: AppContext) {
     const onInput = async (msg: string) => {
       const apiToken = apiTokenRef.current;
       if (!apiToken) {
-        ctx.systemMessage({
+        systemMessage({
           type: 'error',
           title: '错误',
           content: '未设置API Token，请选择顶部菜单设置API Token',
@@ -232,7 +232,7 @@ async function mount(ctx: AppContext) {
         token = t;
         setApiToken(t);
         if (t) {
-          ctx.systemMessage({
+          systemMessage({
             type: 'info',
             title: '已配置API Token',
             content: t,

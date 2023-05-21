@@ -1,5 +1,5 @@
 import path from "path-browserify";
-import { SelectFileOptions, SharedScope, processManager } from "../web-app";
+import { AppDefinitionWithContainer, SelectFileOptions, SharedScope, processManager } from "../web-app";
 import { SystemMessageHandle } from "../web-app";
 import { SystemMessage } from "../web-app";
 
@@ -17,8 +17,9 @@ export interface PromptResult {
 }
 
 export function systemMessage(message: SystemMessage, onClose?: () => void): SystemMessageHandle {
-  const sc = (window as any).sharedScope as SharedScope;;
-  return sc.system.systemMessage!(message, onClose);
+  const app = (window as any).__app as AppDefinitionWithContainer;
+  const sc = (window as any).sharedScope as SharedScope;
+  return sc.system.systemMessage!(app, message, onClose);
 }
 
 export function setSystemTitleBarFlow(isFlow: boolean): void {
@@ -27,13 +28,15 @@ export function setSystemTitleBarFlow(isFlow: boolean): void {
 }
 
 export function systemPrompt(prompt: PromptContent): Promise<PromptResult | null> {
-  const sc = (window as any).sharedScope as SharedScope;;
-  return sc.system.systemPrompt!(prompt);
+  const app = (window as any).__app as AppDefinitionWithContainer;
+  const sc = (window as any).sharedScope as SharedScope;
+  return sc.system.systemPrompt!(app, prompt);
 }
 
 export function systemSelectFile(options: SelectFileOptions): Promise<string[] | null> {
+  const app = (window as any).__app as AppDefinitionWithContainer;
   const sc = (window as any).sharedScope as SharedScope;;
-  return sc.system.systemSelectFile!(options);
+  return sc.system.systemSelectFile!(app, options);
 }
 
 export async function openFile(file: string): Promise<boolean> {

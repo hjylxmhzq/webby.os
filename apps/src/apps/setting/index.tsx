@@ -6,7 +6,7 @@ import ReactDom from 'react-dom/client';
 import { AppContext, AppDefinitionWithContainer, AppInfo, defineApp } from '@webby/core/web-app';
 import { http } from '@webby/core/utils';
 import iconUrl from './icon.svg';
-import { commonCollection } from "@webby/core/kv-storage";
+import { Collection, commonCollection } from "@webby/core/kv-storage";
 import { create_download_link_from_file_path, getLocalFSCache, MetaAll } from "@webby/core/fs";
 import { auth, systemInfo } from "@webby/core/api";
 import classNames from 'classnames';
@@ -380,8 +380,36 @@ function FileSetting() {
     const metaAll = await localFSCache.getMetaAll();
     setLocalFSCacheMeta(metaAll);
   }
+  const loadCollections = async () => {
+    Collection.collections().then(cols => {
+      const colObjs = cols.reduce((prev, next) => { prev[next] = []; return prev }, {} as { [key: string]: [string, any][] });
+      setCollections(colObjs);
+    });
+  }
+  const expandCollections = async (colKey: string) => {
+    Collection.allowBuiltIn = true;
+    const col = new Collection(colKey);
+    Collection.allowBuiltIn = false;
+    const entries = await col.entries();
+    setCollections((cols) => {
+      cols[colKey] = entries;
+      return {
+        ...cols,
+      }
+    })
+  }
+  const collapseCollections = async (colKey: string) => {
+    setCollections((cols) => {
+      cols[colKey] = [];
+      return {
+        ...cols,
+      }
+    })
+  }
+  const [collections, setCollections] = useState<{ [key: string]: [string, any][] }>({});
   useEffect(() => {
     loadMeta();
+    loadCollections();
   }, []);
   return <div>
     <div className={style['section-title']}>本地文件缓存</div>
@@ -403,7 +431,7 @@ function FileSetting() {
       </div>
     </div>
     <div className={style['section-title']}>缓存列表</div>
-    <div className={style['setting-section']}>
+    <div className={classNames(style['setting-section'], style['limit-height'])}>
       <div className={style['setting-item']}>
         {
           !!localFSCacheMeta?.metas.length ? localFSCacheMeta?.metas.map(m => {
@@ -413,6 +441,41 @@ function FileSetting() {
             </div>
           })
             : '无本地缓存文件'
+        }
+      </div>
+    </div>
+    <div className={style['section-title']}>Key-Value存储列表</div>
+    <div className={style['setting-section']}>
+      <div className={style['setting-item']}>
+        {
+          Object.entries(collections).map(([colKey, colEntries]) => {
+            return <div key={colKey}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>{colKey}</span>
+                <span>
+                  <Button onClick={async () => {
+                    Collection.allowBuiltIn = true;
+                    await new Collection(colKey).remove_all();
+                    Collection.allowBuiltIn = false;
+                    loadCollections();
+                  }}>清空</Button>
+                  <Button onClick={async () => {
+                    if (collections[colKey].length) {
+                      collapseCollections(colKey);
+                    } else {
+                      expandCollections(colKey);
+                    }
+                  }}>{collections[colKey].length ? '折叠' : '展开'}</Button>
+                </span>
+              </div>
+              {
+                !!colEntries.length &&
+                <div className={style['collection-entries']}>
+                  <RecordBlock record={Object.fromEntries(colEntries)} />
+                </div>
+              }
+            </div>
+          })
         }
       </div>
     </div>

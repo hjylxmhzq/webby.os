@@ -23,11 +23,11 @@ function Rec(props: { record: RecordRec }) {
         const isRow = typeof val !== 'object' || val === null;
         if (!isRow && Object.keys(val).length === 0) return null;
         return isRow ?
-          <div className={style['row']}>
+          <div key={key} className={style['row']}>
             <span className={style.key}>{key}:</span>
             <span>{val}</span>
           </div>
-          : <div>
+          : <div key={key}>
             <div className={style.title}>{key}</div>
             <div className={style.block}>
               <Rec record={val} />

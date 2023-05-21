@@ -383,8 +383,6 @@ export function createContext(appWindow: AppWindow, theme: Theme) {
     isResume: false,
     channel: channel.port2,
     systemMenu: new AppMenuManager(),
-    selectFile: systemSelectFile,
-    systemMessage: systemMessage,
     onOpenFile(cb) {
       eventBus.on('open_file', cb);
       return () => {

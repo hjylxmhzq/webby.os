@@ -2,7 +2,7 @@ import { Theme } from "../types/theme";
 import EventEmitter from 'events';
 import processManager, { ProcessManager } from "./process-manager";
 import windowManager, { WindowManager } from "./window-manager";
-import appManager, { AppManager } from "./app-manager";
+import appManager, { AppDefinitionWithContainer, AppManager } from "./app-manager";
 import { SystemHook } from "./system-hook";
 
 export * from './process-manager';
@@ -31,13 +31,11 @@ export interface AppContext {
   systemMenu: AppMenuManager,
   isResume: boolean, // 是否从未unmount的状态恢复
   params: Record<string, string>,
-  selectFile(options: SelectFileOptions): Promise<string[] | null>
   setWindowSize: (w: number, h: number) => void;
   onOpenFile(cb: (file: string) => void): () => void;
   openFile(file: string): Promise<boolean>;
   openFileBy(appName: string, file: string): Promise<void>;
   registerExt(ext: string[]): void;
-  systemMessage(message: SystemMessage, onClose?: () => void): SystemMessageHandle;
 }
 
 export class AppMenuManager {
@@ -269,9 +267,9 @@ export interface PromptResult {
 }
 
 export interface SystemSharedScope {
-  systemSelectFile?(options: SelectFileProps): Promise<string[] | null>,
-  systemMessage?(msg: SystemMessage, onClose?: () => void): SystemMessageHandle,
-  systemPrompt?(prompt: PromptContent): Promise<PromptResult | null>,
+  systemSelectFile?(app: AppDefinitionWithContainer ,options: SelectFileProps): Promise<string[] | null>,
+  systemMessage?(app: AppDefinitionWithContainer ,msg: SystemMessage, onClose?: () => void): SystemMessageHandle,
+  systemPrompt?(app: AppDefinitionWithContainer ,prompt: PromptContent): Promise<PromptResult | null>,
   setSystemTitleBarFlow?(isFlow: boolean): void;
   processManager: ProcessManager,
   windowManager: WindowManager,

@@ -1,3 +1,5 @@
+/// virtual file system backend
+
 use actix_web::web::block;
 use async_zip::error::ZipError;
 use async_zip::write::ZipFileWriter;
@@ -554,4 +556,8 @@ pub fn create_thumbnail(file_root: &PathBuf, user_root: &str, file: &str, size: 
   let file: PathBuf = normailze_path(file_root, user_root, file)?;
   let thumbnail = transcode::create_image_thumbnail(&file, size);
   thumbnail
+}
+
+pub fn download_files(links: Vec<String>, dest_dir: &PathBuf) {
+
 }

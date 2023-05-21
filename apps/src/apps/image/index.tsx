@@ -7,6 +7,7 @@ import path from 'path-browserify';
 import iconUrl from './icon.svg';
 import { CachedEventEmitter } from '../../utils/events';
 import style from './image-viewer.module.less';
+import { systemMessage, systemSelectFile } from '@webby/core/system';
 
 let reactRoot: ReactDom.Root;
 let eventBus = new CachedEventEmitter();
@@ -17,9 +18,9 @@ export async function mount(ctx: AppContext) {
       {
         name: 'Open File',
         async onClick() {
-          const files = await ctx.selectFile({ allowedExts });
+          const files = await systemSelectFile({ allowedExts });
           if (files && files.length) {
-            ctx.systemMessage({ title: `打开文件`, content: files[0], timeout: 2000, type: 'info' });
+            systemMessage({ title: `打开文件`, content: files[0], timeout: 2000, type: 'info' });
             eventBus.emit('openfile', files[0]);
           }
         }
@@ -41,10 +42,10 @@ export async function mount(ctx: AppContext) {
   });
 
   reactRoot = ReactDom.createRoot(root);
-  reactRoot.render(<Index ctx={ctx} onOpenFile={onOpenFile} selectFile={ctx.selectFile} />);
+  reactRoot.render(<Index ctx={ctx} onOpenFile={onOpenFile} />);
 }
 
-function Index(props: { ctx: AppContext, onOpenFile: (cb: (file: string) => void) => void, selectFile: (options: SelectFileOptions) => Promise<string[] | null> }) {
+function Index(props: { ctx: AppContext, onOpenFile: (cb: (file: string) => void) => void }) {
   const [file_path, setFilePath] = useState('');
   const [file, setFile] = useState<FileStat>();
   const [files, setFiles] = useState<FileStat[]>([]);
@@ -70,7 +71,7 @@ function Index(props: { ctx: AppContext, onOpenFile: (cb: (file: string) => void
     {
       file ? <ImagePreview ctx={props.ctx} files={files} file={file} dir={path.parse(file_path).dir} />
         : <OpenFile onClick={async () => {
-          const files = await props.selectFile({ allowedExts });
+          const files = await systemSelectFile({ allowedExts });
           console.log(files);
           if (files && files.length) {
             await loadImage(files[0]);
