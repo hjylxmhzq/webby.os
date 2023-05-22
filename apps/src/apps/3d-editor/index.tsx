@@ -1,11 +1,17 @@
 import { MessageQueue } from '@webby/core/message-queue';
-import { AppContext, AppInfo, defineApp } from '@webby/core/web-app';
+import { AppContext, AppInfo, AppWindow, createAppWindow, defineApp } from '@webby/core/web-app';
 
 import iconUrl from './icon.svg';
 import { systemMessage } from '@webby/core/system';
 
 let mq: MessageQueue;
-async function mount(ctx: AppContext) {
+let appWindow: AppWindow;
+export async function mount(ctx: AppContext) {
+  if (appWindow) {
+    appWindow.setActive(true);
+    return;
+  }
+  appWindow = createAppWindow();
   let key = Math.random().toString(16).substring(2);
   mq = new MessageQueue(key);
 
@@ -52,7 +58,7 @@ async function mount(ctx: AppContext) {
   }];
   ctx.systemMenu.set(systemMenu);
 
-  const root = ctx.appRootEl;
+  const root = appWindow.body;
   root.style.position = 'absolute';
   root.style.inset = '0';
   const iframe = document.createElement('iframe');
@@ -92,12 +98,12 @@ async function mount(ctx: AppContext) {
     console.log('open: ', file);
   });
   setTimeout(() => {
-    ctx.appWindow.setSize(900, 600);
+    appWindow.setSize(900, 600);
   }, 100);
 }
 
 async function unmount(ctx: AppContext) {
-  ctx.appRootEl.innerHTML = '';
+  appWindow.body.innerHTML = '';
   if (mq) {
     mq.close();
   }

@@ -12,8 +12,9 @@ export type AppDefinitionWithContainer = AppDefinition & {
     window: Window,
     document: Document,
     console: Console,
+    head: HTMLElement,
+    injectGlobalFunction: (fnName: string, fn: (...args: any[]) => any) => void;
   },
-  container: HTMLElement;
   hooks: SystemHooks
 };
 
@@ -46,6 +47,9 @@ export class AppManager {
     this.apps = [];
   }
   init(selectedApps?: string[]) {
+    if(this.readyPromise) {
+      return this.readyPromise;
+    }
     this.readyPromise = (async () => {
       await this.installBuiltinApps(selectedApps);
       this.eventBus.emit('app_installed');
@@ -132,6 +136,7 @@ export class AppManager {
   }
   async download(name: string, src: string) {
     if (this.downloadedApps[name]) {
+      console.log(`${name} exists, skip download`);
       return;
     }
     async function downloadApp(src: string) {
@@ -149,6 +154,10 @@ export class AppManager {
     this.downloadedApps[name] = { scriptContent: appScript, scriptSrc: src };
   }
   async install(name: string) {
+    if (this.apps.findIndex(app => app.name === name) !== -1) {
+      console.log(`${name} exists, skip install`);
+      return;
+    };
     const appScript = this.downloadedApps[name];
     if (!appScript) {
       throw new Error(`app ${name} is not downloaded`);
@@ -232,6 +241,7 @@ export async function loadModule(appScript: { scriptContent: string, scriptSrc: 
           window: fakeWindow,
           document: fakeDocument,
           console: scopedConsole,
+          head,
         };
         console.log('install app: ${escapedModuleName}', app);
         
@@ -262,6 +272,9 @@ export async function loadModule(appScript: { scriptContent: string, scriptSrc: 
     })
   }
   let app = await loadScript(sandbox);
+  app.scoped.injectGlobalFunction = (fnName: string, fn) => {
+    (app.scoped.window as any)[fnName] = fn;
+  }
   return app;
 }
 

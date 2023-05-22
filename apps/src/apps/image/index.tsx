@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReactDom from 'react-dom/client';
-import { AppContext, AppInfo, SelectFileOptions, defineApp } from '@webby/core/web-app';
+import { AppContext, AppInfo, AppWindow, SelectFileOptions, createAppWindow, defineApp } from '@webby/core/web-app';
 import ImagePreview from './image-viewer';
 import { FileStat, readdir } from '@webby/core/fs';
 import path from 'path-browserify';
@@ -11,7 +11,13 @@ import { systemMessage, systemSelectFile } from '@webby/core/system';
 
 let reactRoot: ReactDom.Root;
 let eventBus = new CachedEventEmitter();
+let appWindow: AppWindow;
 export async function mount(ctx: AppContext) {
+  if (appWindow) {
+    appWindow.setActive(true);
+    return;
+  }
+  appWindow = createAppWindow();
   const systemMenu = [{
     name: 'File',
     children: [
@@ -29,7 +35,7 @@ export async function mount(ctx: AppContext) {
   }];
   ctx.systemMenu.set(systemMenu);
 
-  const root = ctx.appRootEl;
+  const root = appWindow.body;
   root.style.position = 'absolute';
   root.style.inset = '0';
 
@@ -69,7 +75,7 @@ function Index(props: { ctx: AppContext, onOpenFile: (cb: (file: string) => void
 
   return <div style={{ position: 'absolute', inset: 0 }}>
     {
-      file ? <ImagePreview ctx={props.ctx} files={files} file={file} dir={path.parse(file_path).dir} />
+      file ? <ImagePreview appWindow={appWindow} ctx={props.ctx} files={files} file={file} dir={path.parse(file_path).dir} />
         : <OpenFile onClick={async () => {
           const files = await systemSelectFile({ allowedExts });
           console.log(files);

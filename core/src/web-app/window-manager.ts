@@ -1,5 +1,5 @@
 import EventEmitter from "events";
-import { AppWindow, processManager } from ".";
+import { AppDefinitionWithContainer, AppWindow, ProcessState, processManager } from ".";
 import zIndexManager from "./z-index-manager";
 import style from './index.module.less';
 import { debounce, fullscreen } from "../utils/common";
@@ -28,14 +28,67 @@ function getRectByElementStyle(el: HTMLElement) {
 }
 
 export class WindowManager {
-  createWindow(appName: string, appContainer: HTMLElement): AppWindow {
+  windows: AppWindow[] = [];
+  checkActiveTimer: number;
+  activeWindow: AppWindow | undefined;
+  eventBus = new EventEmitter();
+  container = document.body;
+  constructor() {
+    this.checkActiveTimer = window.setInterval(() => {
+      let hasActive = false;
+      for (let win of this.windows) {
+        if (document.activeElement && win.window.contains(document.activeElement)) {
+          hasActive = true;
+          if (this.activeWindow !== win) {
+            const oldWin = this.activeWindow;
+            this.activeWindow = win;
+            this.eventBus.emit('active_window_change', win, oldWin);
+          }
+          win.setActive(true);
+        } else {
+          win.setActive(false);
+        }
+      };
+      if (!hasActive && this.activeWindow) {
+        this.eventBus.emit('active_window_change', null, this.activeWindow);
+        this.activeWindow = undefined;
+      }
+    }, 200);
+
+    const onResize = debounce(() => {
+      this.windows.forEach(win => {
+        win.checkPos();
+      });
+    }, 200);
+    window.addEventListener('resize', onResize);
+  }
+
+  setContainer(el: HTMLElement) {
+    this.container = el;
+  }
+
+  onActiveWindowChange(cb: (win?: AppWindow, lastWin?: AppWindow) => any) {
+    this.eventBus.on('active_window_change', cb);
+    return () => {
+      this.eventBus.off('active_window_change', cb);
+    }
+  }
+
+  blurAll() {
+    for (let win of this.windows) {
+      win.setActive(false);
+    }
+  }
+
+  createWindow(app: AppDefinitionWithContainer, windowId: string): AppWindow {
+    const appName = app.name;
     const windowEventBus = new EventEmitter();
 
     const clientWidth = document.documentElement.clientWidth;
     const clientHeight = document.documentElement.clientHeight;
 
     const appEl = document.createElement('div');
-    appEl.id = 'app-' + appName;
+    appEl.id = 'app-' + windowId;
     appEl.style.width = '500px';
     appEl.style.height = '500px';
     appEl.style.position = 'fixed';
@@ -63,11 +116,21 @@ export class WindowManager {
     }
 
     const setActive = (active: boolean) => {
+      const oldActiveWindow = this.activeWindow;
       if (active) {
+        for (let win of this.windows) {
+          if (win !== appWindow) {
+            win.setActive(false);
+          }
+        }
+        this.activeWindow = appWindow;
         zIndexManager.setTop(appEl);
         appEl.style.boxShadow = 'var(--box-shadow-grow)';
+        this.eventBus.emit('active_window_change', this.activeWindow, oldActiveWindow);
       } else {
         appEl.style.boxShadow = 'var(--box-shadow-shrink)';
+        this.activeWindow = undefined;
+        this.eventBus.emit('active_window_change', undefined, oldActiveWindow);
       }
     }
 
@@ -88,6 +151,7 @@ export class WindowManager {
     align-items: center;
     position: relative;
     overflow: hidden;
+    text-align: center;
   `}">
     <span class="app_window_close_btn" style="cursor: pointer;">
       <svg class="icon" aria-hidden="true">
@@ -171,6 +235,16 @@ export class WindowManager {
   <div class="${style.resize_handler} ${style.resize_handler_left} ${style.resize_handler_bottom}"></div>
   <div class="${style.resize_handler} ${style.resize_handler_right} ${style.resize_handler_bottom}"></div>
   `;
+
+
+    const appContainer = document.createElement('div');
+    const shadow = appContainer.attachShadow({ mode: 'open' });
+    const fakeFrame = document.createElement('div');
+    const head = document.createElement('div');
+    head.append(...app.scoped.head.cloneNode(true).childNodes)
+    fakeFrame.appendChild(head);
+    shadow.appendChild(fakeFrame);
+
     appEl.appendChild(resizeHandler);
     let resizing = 0;
     const horizonTop = 1;
@@ -403,6 +477,11 @@ export class WindowManager {
 
     resizeOb.observe(appContainer);
     windowEventBus.on(WindowEventType.BeforeClose, () => {
+      appEl.removeEventListener('mousedown', _setActive, false);
+      const idx = this.windows.indexOf(appWindow);
+      if (idx > -1) {
+        this.windows.splice(idx, 1);
+      }
       resizeOb.disconnect();
     });
 
@@ -480,11 +559,17 @@ export class WindowManager {
         appEl.removeEventListener('mousedown', fn);
       };
     }
+    const _setActive = () => {
+      appWindow.setActive(true);
+    }
+    appEl.addEventListener('mousedown', _setActive, false);
     const onBeforeClose = (cb: () => void) => {
       windowEventBus.on(WindowEventType.BeforeClose, cb);
       return () => windowEventBus.off(WindowEventType.BeforeClose, cb);
     }
+
     let appWindow: AppWindow = {
+      ownerApp: app,
       isMinimized: false,
       minWidth: 200,
       minHeight: 200,
@@ -511,9 +596,23 @@ export class WindowManager {
       showTitleBar,
       forceFullscreen,
     };
+    this.container.append(appEl);
+    this.windows.push(appWindow);
+    // open window animation
+    appWindow.setVisible(false);
+    setTimeout(() => {
+      appWindow.setVisible(true);
+    });
+
     return appWindow;
   }
 }
 
 const windowManager = new WindowManager();
 export default windowManager;
+
+export const createAppWindow = (id: string = Math.random().toString(16).substring(2)) => {
+  const __createAppWindow = (window as any).__createAppWindow;
+  const appWin = __createAppWindow(id);
+  return appWin as AppWindow;
+}

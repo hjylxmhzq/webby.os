@@ -23,19 +23,15 @@ export interface SelectFileOptions {
 }
 
 export interface AppContext {
-  theme: Theme;
-  appRoot: string;
-  appRootEl: HTMLElement;
   channel: MessagePort,
-  appWindow: AppWindow,
   systemMenu: AppMenuManager,
   isResume: boolean, // 是否从未unmount的状态恢复
   params: Record<string, string>,
-  setWindowSize: (w: number, h: number) => void;
   onOpenFile(cb: (file: string) => void): () => void;
   openFile(file: string): Promise<boolean>;
   openFileBy(appName: string, file: string): Promise<void>;
   registerExt(ext: string[]): void;
+  getProcess(): ProcessState;
 }
 
 export class AppMenuManager {
@@ -175,6 +171,7 @@ export interface GlobalSearchOptions {
 }
 
 export interface AppWindow {
+  ownerApp: AppDefinitionWithContainer,
   minWidth: number,
   minHeight: number,
   window: HTMLElement,
@@ -201,11 +198,10 @@ export interface AppWindow {
   noBackground(noBg: boolean): void;
   isMinimized: boolean;
 }
-export interface AppState {
-  el: HTMLElement,
+export interface ProcessState {
   name: string,
   isActive: boolean,
-  app: AppDefinition,
+  app: AppDefinitionWithContainer,
   ctx: AppContext,
   channel: MessagePort,
   eventBus: EventEmitter,

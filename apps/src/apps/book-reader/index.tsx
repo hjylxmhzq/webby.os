@@ -1,5 +1,5 @@
 import ReactDom from 'react-dom/client';
-import { AppContext, AppInstallContext, defineApp } from '@webby/core/web-app';
+import { AppContext, AppInstallContext, AppWindow, createAppWindow, defineApp } from '@webby/core/web-app';
 import iconUrl from './icon.svg';
 import { http } from '@webby/core/tunnel';
 import { downloadLink } from '../../utils/download';
@@ -29,7 +29,13 @@ interface Config {
   location?: string,
 }
 
-async function mount(ctx: AppContext) {
+let appWindow: AppWindow;
+export async function mount(ctx: AppContext) {
+  if (appWindow) {
+    appWindow.setActive(true);
+    return;
+  }
+  appWindow = createAppWindow();
   const fonts = await availableFonts();
   const state = await _store.getReactiveState<Config>('config', { font: 'Arial', fontSize: 18, theme: 'dark' });
 
@@ -154,7 +160,7 @@ async function mount(ctx: AppContext) {
     }
   ]);
 
-  const root = ctx.appRootEl;
+  const root = appWindow.body;
   root.style.position = 'absolute';
   root.style.inset = '0';
 
@@ -180,7 +186,7 @@ async function mount(ctx: AppContext) {
     const [showPrev, setShowPrev] = useState(true);
     const [toc, setToc] = useState<TreeNode[]>([]);
 
-    ctx.appWindow.onWindowResize((w, h) => {
+    appWindow.onWindowResize((w, h) => {
       if (rendition) {
         rendition.resize(w, h);
       }
@@ -194,7 +200,7 @@ async function mount(ctx: AppContext) {
       const open = async (file: string) => {
         if (file) {
           const p = path.parse(file).base;
-          ctx.appWindow.setTitle(`Book - ${p}`);
+          appWindow.setTitle(`Book - ${p}`);
           state.state.file = file;
           const r = await read_file(file, { localCache: true, showProgressMessage: true });
           const ab = await r.arrayBuffer();

@@ -558,6 +558,7 @@ pub fn create_thumbnail(file_root: &PathBuf, user_root: &str, file: &str, size: 
   thumbnail
 }
 
+#[allow(unused)]
 pub fn download_files(links: Vec<String>, dest_dir: &PathBuf) {
 
 }

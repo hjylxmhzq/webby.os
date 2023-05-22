@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ReactDom from 'react-dom/client';
-import { AppContext, AppInfo, AppInstallContext, defineApp } from '@webby/core/web-app';
+import { AppContext, AppInfo, AppInstallContext, AppWindow, createAppWindow, defineApp } from '@webby/core/web-app';
 import Chat from './chat';
 import iconUrl from './icon.svg';
 import { Collection } from '@webby/core/kv-storage';
@@ -13,7 +13,13 @@ let reactRoot: ReactDom.Root;
 const store = new Collection('built_in_app_chat');
 
 let enabledGlobalSearch = false;
-async function mount(ctx: AppContext) {
+let appWindow: AppWindow;
+export async function mount(ctx: AppContext) {
+  if (appWindow) {
+    appWindow.setActive(true);
+    return;
+  }
+  appWindow = createAppWindow();
   let token = '';
   const systemMenu = [
     {
@@ -69,7 +75,7 @@ async function mount(ctx: AppContext) {
   store.get('enable_global_search').then(v => {
     enabledGlobalSearch = !!v;
   });
-  const root = ctx.appRootEl;
+  const root = appWindow.body;
   root.style.position = 'absolute';
   root.style.inset = '0';
 

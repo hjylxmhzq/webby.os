@@ -1,4 +1,4 @@
-import { AppContext, AppInfo, defineApp } from '@webby/core/web-app';
+import { AppContext, AppInfo, AppWindow, createAppWindow, defineApp } from '@webby/core/web-app';
 import path from 'path-browserify';
 import React from 'react';
 import ReactDom from 'react-dom/client';
@@ -8,14 +8,20 @@ import { CachedEventEmitter } from '../../utils/events';
 import { systemMessage } from '@webby/core/system';
 
 let root: ReactDom.Root;
+let appWindow: AppWindow;
 export async function mount(ctx: AppContext) {
-  ctx.appWindow.setSize(800, 600);
-  ctx.appWindow.setPos(100, 200);
-  const rootEl = ctx.appRootEl;
+  if (appWindow) {
+    appWindow.setActive(true);
+    return;
+  }
+  appWindow = createAppWindow();
+  appWindow.setSize(800, 600);
+  appWindow.setPos(100, 200);
+  const rootEl = appWindow.body;
   rootEl.style.position = 'absolute';
   rootEl.style.inset = '0';
 
-  root = ReactDom.createRoot(ctx.appRootEl);
+  root = ReactDom.createRoot(appWindow.body);
   const openFile = async (file: string) => {
     const is_open = await ctx.openFile(file);
     if (!is_open) {

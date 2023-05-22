@@ -3,7 +3,7 @@ import Button from "./components/button";
 import { Popover } from "./components/popover";
 import style from './index.module.less';
 import ReactDom from 'react-dom/client';
-import { AppContext, AppDefinitionWithContainer, AppInfo, defineApp } from '@webby/core/web-app';
+import { AppContext, AppDefinitionWithContainer, AppInfo, AppWindow, createAppWindow, defineApp } from '@webby/core/web-app';
 import { http } from '@webby/core/utils';
 import iconUrl from './icon.svg';
 import { Collection, commonCollection } from "@webby/core/kv-storage";
@@ -21,13 +21,18 @@ import DigitInput from "./components/digits-input";
 const localFSCache = getLocalFSCache();
 let reactRoot: ReactDom.Root;
 
+let appWindow: AppWindow;
 export async function mount(ctx: AppContext) {
-
-  ctx.appWindow.noBackground(true);
+  // if (appWindow) {
+  //   appWindow.setActive(true);
+  //   return;
+  // }
+  appWindow = createAppWindow();
+  appWindow.noBackground(true);
   setTimeout(() => {
-    ctx.appWindow.setSize(900, 600);
+    appWindow.setSize(900, 600);
   });
-  const root = ctx.appRootEl;
+  const root = appWindow.body;
   root.style.position = 'absolute';
   root.style.inset = '0';
 

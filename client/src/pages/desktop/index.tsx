@@ -2,9 +2,9 @@ import Header from "./components/header/header";
 import style from './index.module.less';
 import { useCallback, useEffect, useRef, useState } from "react";
 import { http } from '@webby/core/tunnel';
-import { AppActionMenu, AppDefinitionWithContainer, AppState, SystemMessage, SystemMessageHandle, initSharedScope, processManager } from "@webby/core/web-app";
+import { AppActionMenu, AppDefinitionWithContainer, ProcessState, SystemMessage, SystemMessageHandle, initSharedScope, processManager } from "@webby/core/web-app";
 import { Collection, commonCollection } from '@webby/core/kv-storage'
-import { getAppManager } from '@webby/core/system'
+import { getAppManager, getWindowManager } from '@webby/core/system'
 import SystemFileSelector, { SelectFileProps } from "./components/system-file-selector";
 import EventEmitter from "events";
 import { read_file_to_link } from "@webby/core/fs";
@@ -30,6 +30,7 @@ initSharedScope({
 });
 
 const appManager = getAppManager();
+const windowManager = getWindowManager();
 
 export enum DeskTopEventType {
   SelectFile = 'selectFile',
@@ -117,7 +118,7 @@ export function HomePage() {
   const mountPoint = useRef<HTMLDivElement>(null);
   const [apps, setApps] = useState<AppDefinitionWithContainer[]>([]);
   const [currentMenu, setCurrentMenu] = useState<AppActionMenu[]>([]);
-  const [activeApp, setActiveApp] = useState<AppState | null>(null);
+  const [activeApp, setActiveApp] = useState<ProcessState | null>(null);
   const [showFileSelector, setShowFileSelector] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [fileSelectorOptioins, setFileSelectorOptioins] = useState<SelectFileProps>({});
@@ -248,10 +249,12 @@ export function HomePage() {
     });
     if (!mountPoint.current) return;
     if (processManager.isInited) return;
-    processManager.init(mountPoint.current);
-    processManager.eventBus.on('active_app_change', (app: AppState | null, _old) => {
-      setActiveApp(app);
-      if (app) setCurrentMenu(app.ctx.systemMenu.get());
+    appManager.init();
+    windowManager.setContainer(mountPoint.current);
+    windowManager.onActiveWindowChange((win, _old) => {
+      const process = win?.ownerProcess;
+      process && setActiveApp(process);
+      if (process) setCurrentMenu(process.ctx.systemMenu.get());
       else setCurrentMenu([]);
     });
     return () => {
@@ -259,7 +262,7 @@ export function HomePage() {
     }
   }, []);
   const deactiveApps = () => {
-    processManager.blur();
+    windowManager.blurAll();
   }
 
   const [flowTitlebar, setTitlebarFlow] = useState(false);
