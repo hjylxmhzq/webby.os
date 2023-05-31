@@ -25,7 +25,6 @@ let reactRoot: ReactDom.Root;
 
 let appWindow: AppWindow | undefined;
 export async function mount(ctx: AppContext) {
-  console.log('start setting', appWindow);
   if (appWindow) {
     appWindow.setActive(true);
     return;
