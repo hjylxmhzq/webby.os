@@ -1,13 +1,13 @@
 import { read_file } from '@webby/core/fs';
-import { AppContext, AppInfo, defineApp } from '@webby/core/web-app';
+import { AppContext, AppInfo, createAppWindow, defineApp } from '@webby/core/web-app';
 import iconUrl from './icon.svg';
-import { type CherryOptions } from 'cherry-markdown/types/cherry';
-import type Cherry from 'cherry-markdown';
+import { type CherryOptions } from 'cherry-markdown/types/cherry.js';
+
 
 function mountMDE() {
   const _Cherry = (window as any).Cherry;
 
-  const cherry: Cherry = new _Cherry({
+  const cherry: any = new _Cherry({
     id: 'text-area',
     value: '',
   } as CherryOptions);
@@ -18,7 +18,8 @@ function mountMDE() {
 }
 
 export async function mount(ctx: AppContext) {
-  const rootEl = ctx.appRootEl;
+  const appWindow = createAppWindow();
+  const rootEl = appWindow.body;
   rootEl.style.position = 'absolute';
   rootEl.style.inset = '0';
 
@@ -128,7 +129,7 @@ export function getAppInfo(): AppInfo {
 }
 
 defineApp({
-  mount,
-  unmount,
+  start: mount,
+  exit: unmount,
   getAppInfo
 })

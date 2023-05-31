@@ -197,6 +197,7 @@ export function DesktopIconGrid(props: Props) {
             offsetX,
             offsetY,
           };
+          console.log('mouisedown')
           setPressedApp(app);
         }
         let style;
@@ -277,6 +278,7 @@ function GridItem(props: GridItemProps) {
       tabIndex={0}
       className={style['grid-item']}
       style={{ width: '100%', height: '100%' }}
+      onMouseDown={props.onMouseDown}
     >
       <div className={style['grid-item-img']} style={{ height: props.size - 20 }}>
         <SmartImage

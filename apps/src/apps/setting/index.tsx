@@ -1,36 +1,39 @@
 import { useEffect, useRef, useState } from "react";
-import Button from "./components/button";
-import { Popover } from "./components/popover";
+import Button from "./components/button/index.tsx";
+import { Popover } from "./components/popover/index.tsx";
 import style from './index.module.less';
 import ReactDom from 'react-dom/client';
-import { AppContext, AppDefinitionWithContainer, AppInfo, AppWindow, createAppWindow, defineApp } from '@webby/core/web-app';
+import { AppContext, AppDefinitionWithContainer, AppInfo, AppWindow, createAppWindow, defineApp, getAppManager } from '@webby/core/web-app';
 import { http } from '@webby/core/utils';
 import iconUrl from './icon.svg';
 import { Collection, commonCollection } from "@webby/core/kv-storage";
 import { create_download_link_from_file_path, getLocalFSCache, MetaAll } from "@webby/core/fs";
 import { auth, systemInfo } from "@webby/core/api";
 import classNames from 'classnames';
-import { getAppManager, systemMessage, systemSelectFile } from "@webby/core/system";
-import { Switch } from "../../components/switch";
-import { formatFileSize, formatTime } from "./utils";
+import { systemMessage, systemSelectFile } from "@webby/core/system";
+import { Switch } from "../../components/switch/index.tsx";
+import { formatFileSize, formatTime } from "./utils.ts";
 import { SmartImage } from "@webby/components";
-import RecordBlock from "./components/record-block";
+import RecordBlock from "./components/record-block/index.tsx";
 import qrCode from 'qrcode';
-import DigitInput from "./components/digits-input";
+import DigitInput from "./components/digits-input/index.tsx";
+import { customAlphabet } from 'nanoid';
+import base32Encode from 'base32-encode';
 
 const localFSCache = getLocalFSCache();
 let reactRoot: ReactDom.Root;
 
-let appWindow: AppWindow;
+let appWindow: AppWindow | undefined;
 export async function mount(ctx: AppContext) {
-  // if (appWindow) {
-  //   appWindow.setActive(true);
-  //   return;
-  // }
+  console.log('start setting', appWindow);
+  if (appWindow) {
+    appWindow.setActive(true);
+    return;
+  }
   appWindow = createAppWindow();
   appWindow.noBackground(true);
   setTimeout(() => {
-    appWindow.setSize(900, 600);
+    appWindow?.setSize(900, 600);
   });
   const root = appWindow.body;
   root.style.position = 'absolute';
@@ -86,7 +89,7 @@ function GlobalSearchSetting() {
           enabled: app.hooks.globalSearch.isEnabled(),
         };
       });
-
+    console.log(status)
     setSearchStatus(status);
   }
 
@@ -186,9 +189,7 @@ function UserSetting() {
         <span>两步验证<span style={{ fontWeight: 100, fontStyle: 'italic' }}>(TOTP)</span></span>
         <Switch enabled={otpEnabled} onChange={async (enabled) => {
           if (enabled) {
-            const nanoid = await import('nanoid');
-            const base32Encode = (await import('base32-encode')).default;
-            const secret = nanoid.customAlphabet('1234567890abcdefghijklnmopqrstuvwxyz', 25)();
+            const secret = customAlphabet('1234567890abcdefghijklnmopqrstuvwxyz', 25)();
             setSecret(secret);
             const uint8 = new TextEncoder().encode(secret);
             const encoded = base32Encode(uint8, 'RFC4648');
@@ -218,7 +219,7 @@ function UserSetting() {
             onClick={async () => {
               const success = await auth.enableOtp(secret, verifyCode);
               if (!success) {
-                systemMessage({ title: '两步验证设置', content: '检查验错误', timeout: 5000 });
+                systemMessage({ title: '两步验证设置', content: '验证码错误', timeout: 5000 });
               } else {
                 setOtpEnabled(true);
                 setShowOtpForm(false);
@@ -311,7 +312,7 @@ function UserSetting() {
           </div>
           {
             groups.map(group => {
-              return <div className={style['user-list-item']}>
+              return <div key={group.name} className={style['user-list-item']}>
                 <span>{group.name}</span>
                 <span>{group.desc}</span>
                 <span>{group.permissions}</span>
@@ -335,7 +336,7 @@ function UserSetting() {
           </div>
           {
             sessions.map(sess => {
-              return <div className={style['user-list-item']}>
+              return <div key={sess.key} className={style['user-list-item']}>
                 <span>{sess.state.user.username}</span>
                 <span>{formatTime(sess.state.user.last_login * 1000)}</span>
                 <span>{sess.state.user.ip}</span>
@@ -653,7 +654,9 @@ function Sep() {
 }
 
 export async function unmount(ctx: AppContext) {
+  console.log('unmount');
   reactRoot.unmount();
+  appWindow = undefined;
 }
 
 export function getAppInfo(): AppInfo {
@@ -667,7 +670,7 @@ export function getAppInfo(): AppInfo {
 }
 
 defineApp({
-  mount,
-  unmount,
+  start: mount,
+  exit: unmount,
   getAppInfo
 })

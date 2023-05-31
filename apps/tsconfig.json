@@ -14,10 +14,11 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
-    "module": "CommonJS",
+    "module": "ESNext",
     "moduleResolution": "nodenext",
     "resolveJsonModule": true,
     "isolatedModules": false,
+    "allowImportingTsExtensions": true,
     // "noEmit": true,
     "jsx": "react-jsx",
     "useDefineForClassFields": true,
@@ -32,6 +33,6 @@
   },
   "include": [
     "src",
-    "./types.ts"
+    "types.d.ts"
   ]
 }

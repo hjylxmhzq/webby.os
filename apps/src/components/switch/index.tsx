@@ -9,7 +9,7 @@ interface Props {
 
 export function Switch(props: Props) {
   return <span
-   tabIndex={0}
+    tabIndex={0}
     className={classNames(props.className, style.switch, { [style.enabled]: props.enabled })}
     onClick={() => {
       props.onChange?.(!props.enabled);

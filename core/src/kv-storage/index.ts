@@ -217,7 +217,7 @@ export const commonCollection = {
   desktop: new Collection('_desktop_config', { localFirst: true }),
   windowManager: new Collection('_window_manager'),
   processManager: new Collection('_process_manager'),
-  appManager: new Collection('_app_manager'),
-  systemHook: new Collection('_system_hook'),
+  appManager: new Collection('_app_manager', { localFirst: true }),
+  systemHook: new Collection('_system_hook', { localFirst: true }),
 }
 Collection.allowBuiltIn = false;

@@ -51,7 +51,7 @@ export function getAppInfo(): AppInfo {
 }
 
 defineApp({
-  mount,
-  unmount,
+  start: mount,
+  exit: unmount,
   getAppInfo
 })

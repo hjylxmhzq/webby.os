@@ -535,8 +535,8 @@ function OpenFile(props: { onSelectFile: (file: string) => void }) {
 }
 
 defineApp({
-  mount,
-  unmount,
+  start: mount,
+  exit: unmount,
   installed,
   getAppInfo() {
     return {

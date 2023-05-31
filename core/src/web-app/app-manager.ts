@@ -1,9 +1,8 @@
 import { commonCollection } from "../kv-storage";
-import { AppDefinition, AppInstallContext, GlobalSearchOptions, GlobalSearchResult, SystemHooks } from ".";
+import { AppDefinition, AppInstallContext, GlobalSearchOptions, GlobalSearchResult, SystemHooks, processManager } from ".";
 import EventEmitter from "events";
 import { SystemHook } from "./system-hook";
 import { systemMessage } from "../system";
-import processManager from "./process-manager";
 import { http } from "../tunnel";
 
 export type AppDefinitionWithContainer = AppDefinition & {
@@ -47,11 +46,13 @@ export class AppManager {
     this.apps = [];
   }
   init(selectedApps?: string[]) {
-    if(this.readyPromise) {
+    if (this.readyPromise) {
       return this.readyPromise;
     }
     this.readyPromise = (async () => {
       await this.installBuiltinApps(selectedApps);
+      this.eventBus.emit('app_installed');
+      await this.installThirdPartyApps();
       this.eventBus.emit('app_installed');
     })();
     return this.readyPromise;
@@ -121,7 +122,8 @@ export class AppManager {
       }
     }
     await Promise.all(installPromises);
-
+  }
+  async installThirdPartyApps() {
     const thirdPartyApps = await this.remote.get('thridparty_apps') as typeof this['thirdPartyApps'];
     if (thirdPartyApps) {
       const install = async (appScriptSrc: string, appName: string) => {
@@ -264,8 +266,8 @@ export async function loadModule(appScript: { scriptContent: string, scriptSrc: 
         document.body.removeChild(script);
         URL.revokeObjectURL(blobSrc);
         const appDef = (window as any).__apps[moduleName] as AppDefinitionWithContainer;
-        if (typeof appDef.mount !== 'function' || typeof appDef.getAppInfo !== 'function') {
-          reject(`install app [${moduleName}] error`);
+        if (typeof appDef.start !== 'function' || typeof appDef.getAppInfo !== 'function') {
+          reject(`install app [${moduleName}] error, app does't have [start] or [getAppInfo] function`);
         }
         resolve(appDef);
       });
@@ -278,8 +280,7 @@ export async function loadModule(appScript: { scriptContent: string, scriptSrc: 
   return app;
 }
 
-const appManager = new AppManager();
-export default appManager;
+export const appManager = new AppManager();
 
 function createAppInstallContext(): AppInstallContext {
   const ctx = {
@@ -394,6 +395,7 @@ function createScopeConsole(scope: string) {
   });
   return proxy
 }
+
 
 (window as any).__createFakeWindow = createFakeWindow;
 (window as any).__createFakeDocument = createFakeDocument;

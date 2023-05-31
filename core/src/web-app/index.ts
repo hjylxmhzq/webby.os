@@ -1,19 +1,14 @@
 import { Theme } from "../types/theme";
 import EventEmitter from 'events';
-import processManager, { ProcessManager } from "./process-manager";
-import windowManager, { WindowManager } from "./window-manager";
-import appManager, { AppDefinitionWithContainer, AppManager } from "./app-manager";
+import { ProcessManager, processManager } from "./process-manager";
+import { WindowManager, windowManager } from "./window-manager";
+import { AppDefinitionWithContainer, AppManager, appManager } from "./app-manager";
 import { SystemHook } from "./system-hook";
 
 export * from './process-manager';
 export * from './app-manager';
 export * from './window-manager';
 
-export {
-  processManager,
-  windowManager,
-  appManager,
-};
 
 export interface SelectFileOptions {
   allowFile?: boolean;
@@ -138,8 +133,8 @@ export interface SystemMessageHandle {
 }
 
 export interface AppDefinition {
-  mount(ctx: AppContext): Promise<void>;
-  unmount(ctx: AppContext): Promise<void>;
+  start(ctx: AppContext): Promise<void>;
+  exit(ctx: AppContext): Promise<void>;
   getAppInfo(): AppInfo;
   installed?(ctx: AppInstallContext): Promise<void>;
   beforeUninstall?(): Promise<void>;
@@ -171,6 +166,7 @@ export interface GlobalSearchOptions {
 }
 
 export interface AppWindow {
+  ownerProcess: ProcessState,
   ownerApp: AppDefinitionWithContainer,
   minWidth: number,
   minHeight: number,
@@ -263,9 +259,9 @@ export interface PromptResult {
 }
 
 export interface SystemSharedScope {
-  systemSelectFile?(app: AppDefinitionWithContainer ,options: SelectFileProps): Promise<string[] | null>,
-  systemMessage?(app: AppDefinitionWithContainer ,msg: SystemMessage, onClose?: () => void): SystemMessageHandle,
-  systemPrompt?(app: AppDefinitionWithContainer ,prompt: PromptContent): Promise<PromptResult | null>,
+  systemSelectFile?(app: AppDefinitionWithContainer, options: SelectFileProps): Promise<string[] | null>,
+  systemMessage?(app: AppDefinitionWithContainer, msg: SystemMessage, onClose?: () => void): SystemMessageHandle,
+  systemPrompt?(app: AppDefinitionWithContainer, prompt: PromptContent): Promise<PromptResult | null>,
   setSystemTitleBarFlow?(isFlow: boolean): void;
   processManager: ProcessManager,
   windowManager: WindowManager,
@@ -285,15 +281,34 @@ export function initSharedScope(system: Pick<SystemSharedScope, 'setSystemTitleB
   Object.assign(window.sharedScope.system, system);
 }
 
-if (!window.sharedScope) {
-  window.sharedScope = {
-    system: {
-      appManager: appManager,
-      windowManager: windowManager,
-      processManager: processManager,
-    },
-    shared: {},
-  }
+export function ensureSharedScope() {
+  window.sharedScope = window.sharedScope || {};
+  window.sharedScope.shared = window.sharedScope.shared || {};
+  window.sharedScope.system = window.sharedScope.system || {};
+  const system = window.sharedScope.system;
+  system.appManager = system.appManager || appManager;
+  system.processManager = system.processManager || processManager;
+  system.windowManager = system.windowManager || windowManager;
+}
+
+ensureSharedScope();
+
+export function getAppManager() {
+  const sc = window.sharedScope;
+  const appManager = sc.system.appManager;
+  return appManager;
+}
+
+export function getWindowManager() {
+  const sc = (window as any).sharedScope as SharedScope;;
+  const windowManager = sc.system.windowManager;
+  return windowManager;
+}
+
+export function getProcessManager() {
+  const sc = (window as any).sharedScope as SharedScope;;
+  const processManager = sc.system.processManager;
+  return processManager;
 }
 
 export function getSharedScope() {
@@ -301,12 +316,12 @@ export function getSharedScope() {
 }
 
 export interface App {
-  mount?(ctx: AppContext): Promise<void>;
-  unmount?(ctx: AppContext): Promise<void>;
+  start?(ctx: AppContext): Promise<void>;
+  exit?(ctx: AppContext): Promise<void>;
   installed?(ctx: AppInstallContext): Promise<void>;
   getAppInfo(): AppInfo;
 }
 
-export function defineApp(app: App) {
+export function defineApp(app: AppDefinition) {
   (window as any).__app = app;
 }

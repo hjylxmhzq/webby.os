@@ -1,5 +1,5 @@
 import ReactDom from 'react-dom/client';
-import { AppContext, AppInstallContext, defineApp, getSharedScope } from '@webby/core/web-app';
+import { AppContext, AppInstallContext, createAppWindow, defineApp, getSharedScope } from '@webby/core/web-app';
 import iconUrl from './icon.svg';
 import { CachedEventEmitter } from '../../utils/events';
 import path from 'path-browserify';
@@ -32,7 +32,8 @@ async function mount(ctx: AppContext) {
     </div>
   }
 
-  const root = ctx.appRootEl;
+  const appWindow = createAppWindow();
+  const root = appWindow.body;
   root.style.position = 'absolute';
   root.style.inset = '0';
 
@@ -52,8 +53,8 @@ async function installed(ctx: AppInstallContext) {
 }
 
 defineApp({
-  mount,
-  unmount,
+  start: mount,
+  exit: unmount,
   installed,
   getAppInfo() {
     return {

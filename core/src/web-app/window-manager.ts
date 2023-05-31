@@ -28,6 +28,7 @@ function getRectByElementStyle(el: HTMLElement) {
 }
 
 export class WindowManager {
+  newWindowOffset = 0;
   windows: AppWindow[] = [];
   checkActiveTimer: number;
   activeWindow: AppWindow | undefined;
@@ -80,7 +81,7 @@ export class WindowManager {
     }
   }
 
-  createWindow(app: AppDefinitionWithContainer, windowId: string): AppWindow {
+  createWindow(app: AppDefinitionWithContainer, windowId: string, process: ProcessState): AppWindow {
     const appName = app.name;
     const windowEventBus = new EventEmitter();
 
@@ -89,11 +90,12 @@ export class WindowManager {
 
     const appEl = document.createElement('div');
     appEl.id = 'app-' + windowId;
-    appEl.style.width = '500px';
+    appEl.style.width = '700px';
     appEl.style.height = '500px';
     appEl.style.position = 'fixed';
-    appEl.style.left = clientWidth / 2 - 250 + 'px';
-    appEl.style.top = clientHeight / 2 - 250 + 'px';
+    appEl.style.left = clientWidth / 2 - 380 + this.newWindowOffset + 'px';
+    appEl.style.top = clientHeight / 2 - 280 + this.newWindowOffset + 'px';
+    this.newWindowOffset = this.newWindowOffset > 100 ? 0 : this.newWindowOffset + 10;
     appEl.style.boxShadow = 'var(--box-shadow)';
     appEl.style.borderRadius = '10px';
     appEl.style.overflow = 'hidden';
@@ -482,6 +484,14 @@ export class WindowManager {
       if (idx > -1) {
         this.windows.splice(idx, 1);
       }
+      const hasOtherWindow = this.windows.find(w => w.ownerApp.name === app.name);
+      if (!hasOtherWindow) {
+        const pm = processManager;
+        const proc = pm.getAppByName(app.name);
+        if (proc) {
+          proc.app.exit(proc.ctx);
+        }
+      }
       resizeOb.disconnect();
     });
 
@@ -570,6 +580,7 @@ export class WindowManager {
 
     let appWindow: AppWindow = {
       ownerApp: app,
+      ownerProcess: process,
       isMinimized: false,
       minWidth: 200,
       minHeight: 200,
@@ -608,8 +619,8 @@ export class WindowManager {
   }
 }
 
-const windowManager = new WindowManager();
-export default windowManager;
+export const windowManager = new WindowManager();
+
 
 export const createAppWindow = (id: string = Math.random().toString(16).substring(2)) => {
   const __createAppWindow = (window as any).__createAppWindow;

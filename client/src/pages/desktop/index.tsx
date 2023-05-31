@@ -2,9 +2,9 @@ import Header from "./components/header/header";
 import style from './index.module.less';
 import { useCallback, useEffect, useRef, useState } from "react";
 import { http } from '@webby/core/tunnel';
-import { AppActionMenu, AppDefinitionWithContainer, ProcessState, SystemMessage, SystemMessageHandle, initSharedScope, processManager } from "@webby/core/web-app";
+import { AppActionMenu, AppDefinitionWithContainer, ProcessState, SystemMessage, SystemMessageHandle, initSharedScope } from "@webby/core/web-app";
 import { Collection, commonCollection } from '@webby/core/kv-storage'
-import { getAppManager, getWindowManager } from '@webby/core/system'
+import { getAppManager, getProcessManager, getWindowManager } from '@webby/core/web-app'
 import SystemFileSelector, { SelectFileProps } from "./components/system-file-selector";
 import EventEmitter from "events";
 import { read_file_to_link } from "@webby/core/fs";
@@ -31,6 +31,7 @@ initSharedScope({
 
 const appManager = getAppManager();
 const windowManager = getWindowManager();
+const processManager = getProcessManager();
 
 export enum DeskTopEventType {
   SelectFile = 'selectFile',
@@ -140,7 +141,7 @@ export function HomePage() {
     (async () => {
       const wp = await commonCollection.desktop.get<string>('wallpaper');
       if (wp) {
-        const wallpaper = await read_file_to_link(wp, { localCache: true });
+        const wallpaper = await read_file_to_link(wp, { localCache: true, allowStaled: true });
         setWallpaper(wallpaper);
       }
       const _bgFillMode = await commonCollection.desktop.get<string>('bg-fill-mode');

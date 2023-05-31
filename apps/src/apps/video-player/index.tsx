@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import ReactDom from 'react-dom/client';
-import { AppContext, AppInfo, defineApp } from '@webby/core/web-app';
+import { AppContext, AppInfo, createAppWindow, defineApp } from '@webby/core/web-app';
 import { create_download_link_from_file_path } from '@webby/core/fs';
-import VideoPreview from './video-player';
+import VideoPreview from './video-player.tsx';
 import iconUrl from './icon.svg';
 import style from './video-player.module.less';
 import { systemSelectFile } from '@webby/core/system';
@@ -30,7 +30,8 @@ export async function mount(ctx: AppContext) {
   }];
   ctx.systemMenu.set(systemMenu);
 
-  const root = ctx.appRootEl;
+  const appWindow = createAppWindow();
+  const root = appWindow.body;
   root.style.position = 'absolute';
   root.style.inset = '0';
   let openCb: (file: string) => void;
@@ -132,7 +133,7 @@ export function getAppInfo(): AppInfo {
 }
 
 defineApp({
-  mount,
-  unmount,
+  start: mount,
+  exit: unmount,
   getAppInfo
 })

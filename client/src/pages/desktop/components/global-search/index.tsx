@@ -7,7 +7,7 @@ import LoadingBar from "src/pages/file/components/loading-bar";
 import { CSSTransition, TransitionGroup } from "react-transition-group";
 import { FileThumbnailIcon, SmartImage } from "@webby/components";
 import { GlobalSearchResult, processManager } from "@webby/core/web-app";
-import { getAppManager } from '@webby/core/system';
+import { getAppManager } from '@webby/core/web-app';
 import { xssFilter } from "src/utils/xss-filter";
 
 const appManager = getAppManager();

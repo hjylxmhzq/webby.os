@@ -378,8 +378,8 @@ function getAppInfo(): AppInfo {
 }
 
 defineApp({
-  mount,
-  unmount,
+  start: mount,
+  exit: unmount,
   installed,
   getAppInfo
 })

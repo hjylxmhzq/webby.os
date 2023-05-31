@@ -3,8 +3,10 @@ import path from "path-browserify";
 import { post, post_formdata, post_raw, Response } from "../utils/http";
 import { systemMessage } from "../system";
 import { LocalCache } from "./local-cache";
+import { ensureSharedScope } from "../web-app";
 export * from './local-cache';
 
+ensureSharedScope();
 const localFSCache = new LocalCache('fs', { maxSize: 1024 * 1024 * 1024 });
 window.sharedScope.shared['localFSCache'] = localFSCache;
 
@@ -148,6 +150,7 @@ export async function read_text_file(dir: string, file: string) {
 export interface ReadFileOptions extends GetFileOptions {
   localCache?: boolean,
   showProgressMessage?: boolean,
+  allowStaled?: boolean,
 }
 
 export async function read_file(file: string, options: ReadFileOptions = {}): Promise<Blob> {
@@ -155,56 +158,74 @@ export async function read_file(file: string, options: ReadFileOptions = {}): Pr
   const filename = path.basename(file_path);
   if (options.localCache) {
     const cached = await localFSCache.get<Blob>(file);
-    const meta = await localFSCache.getMeta(file);
-    if (cached && meta) {
-      const fileStat = await file_stat(file);
-      if (fileStat.modified < meta.saved_at) {
-        if (options.showProgressMessage) {
-          systemMessage({ title: '已从本地缓存加载文件', content: `${filename}`, type: 'info', timeout: 3000 })
+    const checkStale = async () => {
+      const meta = await localFSCache.getMeta(file);
+      if (cached && meta) {
+        const fileStat = await file_stat(file);
+        if (fileStat.modified < meta.saved_at) {
+          if (options.showProgressMessage) {
+            systemMessage({ title: '已从本地缓存加载文件', content: `${filename}`, type: 'info', timeout: 3000 })
+          }
+          return cached;
         }
+      }
+    }
+    if (options.allowStaled && cached) {
+      checkStale().then(cached => {
+        if (!cached) {
+          getFile();
+        }
+      })
+      return cached;
+    } else {
+      const cached = await checkStale();
+      if (cached) {
         return cached;
       }
     }
   }
-  let body = {
-    file: file_path,
-    ...(options.resize ? { param_resize: options.resize } : {}),
-  }
-  const url = new URL('/file/read', window.location.origin);
-  let resp = await post_raw(url.toString(), body, file);
-  const chunks = [];
-  let reader = resp.body?.getReader();
-  let content: Blob = new Blob();
-  const contentType = resp.headers.get('content-type') || '';
-  const total = parseInt(resp.headers.get('content-length') || '0', 10);
-  let loaded = 0;
-  let handle;
-  if (options.showProgressMessage) {
-    handle = systemMessage({ title: '正在加载文件', content: `${filename}`, type: 'info', timeout: 0 })
-  }
-  while (reader && true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      break;
+  const getFile = async () => {
+    let body = {
+      file: file_path,
+      ...(options.resize ? { param_resize: options.resize } : {}),
     }
-    loaded += value.byteLength;
-    chunks.push(value);
-    if (handle) {
-      const percent = loaded / total;
-      const percentStr = (percent * 100).toFixed(1) + '%';
-      if (!handle.isClosed) {
-        handle.setMessage({ title: '正在加载文件', content: `${filename}: ${percentStr}`, type: 'info', timeout: 0, progress: percent })
+    const url = new URL('/file/read', window.location.origin);
+    let resp = await post_raw(url.toString(), body, file);
+    const chunks = [];
+    let reader = resp.body?.getReader();
+    let content: Blob = new Blob();
+    const contentType = resp.headers.get('content-type') || '';
+    const total = parseInt(resp.headers.get('content-length') || '0', 10);
+    let loaded = 0;
+    let handle;
+    if (options.showProgressMessage) {
+      handle = systemMessage({ title: '正在加载文件', content: `${filename}`, type: 'info', timeout: 0 })
+    }
+    while (reader && true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      loaded += value.byteLength;
+      chunks.push(value);
+      if (handle) {
+        const percent = loaded / total;
+        const percentStr = (percent * 100).toFixed(1) + '%';
+        if (!handle.isClosed) {
+          handle.setMessage({ title: '正在加载文件', content: `${filename}: ${percentStr}`, type: 'info', timeout: 0, progress: percent })
+        }
       }
     }
+    if (handle && !handle.isClosed) {
+      handle.setMessage({ title: '加载完成', content: `${filename}`, type: 'info', timeout: 2000 })
+    }
+    content = new Blob(chunks, { type: contentType });
+    if (options.localCache) {
+      localFSCache.set(file_path, content);
+    }
+    return content;
   }
-  if (handle && !handle.isClosed) {
-    handle.setMessage({ title: '加载完成', content: `${filename}`, type: 'info', timeout: 2000 })
-  }
-  content = new Blob(chunks, { type: contentType });
-  if (options.localCache) {
-    localFSCache.set(file_path, content);
-  }
-  return content;
+  return getFile();
 }
 
 export async function read_file_to_link(file: string, options: ReadFileOptions = {}): Promise<string> {

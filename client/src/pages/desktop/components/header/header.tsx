@@ -4,11 +4,11 @@ import { useTheme } from "src/hooks/common";
 import Icon from "src/components/icon/icon";
 import { fullscreen } from "src/utils/common";
 import { DropdownMenu } from "src/pages/desktop/components/header/dropdown-menu";
-import { AppActionMenu, AppMenu, AppMenuManager, AppState, processManager } from '@webby/core/web-app';
+import { AppActionMenu, AppMenu, AppMenuManager, ProcessState, processManager } from '@webby/core/web-app';
 import { logout } from 'src/apis/auth';
 import { showGlobalSearch } from '../..';
 import classNames from 'classnames';
-import { getAppManager } from '@webby/core/system';
+import { getAppManager } from '@webby/core/web-app';
 
 const appManager = getAppManager();
 
@@ -57,7 +57,7 @@ appManager.onAppInstalled(() => {
   }));
 });
 
-export default function Header(props: { flow: boolean, menu: AppActionMenu[], activeApp?: AppState | null }) {
+export default function Header(props: { flow: boolean, menu: AppActionMenu[], activeApp?: ProcessState | null }) {
   const [time, setTime] = useState('');
 
   useEffect(() => {

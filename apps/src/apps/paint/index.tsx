@@ -1,8 +1,10 @@
-import { AppContext, AppInfo, defineApp } from '@webby/core/web-app';
+import { AppContext, AppInfo, AppWindow, createAppWindow, defineApp } from '@webby/core/web-app';
 import iconUrl from './icon.svg';
 
+let appWindow: AppWindow;
 export async function mount(ctx: AppContext) {
-  const root = ctx.appRootEl;
+  appWindow = createAppWindow();
+  const root = appWindow.body;
   root.style.position = 'absolute';
   root.style.inset = '0';
   const iframe = document.createElement('iframe');
@@ -19,7 +21,7 @@ export async function mount(ctx: AppContext) {
 }
 
 export async function unmount(ctx: AppContext) {
-  ctx.appRootEl.innerHTML = '';
+  appWindow.body.innerHTML = '';
 }
 
 export function getAppInfo(): AppInfo {
@@ -33,7 +35,7 @@ export function getAppInfo(): AppInfo {
 }
 
 defineApp({
-  mount,
-  unmount,
+  start: mount,
+  exit: unmount,
   getAppInfo
 })

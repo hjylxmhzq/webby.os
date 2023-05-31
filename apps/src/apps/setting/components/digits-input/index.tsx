@@ -11,7 +11,7 @@ export default function DigitInput(props: Props) {
   return <div style={{ display: 'inline-flex' }}>
     {
       Array.from({ length: props.length }).map((_, idx) => {
-        return <div tabIndex={0} className={style.digit} onKeyDown={e => {
+        return <div key={idx} tabIndex={0} className={style.digit} onKeyDown={e => {
           const el = e.target as HTMLDivElement;
           const nextEl = el.nextElementSibling as HTMLInputElement | null;
           const key = e.key;

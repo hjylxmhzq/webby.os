@@ -1,5 +1,5 @@
 import path from "path-browserify";
-import { AppDefinitionWithContainer, SelectFileOptions, SharedScope, processManager } from "../web-app";
+import { AppDefinitionWithContainer, SelectFileOptions, SharedScope, getProcessManager } from "../web-app";
 import { SystemMessageHandle } from "../web-app";
 import { SystemMessage } from "../web-app";
 
@@ -46,6 +46,7 @@ export async function openFile(file: string): Promise<boolean> {
 
   const ext = path.parse(file).ext;
   const apps = appManager.getSupportedAppsByExt(ext);
+  const processManager = getProcessManager();
   if (apps.length) {
     await processManager.openFileBy(apps[0], file);
     return true;
@@ -56,22 +57,11 @@ export async function openFile(file: string): Promise<boolean> {
 export async function openFileBy(appName: string, file: string): Promise<void> {
   const sc = (window as any).sharedScope as SharedScope;;
   const windowManager = sc.system.windowManager;
+  const processManager = getProcessManager();
   await processManager.startApp(appName);
   let existApp = processManager.getAppByName(appName);
   if (existApp) {
     existApp.eventBus.emit('open_file', file);
     return;
   }
-}
-
-export function getAppManager() {
-  const sc = window.sharedScope;
-  const appManager = sc.system.appManager;
-  return appManager;
-}
-
-export function getWindowManager() {
-  const sc = (window as any).sharedScope as SharedScope;;
-  const windowManager = sc.system.windowManager;
-  return windowManager;
 }

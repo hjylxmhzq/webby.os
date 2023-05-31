@@ -7,6 +7,7 @@
     "build": "NODE_ENV=production webpack",
     "start": "webpack --watch"
   },
+  "type": "module",
   "dependencies": {
     "@webby/client": "*",
     "@webby/components": "*",
@@ -16,7 +17,7 @@
     "highlight.js": "^11.7.0",
     "katex": "^0.16.4",
     "marked": "^4.3.0",
-    "nanoid": "^4.0.2",
+    "nanoid": "3.3.1",
     "path-browserify": "^1.0.1",
     "pdfjs-dist": "^3.4.120",
     "plyr-react": "^5.1.2",

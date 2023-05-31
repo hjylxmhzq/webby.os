@@ -1,4 +1,4 @@
-import { AppContext, AppInfo, AppInstallContext, defineApp } from '@webby/core/web-app';
+import { AppContext, AppInfo, AppInstallContext, AppWindow, createAppWindow, defineApp } from '@webby/core/web-app';
 import { Shell } from '@webby/core/shell';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
@@ -9,7 +9,7 @@ import style from './index.module.less';
 import iconUrl from './icon.svg';
 import { Collection } from '@webby/core/kv-storage';
 import { WebLinksAddon } from 'xterm-addon-web-links';
-import { CachedEventEmitter } from '../../utils/events';
+import { CachedEventEmitter } from '../../utils/events.ts';
 
 function debounce<T extends Function>(fn: T, delay = 500, mw?: (...args: any[]) => any) {
   let timer: number | undefined;
@@ -29,7 +29,9 @@ let shell: Shell;
 const DefaultFontSize = 14;
 
 let eventBus = new CachedEventEmitter();
+let appWindow: AppWindow;
 export async function mount(ctx: AppContext) {
+  const appWindow = createAppWindow();
   const systemMenu = [
     {
       name: '字体',
@@ -55,7 +57,7 @@ export async function mount(ctx: AppContext) {
   ];
   ctx.systemMenu.set(systemMenu);
 
-  const root = ctx.appRootEl;
+  const root = appWindow.body;
   root.style.position = 'absolute';
   root.style.inset = '0';
 
@@ -95,7 +97,7 @@ export async function mount(ctx: AppContext) {
     shell.setSize(cols, rows);
   }));
 
-  ctx.appWindow.onWindowResize(() => {
+  appWindow.onWindowResize(() => {
     fitAddon.fit();
   });
   shell = new Shell();
@@ -173,7 +175,7 @@ export async function unmount(ctx: AppContext) {
   store.remove('history');
   eventBus.removeAllListeners();
   shell.close();
-  ctx.appRootEl.innerHTML = '';
+  appWindow.body.innerHTML = '';
 }
 
 export function getAppInfo(): AppInfo {
@@ -281,8 +283,8 @@ class Term {
 }
 
 defineApp({
-  mount,
-  unmount,
+  start: mount,
+  exit: unmount,
   installed,
   getAppInfo
 })

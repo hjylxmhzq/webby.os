@@ -1,4 +1,4 @@
-import { AppContext, AppInfo, AppInstallContext, defineApp } from '@webby/core/web-app';
+import { AppContext, AppInfo, AppInstallContext, AppWindow, createAppWindow, defineApp } from '@webby/core/web-app';
 import ReactDom from 'react-dom/client';
 import PdfViewer from './pdf-viewer';
 import iconUrl from './icon.svg';
@@ -11,16 +11,17 @@ import { systemSelectFile } from '@webby/core/system';
 let reactRoot: ReactDom.Root;
 
 let root: HTMLElement;
-
+let appWindow: AppWindow;
 const store = new Collection('pdf-viewer-store');
 let recentOpenFiles: string[] = [];
 export async function mount(ctx: AppContext) {
-  root = ctx.appRootEl;
+  const appWindow = createAppWindow();
+  root = appWindow.body;
   root.style.position = 'absolute';
   root.style.inset = '0';
   root.style.overflow = 'auto';
 
-  ctx.appWindow.noBackground(true);
+  appWindow.noBackground(true);
   store.get<string[]>('recent_files').then(files => {
     if (files) {
       recentOpenFiles = files;
@@ -56,7 +57,7 @@ export async function mount(ctx: AppContext) {
       await store.set('last_open_file', file);
     }
   });
-  ctx.appWindow.onWindowResize(debounceThrottle((_w: number, _h: number, cw: number) => {
+  appWindow.onWindowResize(debounceThrottle((_w: number, _h: number, cw: number) => {
     // eventBus.emit("resize", cw);
   }, 1000, (w: number) => {
     return w;
@@ -140,8 +141,8 @@ export async function installed(ctx: AppInstallContext) {
 }
 
 defineApp({
-  mount,
-  unmount,
+  start: mount,
+  exit: unmount,
   installed,
   getAppInfo
 })

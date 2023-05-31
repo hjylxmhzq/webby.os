@@ -1,8 +1,8 @@
 import EventEmitter from "events";
-import { AppContext, AppMenuManager, ProcessState, AppWindow } from ".";
+import { AppContext, AppMenuManager, ProcessState, AppWindow, appManager, windowManager } from ".";
 import { commonCollection } from "../kv-storage";
 import path from "path-browserify";
-import { getAppManager, getWindowManager, setSystemTitleBarFlow, systemMessage, systemSelectFile } from "../system";
+import { setSystemTitleBarFlow, systemMessage, systemSelectFile } from "../system";
 
 interface DockApp {
   app: ProcessState,
@@ -35,15 +35,15 @@ export class ProcessManager {
       const appNameMatch = window.location.hash.match(/app=(.+)($|,)/);
       if (appNameMatch && appNameMatch[1]) {
         const appName = appNameMatch[1];
-        await getAppManager().init([appName]);
-        if (getAppManager().get(appName)) {
+        appManager.init([appName]);
+        if (appManager.get(appName)) {
           const app = await this.startApp(appName, { resume: true });
           setSystemTitleBarFlow(true);
           return;
         }
       }
     }
-    await getAppManager().init();
+    await appManager.init();
 
 
     store.get<typeof this['cacheProcessState']>('cacheProcessState').then(async (v) => {
@@ -51,7 +51,7 @@ export class ProcessManager {
       if (v) {
         this.cacheProcessState = v;
         let tasks = Object.keys(this.cacheProcessState).map(async appName => {
-          if (!getAppManager().get(appName)) {
+          if (!appManager.get(appName)) {
             delete this.cacheProcessState[appName];
           } else if (this.cacheProcessState[appName].isRunning) {
             console.log('cache', appName, this.cacheProcessState);
@@ -65,7 +65,7 @@ export class ProcessManager {
   }
   async openFile(file: string) {
     const ext = path.parse(file).ext;
-    const apps = getAppManager().getSupportedAppsByExt(ext);
+    const apps = appManager.getSupportedAppsByExt(ext);
     if (apps.length) {
       await this.openFileBy(apps[0], file);
       return true;
@@ -73,7 +73,7 @@ export class ProcessManager {
     return false;
   }
   async openFileBy(appName: string, file: string) {
-    await this.startApp(appName);
+    await this.startApp(appName, { params: { file } });
     let existApp = this.getAppByName(appName);
     if (existApp) {
       existApp.eventBus.emit('open_file', file);
@@ -100,6 +100,15 @@ export class ProcessManager {
     }
   }
   async startApp(appName: string, options: { isFullscreen?: boolean, params?: Record<string, string>, resume?: boolean } = { isFullscreen: false, params: {}, resume: false }) {
+    const existApp = this.openedApps.find(app => {
+      return app.app.name === appName;
+    });
+    if (existApp) {
+      // if app is running, not to create process again
+      existApp.ctx.params = options.params || {};
+      await existApp.app.start(existApp.ctx);
+      return;
+    }
     let app = await startApp(appName, !!options.resume, options.params || {});
     if (!app) return;
     let isClose = false;
@@ -110,7 +119,7 @@ export class ProcessManager {
       this.cacheProcessState[appName].isRunning = false;
       store.set('cacheProcessState', this.cacheProcessState);
 
-      app!.app.unmount(app!.ctx);
+      app!.app.exit(app!.ctx);
       let idx = this.openedApps.findIndex(app => app.name === appName);
       if (idx > -1) {
         this.openedApps.splice(idx, 1);
@@ -133,14 +142,14 @@ export class ProcessManager {
   async close(appName: string) {
     const app = this.openedApps.find(app => app.name === appName);
     if (app) {
-      await app.app.unmount(app.ctx);
+      await app.app.exit(app.ctx);
     }
   }
 }
 
 export async function startApp(appName: string, resume: boolean, params: Record<string, string>): Promise<ProcessState | undefined> {
 
-  const app = getAppManager().get(appName);
+  const app = appManager.get(appName);
   if (!app) {
     console.error(`app not installed: ${appName}`);
     return;
@@ -152,7 +161,7 @@ export async function startApp(appName: string, resume: boolean, params: Record<
   ctx.isResume = resume;
   ctx.params = params;
   app.scoped.injectGlobalFunction('__createAppWindow', (id: string) => {
-    return getWindowManager().createWindow(app, id);
+    return windowManager.createWindow(app, id, processState);
   });
   let processState = {
     name: appName,
@@ -162,7 +171,7 @@ export async function startApp(appName: string, resume: boolean, params: Record<
     channel: sender,
     eventBus,
   };
-  await app.mount(ctx);
+  await app.start(ctx);
   return processState;
 }
 
@@ -206,5 +215,4 @@ export const exitApp = () => {
   (window as any).__exitApp();
 }
 
-const processManager = new ProcessManager();
-export default processManager;
+export const processManager = new ProcessManager();
