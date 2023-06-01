@@ -1,7 +1,8 @@
 import path from "path-browserify";
-import { AppDefinitionWithContainer, SelectFileOptions, SharedScope, getProcessManager } from "../web-app";
+import { SelectFileOptions, SharedScope, getProcessManager } from "../web-app";
 import { SystemMessageHandle } from "../web-app";
 import { SystemMessage } from "../web-app";
+import { AppDefinitionWithContainer } from "../web-app/app-manager";
 
 export interface PromptContent {
   title: string;

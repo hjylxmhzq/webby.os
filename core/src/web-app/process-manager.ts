@@ -1,8 +1,10 @@
 import EventEmitter from "events";
-import { AppContext, AppMenuManager, ProcessState, AppWindow, appManager, windowManager } from ".";
+import { AppContext, AppMenuManager, ProcessState, AppWindow } from ".";
 import { commonCollection } from "../kv-storage";
 import path from "path-browserify";
 import { setSystemTitleBarFlow, systemMessage, systemSelectFile } from "../system";
+import { windowManager } from "./window-manager";
+import { appManager } from "./app-manager";
 
 interface DockApp {
   app: ProcessState,

@@ -5,9 +5,9 @@ import { WindowManager, windowManager } from "./window-manager";
 import { AppDefinitionWithContainer, AppManager, appManager } from "./app-manager";
 import { SystemHook } from "./system-hook";
 
-export * from './process-manager';
-export * from './app-manager';
-export * from './window-manager';
+export { ProcessManager } from './process-manager';
+export { AppManager, AppDefinitionWithContainer } from './app-manager';
+export { WindowManager, createAppWindow } from './window-manager';
 
 
 export interface SelectFileOptions {

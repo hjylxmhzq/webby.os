@@ -2,19 +2,19 @@ import ReactDom from 'react-dom/client';
 import { AppContext, AppInstallContext, AppWindow, createAppWindow, defineApp } from '@webby/core/web-app';
 import iconUrl from './icon.svg';
 import { http } from '@webby/core/tunnel';
-import { downloadLink } from '../../utils/download';
-import { formatFileSize, makeDefaultTemplate } from '../../utils/formatter';
+import { downloadLink } from '../../utils/download.ts';
+import { formatFileSize, makeDefaultTemplate } from '../../utils/formatter.ts';
 import Epub, { Rendition } from 'epubjs';
 import style from './index.module.less';
 import { KeyboardEvent, MouseEvent, WheelEvent, useEffect, useRef, useState } from 'react';
 import { systemPrompt, systemSelectFile } from '@webby/core/system';
 import { read_file } from '@webby/core/fs';
-import { availableFonts } from '../../utils/fonts';
-import Icon from '../../components/icon/icon';
+import { availableFonts } from '../../utils/fonts.ts';
+import Icon from '../../components/icon/icon.tsx';
 import classNames from 'classnames';
 import { Collection } from '@webby/core/kv-storage';
-import { PopButton } from '../../components/button';
-import { CachedEventEmitter } from '../../utils/events';
+import { PopButton } from '../../components/button/index.tsx';
+import { CachedEventEmitter } from '../../utils/events.ts';
 import path from 'path-browserify';
 
 let reactRoot: ReactDom.Root;
@@ -29,7 +29,7 @@ interface Config {
   location?: string,
 }
 
-let appWindow: AppWindow;
+let appWindow: AppWindow | undefined;
 export async function mount(ctx: AppContext) {
   if (appWindow) {
     appWindow.setActive(true);
@@ -186,7 +186,7 @@ export async function mount(ctx: AppContext) {
     const [showPrev, setShowPrev] = useState(true);
     const [toc, setToc] = useState<TreeNode[]>([]);
 
-    appWindow.onWindowResize((w, h) => {
+    appWindow?.onWindowResize((w, h) => {
       if (rendition) {
         rendition.resize(w, h);
       }
@@ -200,7 +200,7 @@ export async function mount(ctx: AppContext) {
       const open = async (file: string) => {
         if (file) {
           const p = path.parse(file).base;
-          appWindow.setTitle(`Book - ${p}`);
+          appWindow?.setTitle(`Book - ${p}`);
           state.state.file = file;
           const r = await read_file(file, { localCache: true, showProgressMessage: true });
           const ab = await r.arrayBuffer();
@@ -215,7 +215,7 @@ export async function mount(ctx: AppContext) {
 
     useEffect(() => {
       if (resoure && containerRef.current) {
-        const book = Epub(resoure);
+        const book = (Epub as any)(resoure);
         rendition = book.renderTo(containerRef.current, {
           manager: "continuous", flow: "paginated", width: '100%', height: '100%'
         });
@@ -264,10 +264,10 @@ export async function mount(ctx: AppContext) {
           keydown(e);
         });
 
-        book.loaded.navigation.then(function (toc) {
+        book.loaded.navigation.then(function (toc: any) {
 
           const treeNodes: TreeNode[] = [];
-          toc.forEach(t => {
+          toc.forEach((t: any) => {
             treeNodes.push(toc2Tree(t));
             return {};
           });
@@ -443,6 +443,7 @@ async function unmount() {
   if (reactRoot) {
     reactRoot.unmount();
   }
+  appWindow = undefined
 }
 
 const defautTemplate = makeDefaultTemplate('未知');

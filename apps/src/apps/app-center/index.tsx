@@ -1,7 +1,7 @@
 import ReactDom from 'react-dom/client';
 import { AppContext, AppInstallContext, createAppWindow, defineApp, getSharedScope } from '@webby/core/web-app';
 import iconUrl from './icon.svg';
-import { CachedEventEmitter } from '../../utils/events';
+import { CachedEventEmitter } from '../../utils/events.ts';
 import path from 'path-browserify';
 import { systemMessage } from '@webby/core/system';
 

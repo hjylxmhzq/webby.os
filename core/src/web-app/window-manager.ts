@@ -1,8 +1,10 @@
 import EventEmitter from "events";
-import { AppDefinitionWithContainer, AppWindow, ProcessState, processManager } from ".";
+import { AppWindow, ProcessState } from ".";
 import zIndexManager from "./z-index-manager";
 import style from './index.module.less';
 import { debounce, fullscreen } from "../utils/common";
+import { processManager } from "./process-manager";
+import { AppDefinitionWithContainer } from "./app-manager";
 
 const DOCK_HEIGHT = 25; // also defined in ./index.module.css
 
@@ -46,16 +48,29 @@ export class WindowManager {
             this.eventBus.emit('active_window_change', win, oldWin);
           }
           win.setActive(true);
-        } else {
-          win.setActive(false);
         }
       };
-      if (!hasActive && this.activeWindow) {
-        this.eventBus.emit('active_window_change', null, this.activeWindow);
-        this.activeWindow = undefined;
-      }
+      // if (!hasActive && this.activeWindow && this.container.contains(document.activeElement)) {
+      //   this.eventBus.emit('active_window_change', null, this.activeWindow);
+      //   this.activeWindow = undefined;
+      // }
     }, 200);
 
+    window.addEventListener('mousedown', e => {
+      let activeWin: AppWindow | undefined;
+      for (const win of this.windows) {
+        if (win.window.contains(e.target as Node)) {
+          activeWin = win;
+          break;
+        }
+      }
+      if (activeWin && this.activeWindow !== activeWin) {
+        activeWin.setActive(true)
+        const oldWin = this.activeWindow;
+        this.activeWindow = activeWin;
+        this.eventBus.emit('active_window_change', this.activeWindow, oldWin);
+      }
+    })
     const onResize = debounce(() => {
       this.windows.forEach(win => {
         win.checkPos();

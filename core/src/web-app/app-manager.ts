@@ -1,9 +1,10 @@
 import { commonCollection } from "../kv-storage";
-import { AppDefinition, AppInstallContext, GlobalSearchOptions, GlobalSearchResult, SystemHooks, processManager } from ".";
+import { AppDefinition, AppInstallContext, GlobalSearchOptions, GlobalSearchResult, SystemHooks } from ".";
 import EventEmitter from "events";
 import { SystemHook } from "./system-hook";
 import { systemMessage } from "../system";
 import { http } from "../tunnel";
+import { processManager } from "./process-manager";
 
 export type AppDefinitionWithContainer = AppDefinition & {
   name: string,
