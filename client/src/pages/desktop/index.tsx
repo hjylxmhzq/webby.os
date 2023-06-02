@@ -245,12 +245,20 @@ export function HomePage() {
   }, []);
 
   useEffect(() => {
+    const url = new URL(window.location.href);
+    const reg = /#app=(.+)$/;
+    const match = url.hash.match(reg);
+    const appName = match?.[1];
+
     const unbind = appManager.onAppInstalled(() => {
       setApps([...appManager.apps]);
+      if (appName && appManager.apps.find(app => app.name === appName)) {
+        processManager.startApp(appName, { isFullscreen: true });
+      }
     });
     if (!mountPoint.current) return;
     if (processManager.isInited) return;
-    appManager.init();
+    appManager.init(appName ? [appName] : undefined);
     windowManager.setContainer(mountPoint.current);
     windowManager.onActiveWindowChange((win, _old) => {
       const process = win?.ownerProcess;

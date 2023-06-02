@@ -11,6 +11,8 @@ interface DockApp {
   el: HTMLElement
 }
 
+export interface StartAppOptions { isFullscreen?: boolean, params?: Record<string, string>, resume?: boolean }
+
 const store = commonCollection.processManager
 
 export class ProcessManager {
@@ -101,7 +103,7 @@ export class ProcessManager {
       console.error('app not opened');
     }
   }
-  async startApp(appName: string, options: { isFullscreen?: boolean, params?: Record<string, string>, resume?: boolean } = { isFullscreen: false, params: {}, resume: false }) {
+  async startApp(appName: string, options: StartAppOptions = { isFullscreen: false, params: {}, resume: false }) {
     const existApp = this.openedApps.find(app => {
       return app.app.name === appName;
     });
@@ -111,7 +113,7 @@ export class ProcessManager {
       await existApp.app.start(existApp.ctx);
       return;
     }
-    let app = await startApp(appName, !!options.resume, options.params || {});
+    let app = await startApp(appName, !!options.resume, options.params || {}, options);
     if (!app) return;
     let isClose = false;
     const beforeClose = (force = false) => {
@@ -149,7 +151,7 @@ export class ProcessManager {
   }
 }
 
-export async function startApp(appName: string, resume: boolean, params: Record<string, string>): Promise<ProcessState | undefined> {
+export async function startApp(appName: string, resume: boolean, params: Record<string, string>, options: StartAppOptions): Promise<ProcessState | undefined> {
 
   const app = appManager.get(appName);
   if (!app) {
@@ -162,8 +164,16 @@ export async function startApp(appName: string, resume: boolean, params: Record<
   });
   ctx.isResume = resume;
   ctx.params = params;
+  if (options.isFullscreen) {
+    setSystemTitleBarFlow(true);
+  }
   app.scoped.injectGlobalFunction('__createAppWindow', (id: string) => {
-    return windowManager.createWindow(app, id, processState);
+    const win = windowManager.createWindow(app, id, processState);
+    if (options.isFullscreen) {
+      win.forceFullscreen();
+      win.showTitleBar(false);
+    }
+    return win;
   });
   let processState = {
     name: appName,

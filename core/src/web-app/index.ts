@@ -311,6 +311,12 @@ export function getProcessManager() {
   return processManager;
 }
 
+export function setSystemTitleBarFlow(isFlow: boolean) {
+  const sc = (window as any).sharedScope as SharedScope;;
+  const ret = sc.system.setSystemTitleBarFlow!(isFlow);
+  return ret;
+}
+
 export function getSharedScope() {
   return window.sharedScope;
 }
