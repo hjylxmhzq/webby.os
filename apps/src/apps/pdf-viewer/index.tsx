@@ -77,7 +77,7 @@ export async function mount(ctx: AppContext) {
     const [pageIdx, setPageIdx] = useState(0);
     const [width, setWidth] = useState(600);
     useEffect(() => {
-      eventBus.on("openfile", (file) => {
+      eventBus.on("openfile", (file: string) => {
         recentOpenFiles.push(file);
         recentOpenFiles = [...new Set(recentOpenFiles)];
         store.set('recent_files', recentOpenFiles);

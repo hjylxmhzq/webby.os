@@ -43,17 +43,14 @@ export class WindowManager {
         if (document.activeElement && win.window.contains(document.activeElement)) {
           hasActive = true;
           if (this.activeWindow !== win) {
+            console.log(this.activeWindow, win, this.activeWindow === win)
             const oldWin = this.activeWindow;
             this.activeWindow = win;
             this.eventBus.emit('active_window_change', win, oldWin);
+            win.setActive(true);
           }
-          win.setActive(true);
         }
       };
-      // if (!hasActive && this.activeWindow && this.container.contains(document.activeElement)) {
-      //   this.eventBus.emit('active_window_change', null, this.activeWindow);
-      //   this.activeWindow = undefined;
-      // }
     }, 200);
 
     window.addEventListener('mousedown', e => {
@@ -495,14 +492,14 @@ export class WindowManager {
     resizeOb.observe(appContainer);
     windowEventBus.on(WindowEventType.BeforeClose, () => {
       appEl.removeEventListener('mousedown', _setActive, false);
+      appWindow.setActive(false)
       const idx = this.windows.indexOf(appWindow);
       if (idx > -1) {
         this.windows.splice(idx, 1);
       }
       const hasOtherWindow = this.windows.find(w => w.ownerApp.name === app.name);
       if (!hasOtherWindow) {
-        const pm = processManager;
-        const proc = pm.getAppByName(app.name);
+        const proc = processManager.getAppByName(app.name);
         if (proc) {
           proc.app.exit(proc.ctx);
         }
@@ -636,9 +633,17 @@ export class WindowManager {
 
 export const windowManager = new WindowManager();
 
+export interface CreateAppWindowOptions {
+  actived?: boolean;
+}
 
-export const createAppWindow = (id: string = Math.random().toString(16).substring(2)) => {
+const createAppWindowDefaultOptions = {
+  actived: true,
+}
+
+export const createAppWindow = (id: string = Math.random().toString(16).substring(2), options: CreateAppWindowOptions = {}) => {
+  options = {...createAppWindowDefaultOptions, ...options};
   const __createAppWindow = (window as any).__createAppWindow;
-  const appWin = __createAppWindow(id);
+  const appWin = __createAppWindow(id, options);
   return appWin as AppWindow;
 }

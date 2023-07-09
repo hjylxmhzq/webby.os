@@ -11,13 +11,17 @@ import { systemMessage, systemSelectFile } from '@webby/core/system';
 
 let reactRoot: ReactDom.Root;
 let eventBus = new CachedEventEmitter();
-let appWindow: AppWindow;
+let appWindow: AppWindow | undefined;
 export async function mount(ctx: AppContext) {
   if (appWindow) {
     appWindow.setActive(true);
     return;
   }
   appWindow = createAppWindow();
+  appWindow.onBeforeClose(() => {
+    reactRoot.unmount();
+    appWindow = undefined;
+  })
   const systemMenu = [{
     name: 'File',
     children: [

@@ -3,7 +3,7 @@ import { AppContext, AppMenuManager, ProcessState, AppWindow } from ".";
 import { commonCollection } from "../kv-storage";
 import path from "path-browserify";
 import { setSystemTitleBarFlow, systemMessage, systemSelectFile } from "../system";
-import { windowManager } from "./window-manager";
+import { CreateAppWindowOptions, windowManager } from "./window-manager";
 import { appManager } from "./app-manager";
 
 interface DockApp {
@@ -167,11 +167,16 @@ export async function startApp(appName: string, resume: boolean, params: Record<
   if (options.isFullscreen) {
     setSystemTitleBarFlow(true);
   }
-  app.scoped.injectGlobalFunction('__createAppWindow', (id: string) => {
+  app.scoped.injectGlobalFunction('__createAppWindow', (id: string, opts: CreateAppWindowOptions = {}) => {
     const win = windowManager.createWindow(app, id, processState);
     if (options.isFullscreen) {
       win.forceFullscreen();
       win.showTitleBar(false);
+    }
+    if (opts.actived) {
+      setTimeout(() => {
+        win.setActive(true);
+      })
     }
     return win;
   });
