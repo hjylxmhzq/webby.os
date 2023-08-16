@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import ReactDom from 'react-dom/client';
 import { AppContext, AppInfo, AppWindow, SelectFileOptions, createAppWindow, defineApp } from '@webby/core/web-app';
-import ImagePreview from './image-viewer';
+import ImagePreview from './image-viewer.tsx';
 import { FileStat, readdir } from '@webby/core/fs';
 import path from 'path-browserify';
 import iconUrl from './icon.svg';
-import { CachedEventEmitter } from '../../utils/events';
+import { CachedEventEmitter } from '../../utils/events.ts';
 import style from './image-viewer.module.less';
 import { systemMessage, systemSelectFile } from '@webby/core/system';
 
@@ -79,7 +79,7 @@ function Index(props: { ctx: AppContext, onOpenFile: (cb: (file: string) => void
 
   return <div style={{ position: 'absolute', inset: 0 }}>
     {
-      file ? <ImagePreview appWindow={appWindow} ctx={props.ctx} files={files} file={file} dir={path.parse(file_path).dir} />
+      file ? <ImagePreview appWindow={appWindow!} ctx={props.ctx} files={files} file={file} dir={path.parse(file_path).dir} />
         : <OpenFile onClick={async () => {
           const files = await systemSelectFile({ allowedExts });
           console.log(files);

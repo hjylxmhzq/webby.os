@@ -13,7 +13,7 @@ export class ZIndexManager {
       this.mapping.push([el, this.zIndex]);
     }
 
-    // rerange
+    // resort
     this.mapping = this.mapping.filter(([el]) => {
       if (document.contains(el)) {
         return true;

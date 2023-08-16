@@ -167,7 +167,12 @@ export async function startApp(appName: string, resume: boolean, params: Record<
   if (options.isFullscreen) {
     setSystemTitleBarFlow(true);
   }
-  app.scoped.injectGlobalFunction('__createAppWindow', (id: string, opts: CreateAppWindowOptions = {}) => {
+  let windowIdx = 0
+  app.scoped.injectGlobalFunction('__createAppWindow', (id?: string, opts: CreateAppWindowOptions = {}) => {
+    if (!id) {
+      id = `${appName}_${windowIdx}`;
+    }
+    windowIdx++;
     const win = windowManager.createWindow(app, id, processState);
     if (options.isFullscreen) {
       win.forceFullscreen();

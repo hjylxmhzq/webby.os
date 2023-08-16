@@ -641,7 +641,7 @@ const createAppWindowDefaultOptions = {
   actived: true,
 }
 
-export const createAppWindow = (id: string = Math.random().toString(16).substring(2), options: CreateAppWindowOptions = {}) => {
+export const createAppWindow = (id?: string, options: CreateAppWindowOptions = {}) => {
   options = {...createAppWindowDefaultOptions, ...options};
   const __createAppWindow = (window as any).__createAppWindow;
   const appWin = __createAppWindow(id, options);
