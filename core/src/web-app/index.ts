@@ -201,6 +201,7 @@ export interface ProcessState {
   ctx: AppContext,
   channel: MessagePort,
   eventBus: EventEmitter,
+  windows: AppWindow[],
 }
 
 export interface AppMenu {

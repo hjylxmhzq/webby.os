@@ -5,6 +5,7 @@ import style from './index.module.less';
 import { debounce, fullscreen } from "../utils/common";
 import { processManager } from "./process-manager";
 import { AppDefinitionWithContainer } from "./app-manager";
+import { removeFromArray } from "../utils/array";
 
 const DOCK_HEIGHT = 25; // also defined in ./index.module.css
 
@@ -587,6 +588,7 @@ export class WindowManager {
     appEl.addEventListener('mousedown', _setActive, false);
     const onBeforeClose = (cb: () => void) => {
       windowEventBus.on(WindowEventType.BeforeClose, cb);
+      removeFromArray(process.windows, appWindow);
       return () => windowEventBus.off(WindowEventType.BeforeClose, cb);
     }
 
@@ -627,6 +629,8 @@ export class WindowManager {
       appWindow.setVisible(true);
     });
 
+    process.windows.push(appWindow);
+
     return appWindow;
   }
 }
@@ -642,7 +646,7 @@ const createAppWindowDefaultOptions = {
 }
 
 export const createAppWindow = (id?: string, options: CreateAppWindowOptions = {}) => {
-  options = {...createAppWindowDefaultOptions, ...options};
+  options = { ...createAppWindowDefaultOptions, ...options };
   const __createAppWindow = (window as any).__createAppWindow;
   const appWin = __createAppWindow(id, options);
   return appWin as AppWindow;

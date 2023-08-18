@@ -192,6 +192,7 @@ export async function startApp(appName: string, resume: boolean, params: Record<
     isActive: false,
     channel: sender,
     eventBus,
+    windows: [],
   };
   await app.start(ctx);
   return processState;
