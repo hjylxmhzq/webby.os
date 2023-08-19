@@ -111,3 +111,9 @@ yarn build_linux_x86
 ```
 
 Be aware that cross compile uses docker as virtualization layer, so you should make sure docker is available in your environment.
+
+## TODOs
+
+- [x] notification push
+- [x] wasm ffmpeg transcode
+- [x] virtual scrollbar component

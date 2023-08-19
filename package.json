@@ -17,11 +17,23 @@
     "start": "lerna run start --parallel --scope @webby/server --scope @webby/components --scope @webby/apps --scope @webby/core --scope @webby/client",
     "server": "cd server && cargo watch -x run",
     "update-assets": "cd client && bash scripts/update-icon.sh",
-    "update-tag": "node build/update-version.js"
+    "update-tag": "node build/update-version.js",
+    "lint": "eslint --ext .ts,.tsx,.js,.jsx --ignore-path .gitignore .",
+    "lint-fix": "eslint --fix --ext .ts,.tsx,.js,.jsx --ignore-path .gitignore ."
   },
   "devDependencies": {
     "@types/tinymce": "^4.6.5",
-    "lerna": "^6.6.1"
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "eslint": "^8.47.0",
+    "eslint-config-semistandard": "latest",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-n": "^15.0.0",
+    "eslint-plugin-promise": "^6.0.0",
+    "eslint-plugin-react": "latest",
+    "lerna": "^6.6.1",
+    "prettier": "^3.0.2"
   },
   "packageManager": "yarn@3.5.0",
   "dependencies": {

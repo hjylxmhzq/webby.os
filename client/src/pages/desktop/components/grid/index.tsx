@@ -166,6 +166,7 @@ export function DesktopIconGrid(props: Props) {
         setAppItems((apps) => {
           if (pressedApp?.moving) {
             const { offsetX, offsetY } = pressedApp.moving;
+            console.log(pressedApp)
             pressedApp.x = e.screenX + offsetX;
             pressedApp.y = e.screenY + offsetY;
           }
@@ -230,6 +231,7 @@ export function DesktopIconGrid(props: Props) {
                   }
                   props.onStartApp(app.name)
                 }}
+                zIndex={pressedApp === app ? 99 : 98}
                 name={app.name}
                 size={itemSize}
                 x={translateX}
@@ -247,6 +249,7 @@ export function DesktopIconGrid(props: Props) {
 
 type GridItemProps = {
   size: number;
+  zIndex: number;
   onStartApp(): void;
   onStartInNewWindow(): void;
 } & AppItem & HTMLAttributes<HTMLDivElement>;
@@ -270,6 +273,7 @@ function GridItem(props: GridItemProps) {
       position: 'absolute',
       left: 0,
       top: 0,
+      zIndex: props.zIndex,
       width: props.size, height: props.size, transform: `translate(${props.x}px,${props.y}px)`
     }}>
     <div
