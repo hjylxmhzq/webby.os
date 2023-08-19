@@ -1,11 +1,8 @@
-import fs from 'fs';
-import CopyPlugin from 'copy-webpack-plugin';
-import { EsbuildPlugin } from 'esbuild-loader'
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+/* eslint-disable @typescript-eslint/no-var-requires */
+const fs = require('fs');
+const CopyPlugin = require('copy-webpack-plugin');
+const { EsbuildPlugin } = require('esbuild-loader');
+const path = require('path');
 
 const appDir = './src/apps';
 const apps = fs.readdirSync(appDir);
@@ -31,7 +28,7 @@ const outputDir = path.resolve(__dirname, '../server/static/apps');
 
 const isProd = process.env.NODE_ENV === 'production';
 
-export default {
+module.exports = {
   mode: isProd ? 'production' : 'development',
   entry: entries,
   module: {

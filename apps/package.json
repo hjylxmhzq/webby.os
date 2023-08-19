@@ -7,7 +7,6 @@
     "build": "NODE_ENV=production webpack",
     "start": "webpack --watch"
   },
-  "type": "module",
   "dependencies": {
     "@webby/client": "*",
     "@webby/components": "*",
