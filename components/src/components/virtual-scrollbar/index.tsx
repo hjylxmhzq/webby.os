@@ -1,12 +1,28 @@
 import React, { cloneElement, useEffect, useRef } from 'react';
 
-export interface VirtualScrollbarProps {
+export interface VirtualScrollbarProps<T extends HTMLElement = HTMLElement> {
   children: React.ReactElement;
+  forwardedRef?: React.RefCallback<T>;
+  scrollbarContainer?: HTMLElement | string;
+  scroll?: 'vertical' | 'horizontal' | 'both';
+  observeScrollHeightChange?: boolean;
 }
 
 export function VirtualScrollbar(props: VirtualScrollbarProps) {
-  const elRef = useRef<HTMLElement>(null);
-  const children = cloneElement(props.children, { ...props.children.props, ref: elRef }, props.children.props.children);
+  const elRef = useRef<HTMLElement>();
+  const children = cloneElement(
+    props.children,
+    {
+      ...props.children.props,
+      ref: (r: HTMLElement) => {
+        elRef.current = r;
+        if (props.forwardedRef) {
+          props.forwardedRef(r);
+        }
+      },
+    },
+    props.children.props.children,
+  );
 
   useEffect(() => {
     const el = elRef.current;
@@ -15,13 +31,33 @@ export function VirtualScrollbar(props: VirtualScrollbarProps) {
       console.error('VirtualScrollbar: children must be HTMLElement');
       return;
     }
-    return attach(el);
-  }, []);
+    const container = typeof props.scrollbarContainer === 'string' ? document.querySelector(props.scrollbarContainer) : props.scrollbarContainer;
+    return attach(el, container as HTMLDivElement, { scrollDir: props.scroll || 'both', observeScrollHeightChange: props.observeScrollHeightChange });
+  }, [props.scrollbarContainer, props.children]);
 
   return children;
 }
 
-export function attach(el: HTMLElement) {
+const hasNativeScrollTo = typeof window !== 'undefined' && 'scrollTo' in window;
+const scrollTo = !hasNativeScrollTo
+  ? (el: HTMLElement, left?: number, top?: number) => {
+      if (top) {
+        el.scrollTop = top;
+      }
+      if (left) {
+        el.scrollLeft = left;
+      }
+    }
+  : (el: HTMLElement, left?: number, top?: number) => {
+      el.scrollTo({ left, top });
+    };
+
+export function attach(
+  el: HTMLElement,
+  scrollbarContainerEl: HTMLElement = el,
+  options: { scrollDir?: 'vertical' | 'horizontal' | 'both'; observeScrollHeightChange?: boolean } = {},
+) {
+  const { scrollDir = 'both' } = options;
   const style = window.getComputedStyle(el);
   if (style.position === 'static') {
     el.style.position = 'relative';
@@ -78,37 +114,56 @@ export function attach(el: HTMLElement) {
   const onMouseMove = (ev: MouseEvent) => {
     if (isXMoving) {
       const diff = ev.clientX - startX;
-      el.scrollLeft = startScrollLeft + (diff / (el.clientWidth - vbarLength - margin * 2)) * (el.scrollWidth - clientWidth);
+      const diffPercent = diff / (containerClientWidth - vbarLength - margin * 2);
+      const scrollLeft = startScrollLeft + diffPercent * (el.scrollWidth - clientWidth);
+      scrollTo(el, scrollLeft);
     }
     if (isYMoving) {
       const diff = ev.clientY - startY;
-      el.scrollTop = startScrollTop + (diff / (el.clientHeight - vbarLength - margin * 2)) * (el.scrollHeight - clientHeight);
+      const diffPercent = diff / (containerClientHeight - vbarLength - margin * 2);
+      const scrollTop = startScrollTop + diffPercent * (el.scrollHeight - clientHeight);
+      scrollTo(el, undefined, scrollTop);
     }
   };
 
   window.addEventListener('mousemove', onMouseMove);
   window.addEventListener('mouseup', onMouseUp);
 
-  el.appendChild(hbar);
-  el.appendChild(vbar);
+  scrollbarContainerEl.appendChild(hbar);
+  scrollbarContainerEl.appendChild(vbar);
 
-  let clientHeight = 0;
-  let clientWidth = 0;
+  let clientHeight = el.clientHeight;
+  let clientWidth = el.clientWidth;
+  let containerClientHeight = scrollbarContainerEl.clientHeight;
+  let containerClientWidth = scrollbarContainerEl.clientWidth;
   const observer = new ResizeObserver(() => {
     clientHeight = el.clientHeight;
     clientWidth = el.clientWidth;
     init();
   });
+  const containerObserver = new ResizeObserver(() => {
+    containerClientHeight = scrollbarContainerEl.clientHeight;
+    containerClientWidth = scrollbarContainerEl.clientWidth;
+  });
 
   observer.observe(el);
+  if (options.observeScrollHeightChange) {
+    for (const child of el.children) {
+      observer.observe(child);
+    }
+  }
+  containerObserver.observe(scrollbarContainerEl);
 
   const updatePos = () => {
     if (!el) return;
     const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = el;
     const hPercent = scrollLeft / (scrollWidth - clientWidth);
     const vPercent = scrollTop / (scrollHeight - clientHeight);
-    vbar.style.top = `${margin + vPercent * (clientHeight - margin * 2 - vbarLength) + scrollTop}px`;
-    hbar.style.left = `${margin + hPercent * (clientWidth - margin * 2 - hbarLength) + scrollLeft}px`;
+
+    const extraTop = scrollbarContainerEl !== el ? 0 : scrollTop;
+    const extraLeft = scrollbarContainerEl !== el ? 0 : scrollLeft;
+    vbar.style.top = `${margin + vPercent * (containerClientHeight - margin * 2 - vbarLength) + extraTop}px`;
+    hbar.style.left = `${margin + hPercent * (containerClientWidth - margin * 2 - hbarLength) + extraLeft}px`;
   };
 
   let timer: number | undefined = undefined;
@@ -134,41 +189,44 @@ export function attach(el: HTMLElement) {
   let vbarLength = 0;
   let hbarLength = 0;
   const init = () => {
-    const { scrollHeight, scrollWidth, clientHeight, clientWidth } = el;
-    vbarLength = ((clientHeight / scrollHeight) * clientHeight) / 1.2;
-    hbarLength = ((clientWidth / scrollWidth) * clientWidth) / 1.2;
-    vbarLength = Math.max(vbarLength, Math.min(100, clientHeight - 50));
-    hbarLength = Math.max(hbarLength, Math.min(100, clientWidth - 50));
+    const { scrollHeight, scrollWidth, clientHeight, clientWidth } = scrollbarContainerEl;
+    const { scrollHeight: elScrollHeight, scrollWidth: elScrollWidth, clientHeight: elClientHeight, clientWidth: elClientWidth } = el;
+    vbarLength = ((elClientHeight / elScrollHeight) * clientHeight) / 1.2;
+    hbarLength = ((elClientWidth / elScrollWidth) * clientWidth) / 1.2;
+    vbarLength = Math.max(vbarLength, Math.min(50, clientHeight - 50));
+    hbarLength = Math.max(hbarLength, Math.min(50, clientWidth - 50));
 
-    if (scrollHeight > clientHeight) {
+    if (scrollHeight > clientHeight && (scrollDir === 'vertical' || scrollDir === 'both')) {
       vbar.style.cssText = `
         transition: opacity 0.3s;
         position: absolute;
-        right: 5px;
+        right: 2px;
         top: 0;
         width: 5px;
         height: ${vbarLength}px;
-        background: rgba(0, 0, 0, 0.2);
+        background: rgba(0, 0, 0, 0.3);
         border-radius: 5px;
         cursor: pointer;
         opacity: 1;
+        z-index: 999999;
         user-select: none;
       `;
     } else {
       vbar.style.display = 'none';
     }
-    if (scrollWidth > clientWidth) {
+    if (scrollWidth > clientWidth && (scrollDir === 'horizontal' || scrollDir === 'both')) {
       hbar.style.cssText = `
         transition: opacity 0.3s;
         position: absolute;
-        bottom: 5px;
+        bottom: 2px;
         left: 0;
         width: ${hbarLength}px;
         height: 5px;
-        background: rgba(0, 0, 0, 0.2);
+        background: rgba(0, 0, 0, 0.3);
         border-radius: 5px;
         cursor: pointer;
         opacity: 1;
+        z-index: 999999;
         user-select: none;
       `;
     } else {
@@ -181,11 +239,12 @@ export function attach(el: HTMLElement) {
   init();
 
   return () => {
-    el.removeChild(vbar);
-    el.removeChild(hbar);
+    scrollbarContainerEl.removeChild(vbar);
+    scrollbarContainerEl.removeChild(hbar);
     el.removeEventListener('scroll', onScroll);
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', onMouseUp);
     observer.disconnect();
+    containerObserver.disconnect();
   };
 }
