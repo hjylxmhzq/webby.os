@@ -22,6 +22,7 @@ export interface AppContext {
   systemMenu: AppMenuManager,
   isResume: boolean, // 是否从未unmount的状态恢复
   params: Record<string, string>,
+  windows: AppWindow[];
   onOpenFile(cb: (file: string) => void): () => void;
   openFile(file: string): Promise<boolean>;
   openFileBy(appName: string, file: string): Promise<void>;
@@ -166,6 +167,7 @@ export interface GlobalSearchOptions {
 }
 
 export interface AppWindow {
+  id: string,
   ownerProcess: ProcessState,
   ownerApp: AppDefinitionWithContainer,
   minWidth: number,

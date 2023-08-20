@@ -39,29 +39,21 @@ export class WindowManager {
   container = document.body;
   constructor() {
     this.checkActiveTimer = window.setInterval(() => {
-      let hasActive = false;
-      for (let win of this.windows) {
+      for (const win of this.windows) {
         if (document.activeElement && win.window.contains(document.activeElement)) {
-          hasActive = true;
           if (this.activeWindow !== win) {
-            console.log(this.activeWindow, win, this.activeWindow === win)
             const oldWin = this.activeWindow;
             this.activeWindow = win;
             this.eventBus.emit('active_window_change', win, oldWin);
             win.setActive(true);
           }
         }
-      };
+      }
     }, 200);
 
     window.addEventListener('mousedown', e => {
-      let activeWin: AppWindow | undefined;
-      for (const win of this.windows) {
-        if (win.window.contains(e.target as Node)) {
-          activeWin = win;
-          break;
-        }
-      }
+      if (this.activeWindow?.window.contains(e.target as Node)) return
+      const activeWin = this.windows.find(win => win.window.contains(e.target as Node));
       if (activeWin && this.activeWindow !== activeWin) {
         activeWin.setActive(true)
         const oldWin = this.activeWindow;
@@ -81,7 +73,7 @@ export class WindowManager {
     this.container = el;
   }
 
-  onActiveWindowChange(cb: (win?: AppWindow, lastWin?: AppWindow) => any) {
+  onActiveWindowChange(cb: (win?: AppWindow, lastWin?: AppWindow) => void) {
     this.eventBus.on('active_window_change', cb);
     return () => {
       this.eventBus.off('active_window_change', cb);
@@ -89,7 +81,7 @@ export class WindowManager {
   }
 
   blurAll() {
-    for (let win of this.windows) {
+    for (const win of this.windows) {
       win.setActive(false);
     }
   }
@@ -133,11 +125,8 @@ export class WindowManager {
     const setActive = (active: boolean) => {
       const oldActiveWindow = this.activeWindow;
       if (active) {
-        for (let win of this.windows) {
-          if (win !== appWindow) {
-            win.setActive(false);
-          }
-        }
+        if (oldActiveWindow === appWindow) return
+        oldActiveWindow?.setActive(false);
         this.activeWindow = appWindow;
         zIndexManager.setTop(appEl);
         appEl.style.boxShadow = 'var(--box-shadow-grow)';
@@ -210,11 +199,11 @@ export class WindowManager {
       const size = getSize();
       const url = new URL(window.location.href);
       url.hash = `#app=${appName}`;
-      let strWindowFeatures = `menubar=no,location=no,resizable=yes,scrollbars=no,status=no,width=${size.width},height=${size.height}`;
+      const strWindowFeatures = `menubar=no,location=no,resizable=yes,scrollbars=no,status=no,width=${size.width},height=${size.height}`;
       window.open(url.href, `${appName}_window`, strWindowFeatures)
     });
 
-    closeBtn.addEventListener('click', (e) => {
+    closeBtn.addEventListener('click', () => {
       windowEventBus.emit(WindowEventType.BeforeClose);
       setVisible(false);
       window.removeEventListener('mousemove', onMouseMove);
@@ -226,7 +215,7 @@ export class WindowManager {
     closeBtn.addEventListener('mousedown', (e) => {
       e.stopPropagation();
     });
-    minBtn.addEventListener('click', (e) => {
+    minBtn.addEventListener('click', () => {
       windowEventBus.emit(WindowEventType.WindowMin);
     });
     minBtn.addEventListener('mousedown', (e) => {
@@ -342,23 +331,19 @@ export class WindowManager {
       }
     }
     const onMouseMove = (e: MouseEvent) => {
-      let _w = startElSize[0];
-      let _h = startElSize[1];
       let _left = startElPos[0];
       let _top = startElPos[1];
       if (resizing) {
-        let delta = [e.clientX - startCursorPos[0], e.clientY - startCursorPos[1]];
+        const delta = [e.clientX - startCursorPos[0], e.clientY - startCursorPos[1]];
         if (resizing & verticalRight) {
           const w = startElSize[0] + delta[0];
           if (w >= appWindow.minWidth) {
-            _w = w;
             appEl.style.width = w + 'px';
           }
         }
         if (resizing & horizonBottom) {
           const h = startElSize[1] + delta[1];
           if (h >= appWindow.minHeight) {
-            _h = h;
             appEl.style.height = h + 'px';
           }
         }
@@ -368,7 +353,6 @@ export class WindowManager {
             appEl.style.height = h + 'px';
             const top = startElPos[1] + delta[1];
             appEl.style.top = top + 'px';
-            _h = h;
             _top = top;
           }
         }
@@ -378,16 +362,15 @@ export class WindowManager {
             appEl.style.width = w + 'px';
             const left = startElPos[0] + delta[0]
             appEl.style.left = left + 'px';
-            _w = w;
             _left = left;
           }
         }
         onMoveCbs.forEach(cb => cb(_left, _top));
         // windowEventBus.emit(WindowEventType.Resize, _w, _h);
       } else if (isMouseDown) {
-        let delta = [e.clientX - startCursorPos[0], e.clientY - startCursorPos[1]];
-        let left = startElPos[0] + delta[0];
-        let top = startElPos[1] + delta[1];
+        const delta = [e.clientX - startCursorPos[0], e.clientY - startCursorPos[1]];
+        const left = startElPos[0] + delta[0];
+        const top = startElPos[1] + delta[1];
         appEl.style.left = left + 'px';
         appEl.style.top = top + 'px';
         onMoveCbs.forEach(cb => cb(left, top));
@@ -396,25 +379,22 @@ export class WindowManager {
     window.addEventListener('mousemove', onMouseMove);
 
     let isForceFullscreen = false;
-    const forceFullscreenResizeCb = () => {
-      const rect = getRect();
-      windowEventBus.emit(WindowEventType.Resize, rect.width, rect.height);
-    }
-    const foruceFullscreenBeforeClose = () => {
+
+    const forceFullscreenBeforeClose = () => {
       windowEventBus.emit(WindowEventType.BeforeClose);
     }
     function forceFullscreen(fullscreen = true) {
       isForceFullscreen = fullscreen;
       if (fullscreen) {
         // window.addEventListener(WindowEventType.Resize, forceFullscreenResizeCb);
-        window.addEventListener('beforeunload', foruceFullscreenBeforeClose);
+        window.addEventListener('beforeunload', forceFullscreenBeforeClose);
         appEl.style.inset = '0 0 0 0';
         appEl.style.width = 'auto'
         appEl.style.height = 'auto';
         appEl.style.borderRadius = '0px';
       } else {
         // window.removeEventListener(WindowEventType.Resize, forceFullscreenResizeCb);
-        window.removeEventListener('beforeunload', foruceFullscreenBeforeClose);
+        window.removeEventListener('beforeunload', forceFullscreenBeforeClose);
         appEl.style.inset = 'none';
         appEl.style.width = '500px';
         appEl.style.height = '500px';
@@ -494,10 +474,8 @@ export class WindowManager {
     windowEventBus.on(WindowEventType.BeforeClose, () => {
       appEl.removeEventListener('mousedown', _setActive, false);
       appWindow.setActive(false)
-      const idx = this.windows.indexOf(appWindow);
-      if (idx > -1) {
-        this.windows.splice(idx, 1);
-      }
+      removeFromArray(this.windows, appWindow)
+      removeFromArray(process.windows, appWindow)
       const hasOtherWindow = this.windows.find(w => w.ownerApp.name === app.name);
       if (!hasOtherWindow) {
         const proc = processManager.getAppByName(app.name);
@@ -588,11 +566,11 @@ export class WindowManager {
     appEl.addEventListener('mousedown', _setActive, false);
     const onBeforeClose = (cb: () => void) => {
       windowEventBus.on(WindowEventType.BeforeClose, cb);
-      removeFromArray(process.windows, appWindow);
       return () => windowEventBus.off(WindowEventType.BeforeClose, cb);
     }
 
-    let appWindow: AppWindow = {
+    const appWindow: AppWindow = {
+      id: windowId,
       ownerApp: app,
       ownerProcess: process,
       isMinimized: false,
@@ -645,9 +623,13 @@ const createAppWindowDefaultOptions = {
   actived: true,
 }
 
+type InjectedWindow = Window & {
+  __createAppWindow: (id?: string, options?: CreateAppWindowOptions) => AppWindow;
+}
+
 export const createAppWindow = (id?: string, options: CreateAppWindowOptions = {}) => {
   options = { ...createAppWindowDefaultOptions, ...options };
-  const __createAppWindow = (window as any).__createAppWindow;
+  const __createAppWindow = (window as unknown as InjectedWindow).__createAppWindow;
   const appWin = __createAppWindow(id, options);
   return appWin as AppWindow;
 }

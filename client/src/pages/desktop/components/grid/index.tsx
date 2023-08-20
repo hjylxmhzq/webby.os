@@ -166,7 +166,6 @@ export function DesktopIconGrid(props: Props) {
         setAppItems((apps) => {
           if (pressedApp?.moving) {
             const { offsetX, offsetY } = pressedApp.moving;
-            console.log(pressedApp)
             pressedApp.x = e.screenX + offsetX;
             pressedApp.y = e.screenY + offsetY;
           }

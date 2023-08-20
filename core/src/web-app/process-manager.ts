@@ -5,6 +5,7 @@ import path from "path-browserify";
 import { setSystemTitleBarFlow, systemMessage, systemSelectFile } from "../system";
 import { CreateAppWindowOptions, windowManager } from "./window-manager";
 import { appManager } from "./app-manager";
+import { removeFromArray } from "../utils/array";
 
 interface DockApp {
   app: ProcessState,
@@ -51,10 +52,10 @@ export class ProcessManager {
 
 
     store.get<typeof this['cacheProcessState']>('cacheProcessState').then(async (v) => {
-      let toDockApp: ProcessState[] = [];
+      const toDockApp: ProcessState[] = [];
       if (v) {
         this.cacheProcessState = v;
-        let tasks = Object.keys(this.cacheProcessState).map(async appName => {
+        const tasks = Object.keys(this.cacheProcessState).map(async appName => {
           if (!appManager.get(appName)) {
             delete this.cacheProcessState[appName];
           } else if (this.cacheProcessState[appName].isRunning) {
@@ -78,7 +79,7 @@ export class ProcessManager {
   }
   async openFileBy(appName: string, file: string) {
     await this.startApp(appName, { params: { file } });
-    let existApp = this.getAppByName(appName);
+    const existApp = this.getAppByName(appName);
     if (existApp) {
       existApp.eventBus.emit('open_file', file);
       return;
@@ -113,10 +114,10 @@ export class ProcessManager {
       await existApp.app.start(existApp.ctx);
       return;
     }
-    let app = await startApp(appName, !!options.resume, options.params || {}, options);
+    const app = await startApp(appName, !!options.resume, options.params || {}, options);
     if (!app) return;
     let isClose = false;
-    const beforeClose = (force = false) => {
+    const beforeClose = () => {
       if (isClose) return;
       isClose = true;
 
@@ -124,10 +125,7 @@ export class ProcessManager {
       store.set('cacheProcessState', this.cacheProcessState);
 
       app!.app.exit(app!.ctx);
-      let idx = this.openedApps.findIndex(app => app.name === appName);
-      if (idx > -1) {
-        this.openedApps.splice(idx, 1);
-      }
+      removeFromArray(this.appsInDock, app => app.app.name === appName);
       const oldApp = this.activeApp;
       this.activeApp = null;
       this.eventBus.emit('active_app_change', null, oldApp);
@@ -171,6 +169,8 @@ export async function startApp(appName: string, resume: boolean, params: Record<
   app.scoped.injectGlobalFunction('__createAppWindow', (id?: string, opts: CreateAppWindowOptions = {}) => {
     if (!id) {
       id = `${appName}_${windowIdx}`;
+    } else {
+      id = `${appName}_${id}`;
     }
     windowIdx++;
     const win = windowManager.createWindow(app, id, processState);
@@ -180,12 +180,13 @@ export async function startApp(appName: string, resume: boolean, params: Record<
     }
     if (opts.actived) {
       setTimeout(() => {
+        console.log('active window', win)
         win.setActive(true);
       })
     }
     return win;
   });
-  let processState = {
+  const processState = {
     name: appName,
     app: app,
     ctx: ctx,
@@ -208,6 +209,9 @@ export function createContext({ getProcess }: { getProcess(): ProcessState }) {
   }
 
   const ctx: AppContext = {
+    get windows() {
+      return getProcess().windows;
+    },
     registerExt,
     params: {},
     isResume: false,

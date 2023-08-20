@@ -160,7 +160,7 @@ export class AppManager {
     if (this.apps.findIndex(app => app.name === name) !== -1) {
       console.log(`${name} exists, skip install`);
       return;
-    };
+    }
     const appScript = this.downloadedApps[name];
     if (!appScript) {
       throw new Error(`app ${name} is not downloaded`);
@@ -172,8 +172,10 @@ export class AppManager {
       if (app.installed) {
         app.installed(installCtx);
       }
+      app.getAppInfo()
       this.apps.push(app);
     } catch (err) {
+      console.error(err)
       throw err;
     }
   }

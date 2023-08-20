@@ -8,13 +8,12 @@ import { CachedEventEmitter } from '../../utils/events';
 import { systemMessage } from '@webby/core/system';
 
 let root: ReactDom.Root;
-let appWindow: AppWindow;
 export async function mount(ctx: AppContext) {
-  if (appWindow) {
-    appWindow.setActive(true);
+  if (ctx.windows.length > 0) {
+    ctx.windows[0].setActive(true);
     return;
   }
-  appWindow = createAppWindow();
+  const appWindow = createAppWindow();
   appWindow.setSize(800, 600);
   appWindow.setPos(100, 200);
   const rootEl = appWindow.body;
@@ -33,7 +32,13 @@ export async function mount(ctx: AppContext) {
     eventBus.emit('open_dir', file);
   });
   const eventBus = new CachedEventEmitter();
-  root.render(<FilePage ctx={ctx} eventBus={eventBus} openFile={openFile} />)
+  root.render(
+    <FilePage
+      ctx={ctx}
+      eventBus={eventBus}
+      openFile={openFile}
+    />,
+  );
 }
 
 export async function unmount(ctx: AppContext) {
@@ -47,11 +52,11 @@ export function getAppInfo(): AppInfo {
     width: 500,
     height: 500,
     supportExts: [],
-  }
+  };
 }
 
 defineApp({
   start: mount,
   exit: unmount,
-  getAppInfo
-})
+  getAppInfo,
+});
