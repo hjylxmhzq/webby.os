@@ -32,6 +32,7 @@ module.exports = {
         "@typescript-eslint",
         "react"
     ],
+    "ignorePatterns": ["node_modules/", "dist/", "server/", "webpack.config.js", "third-party/"],
     "rules": {
         "no-unused-vars": "off",
         "@typescript-eslint/no-unused-vars": [
