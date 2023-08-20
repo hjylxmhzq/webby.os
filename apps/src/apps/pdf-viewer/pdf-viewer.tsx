@@ -453,7 +453,10 @@ export default function PdfViewer(props: {
         </span>
       </div>
       <div className={style['main-body']}>
-        <VirtualScrollbar observeScrollHeightChange>
+        <VirtualScrollbar
+          observeScrollHeightChange
+          thumbColor="#888"
+        >
           <div className={classNames(style['outline-wrapper'], style['no-scrollbar'], { [style.show]: isShowOutline })}>
             <OutlineBar
               outline={outline?.items}

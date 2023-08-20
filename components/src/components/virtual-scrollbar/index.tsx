@@ -1,4 +1,5 @@
-import React, { cloneElement, useEffect, useRef } from 'react';
+import { cloneElement, useEffect, useRef } from 'react';
+import styles from './index.module.less';
 
 export interface VirtualScrollbarProps<T extends HTMLElement = HTMLElement> {
   children: React.ReactElement;
@@ -6,6 +7,8 @@ export interface VirtualScrollbarProps<T extends HTMLElement = HTMLElement> {
   scrollbarContainer?: HTMLElement | string;
   scroll?: 'vertical' | 'horizontal' | 'both';
   observeScrollHeightChange?: boolean;
+  thumbColor?: string;
+  debounceUpdate?: number | boolean;
 }
 
 export function VirtualScrollbar(props: VirtualScrollbarProps) {
@@ -32,8 +35,13 @@ export function VirtualScrollbar(props: VirtualScrollbarProps) {
       return;
     }
     const container = typeof props.scrollbarContainer === 'string' ? document.querySelector(props.scrollbarContainer) : props.scrollbarContainer;
-    return attach(el, container as HTMLDivElement, { scrollDir: props.scroll || 'both', observeScrollHeightChange: props.observeScrollHeightChange });
-  }, [props.scrollbarContainer, props.children]);
+    return attach(el, container as HTMLDivElement, {
+      scrollDir: props.scroll || 'both',
+      observeScrollHeightChange: props.observeScrollHeightChange,
+      thumbColor: props.thumbColor,
+      debounceUpdate: props.debounceUpdate,
+    });
+  }, [props.scrollbarContainer]);
 
   return children;
 }
@@ -48,15 +56,16 @@ const scrollTo = !hasNativeScrollTo
         el.scrollLeft = left;
       }
     }
-  : (el: HTMLElement, left?: number, top?: number) => {
-      el.scrollTo({ left, top });
+  : (el: HTMLElement, left?: number, top?: number, smooth?: boolean) => {
+      el.scrollTo({ left, top, behavior: smooth ? 'smooth' : undefined });
     };
 
 export function attach(
   el: HTMLElement,
   scrollbarContainerEl: HTMLElement = el,
-  options: { scrollDir?: 'vertical' | 'horizontal' | 'both'; observeScrollHeightChange?: boolean } = {},
+  options: { scrollDir?: 'vertical' | 'horizontal' | 'both'; observeScrollHeightChange?: boolean; thumbColor?: string; debounceUpdate?: number | boolean } = {},
 ) {
+  el.classList.add(styles['no-scrollbar']);
   const { scrollDir = 'both' } = options;
   const style = window.getComputedStyle(el);
   if (style.position === 'static') {
@@ -111,18 +120,29 @@ export function attach(
     setVisible();
   };
 
+  let debounceTimer: number;
   const onMouseMove = (ev: MouseEvent) => {
-    if (isXMoving) {
-      const diff = ev.clientX - startX;
-      const diffPercent = diff / (containerClientWidth - vbarLength - margin * 2);
-      const scrollLeft = startScrollLeft + diffPercent * (el.scrollWidth - clientWidth);
-      scrollTo(el, scrollLeft);
-    }
-    if (isYMoving) {
-      const diff = ev.clientY - startY;
-      const diffPercent = diff / (containerClientHeight - vbarLength - margin * 2);
-      const scrollTop = startScrollTop + diffPercent * (el.scrollHeight - clientHeight);
-      scrollTo(el, undefined, scrollTop);
+    const update = (smooth: boolean) => {
+      if (isXMoving) {
+        const diff = ev.clientX - startX;
+        const diffPercent = diff / (containerClientWidth - vbarLength - margin * 2);
+        const scrollLeft = startScrollLeft + diffPercent * (el.scrollWidth - clientWidth);
+        scrollTo(el, scrollLeft, undefined, smooth);
+      }
+      if (isYMoving) {
+        const diff = ev.clientY - startY;
+        const diffPercent = diff / (containerClientHeight - vbarLength - margin * 2);
+        const scrollTop = startScrollTop + diffPercent * (el.scrollHeight - clientHeight);
+        scrollTo(el, undefined, scrollTop, smooth);
+      }
+    };
+
+    if (options.debounceUpdate) {
+      const debounce = typeof options.debounceUpdate === 'number' ? options.debounceUpdate : 10;
+      clearTimeout(debounceTimer);
+      debounceTimer = window.setTimeout(() => update(true), debounce);
+    } else {
+      update(false);
     }
   };
 
@@ -136,6 +156,7 @@ export function attach(
   let clientWidth = el.clientWidth;
   let containerClientHeight = scrollbarContainerEl.clientHeight;
   let containerClientWidth = scrollbarContainerEl.clientWidth;
+
   const observer = new ResizeObserver(() => {
     clientHeight = el.clientHeight;
     clientWidth = el.clientWidth;
@@ -149,16 +170,18 @@ export function attach(
   observer.observe(el);
   if (options.observeScrollHeightChange) {
     for (const child of el.children) {
-      observer.observe(child);
+      if (child !== hbar && child !== vbar) {
+        observer.observe(child);
+      }
     }
   }
   containerObserver.observe(scrollbarContainerEl);
 
-  const updatePos = () => {
+  const updatePos = (xPercent?: number, yPercent?: number) => {
     if (!el) return;
     const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = el;
-    const hPercent = scrollLeft / (scrollWidth - clientWidth);
-    const vPercent = scrollTop / (scrollHeight - clientHeight);
+    const hPercent = xPercent ?? scrollLeft / (scrollWidth - clientWidth);
+    const vPercent = yPercent ?? scrollTop / (scrollHeight - clientHeight);
 
     const extraTop = scrollbarContainerEl !== el ? 0 : scrollTop;
     const extraLeft = scrollbarContainerEl !== el ? 0 : scrollLeft;
@@ -204,7 +227,7 @@ export function attach(
         top: 0;
         width: 5px;
         height: ${vbarLength}px;
-        background: rgba(0, 0, 0, 0.3);
+        background: ${options.thumbColor || 'rgba(0, 0, 0, 0.3)'};
         border-radius: 5px;
         cursor: pointer;
         opacity: 1;
@@ -222,7 +245,7 @@ export function attach(
         left: 0;
         width: ${hbarLength}px;
         height: 5px;
-        background: rgba(0, 0, 0, 0.3);
+        background: ${options.thumbColor || 'rgba(0, 0, 0, 0.3)'};
         border-radius: 5px;
         cursor: pointer;
         opacity: 1;
@@ -242,6 +265,7 @@ export function attach(
     scrollbarContainerEl.removeChild(vbar);
     scrollbarContainerEl.removeChild(hbar);
     el.removeEventListener('scroll', onScroll);
+    el.classList.remove(styles['no-scrollbar']);
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', onMouseUp);
     observer.disconnect();
