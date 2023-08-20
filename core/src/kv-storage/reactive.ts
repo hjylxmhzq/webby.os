@@ -1,12 +1,12 @@
 
-export function makeReactive<T extends {}>(obj: T, cb: () => void) {
-  
-  function _makeReactive(obj: any) {
+export function makeReactive<T extends object>(obj: T, cb: () => void) {
+
+  function _makeReactive<T>(obj: T) {
     if (typeof obj !== 'object' || obj === null) {
       return obj;
     }
     for (const k of Object.keys(obj)) {
-      obj[k] = _makeReactive(obj[k]);
+      obj[k as keyof typeof obj] = _makeReactive(obj[k as keyof typeof obj]);
     }
     const proxy = new Proxy(obj, {
       get(target, p, rec) {
@@ -23,6 +23,6 @@ export function makeReactive<T extends {}>(obj: T, cb: () => void) {
     });
     return proxy;
   }
-  
+
   return _makeReactive(obj);
 }

@@ -14,7 +14,7 @@ class TcpSocket {
     const host = window.location.host;
     const url = `${protocol}://${host}/websocket/websockify/connect?remote=${this.addr}`;
     this.ws = new WebSocket(url);
-    this.readyPromise = new Promise((resolve, reject) => {
+    this.readyPromise = new Promise((resolve, _reject) => {
       this.ws!.addEventListener('open', () => {
         resolve();
       });

@@ -38,7 +38,7 @@ export class MessageQueue {
         }
       }
     });
-    this.ready = new Promise((resolve, reject) => {
+    this.ready = new Promise((resolve, _reject) => {
       ws.addEventListener('open', () => resolve(undefined));
     });
   }

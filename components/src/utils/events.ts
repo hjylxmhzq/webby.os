@@ -3,7 +3,7 @@ import { EventEmitter } from "events";
 export class CachedEventEmitter {
 
   private eventBus = new EventEmitter();
-  private cachedArgs: Record<string, any[][]> = {};
+  private cachedArgs: Record<string, unknown[][]> = {};
   on(type: string, cb: (...args: any[]) => void) {
     if (this.cachedArgs[type]) {
       for (const args of this.cachedArgs[type]) {

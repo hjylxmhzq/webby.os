@@ -2,7 +2,7 @@ import EventEmitter from "events";
 import { commonCollection } from "../kv-storage";
 
 const store = commonCollection.systemHook;
-export class SystemHook<T extends any> {
+export class SystemHook<T> {
   constructor(public hookName: string, public options: { lazy: boolean } = { lazy: false }) {
     store.get<{ enabled: boolean }>('hook_status_' + hookName).then(status => {
       if (status) {

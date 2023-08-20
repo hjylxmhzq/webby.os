@@ -1,8 +1,8 @@
 import axios, { AxiosProgressEvent } from 'axios';
 
-export interface Response {
+export interface Response<T> {
   status: 0 | 1,
-  data: any,
+  data: T,
   message: string,
 }
 
@@ -13,8 +13,8 @@ export function getCsrfToken() {
   return csrfToken;
 }
 
-export async function post(api: string, body: any, tag = 'default') {
-  const resp = await post_raw(api, body, tag).then(resp => resp.json() as Promise<Response>);
+export async function post<T>(api: string, body: T, tag = 'default') {
+  const resp = await post_raw(api, body, tag).then(resp => resp.json() as Promise<Response<T>>);
   if (resp.status !== 0) {
     throw new Error(resp.message);
   }
@@ -22,9 +22,9 @@ export async function post(api: string, body: any, tag = 'default') {
 }
 
 // unique request by tag
-export async function post_raw(
+export async function post_raw<T>(
   api: string,
-  body: any,
+  body: T,
   tag: string = 'default',
 ) {
   const handlers = httpGroupHandlers.get(tag);
@@ -56,10 +56,11 @@ export async function inner_fetch(input: RequestInfo | URL, init?: RequestInit):
   const innerInit = init || {};
 
   innerInit.headers = innerInit.headers || {};
-  (innerInit.headers as any)['csrf-token'] = getCsrfToken() || ''
+  (innerInit.headers as Record<string, string>)['csrf-token'] = getCsrfToken() || ''
 
   const p = fetch(input, init);
   return p;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).__post = post;

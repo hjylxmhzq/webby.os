@@ -1,8 +1,8 @@
 import EventEmitter from "events";
-import { AppContext, AppMenuManager, ProcessState, AppWindow } from ".";
+import { AppContext, AppMenuManager, ProcessState, ScopedWindow } from ".";
 import { commonCollection } from "../kv-storage";
 import path from "path-browserify";
-import { setSystemTitleBarFlow, systemMessage, systemSelectFile } from "../system";
+import { setSystemTitleBarFlow } from "../system";
 import { CreateAppWindowOptions, windowManager } from "./window-manager";
 import { appManager } from "./app-manager";
 import { removeFromArray } from "../utils/array";
@@ -42,7 +42,7 @@ export class ProcessManager {
         const appName = appNameMatch[1];
         appManager.init([appName]);
         if (appManager.get(appName)) {
-          const app = await this.startApp(appName, { resume: true });
+          const _app = await this.startApp(appName, { resume: true });
           setSystemTitleBarFlow(true);
           return;
         }
@@ -52,7 +52,7 @@ export class ProcessManager {
 
 
     store.get<typeof this['cacheProcessState']>('cacheProcessState').then(async (v) => {
-      const toDockApp: ProcessState[] = [];
+      const _toDockApp: ProcessState[] = [];
       if (v) {
         this.cacheProcessState = v;
         const tasks = Object.keys(this.cacheProcessState).map(async appName => {
@@ -60,7 +60,7 @@ export class ProcessManager {
             delete this.cacheProcessState[appName];
           } else if (this.cacheProcessState[appName].isRunning) {
             console.log('cache', appName, this.cacheProcessState);
-            const app = await this.startApp(appName, { resume: true });
+            const _app = await this.startApp(appName, { resume: true });
           }
         });
         await Promise.all(tasks);
@@ -96,7 +96,7 @@ export class ProcessManager {
     }
     this.isInited = false;
   }
-  async postMessage(appName: string, message: any) {
+  async postMessage(appName: string, message: unknown) {
     const app = this.openedApps.find(app => appName === app.name);
     if (app) {
       app.channel.postMessage(message);
@@ -136,7 +136,7 @@ export class ProcessManager {
     this.cacheProcessState[appName].isRunning = true;
     this.storeProcessStatus();
     this.openedApps.push(app);
-    app.app.scoped.injectGlobalFunction('__exitApp', (id: string) => {
+    app.app.scoped.injectGlobalFunction('__exitApp', () => {
       beforeClose();
     });
     return app;
@@ -179,10 +179,7 @@ export async function startApp(appName: string, resume: boolean, params: Record<
       win.showTitleBar(false);
     }
     if (opts.actived) {
-      setTimeout(() => {
-        console.log('active window', win)
-        win.setActive(true);
-      })
+      win.setActive(true);
     }
     return win;
   });
@@ -198,7 +195,6 @@ export async function startApp(appName: string, resume: boolean, params: Record<
   await app.start(ctx);
   return processState;
 }
-
 
 export function createContext({ getProcess }: { getProcess(): ProcessState }) {
   const channel = new MessageChannel();
@@ -239,7 +235,7 @@ export function createContext({ getProcess }: { getProcess(): ProcessState }) {
 }
 
 export const exitApp = () => {
-  (window as any).__exitApp();
+  (window as unknown as ScopedWindow).__exitApp();
 }
 
 export const processManager = new ProcessManager();

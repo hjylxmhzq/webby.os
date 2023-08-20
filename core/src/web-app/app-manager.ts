@@ -1,5 +1,5 @@
 import { commonCollection } from "../kv-storage";
-import { AppDefinition, AppInstallContext, GlobalSearchOptions, GlobalSearchResult, SystemHooks } from ".";
+import { AppDefinition, AppInstallContext, GlobalSearchResult, ScopedWindow, SystemHooks } from ".";
 import EventEmitter from "events";
 import { SystemHook } from "./system-hook";
 import { systemMessage } from "../system";
@@ -13,6 +13,7 @@ export type AppDefinitionWithContainer = AppDefinition & {
     document: Document,
     console: Console,
     head: HTMLElement,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     injectGlobalFunction: (fnName: string, fn: (...args: any[]) => any) => void;
   },
   hooks: SystemHooks
@@ -261,14 +262,14 @@ export async function loadModule(appScript: { scriptContent: string, scriptSrc: 
     `;
 
   function loadScript(s: string): Promise<AppDefinitionWithContainer> {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const blobSrc = URL.createObjectURL(new Blob([s], { type: 'application/javascript' }));
       script.src = blobSrc;
       document.body.appendChild(script);
       script.addEventListener('load', () => {
         document.body.removeChild(script);
         URL.revokeObjectURL(blobSrc);
-        const appDef = (window as any).__apps[moduleName] as AppDefinitionWithContainer;
+        const appDef = window.__apps[moduleName] as AppDefinitionWithContainer;
         if (typeof appDef.start !== 'function' || typeof appDef.getAppInfo !== 'function') {
           reject(`install app [${moduleName}] error, app does't have [start] or [getAppInfo] function`);
         }
@@ -278,7 +279,7 @@ export async function loadModule(appScript: { scriptContent: string, scriptSrc: 
   }
   const app = await loadScript(sandbox);
   app.scoped.injectGlobalFunction = (fnName: string, fn) => {
-    (app.scoped.window as any)[fnName] = fn;
+    (app.scoped.window as ScopedWindow)[fnName] = fn;
   }
   return app;
 }
@@ -305,7 +306,7 @@ function createFakeDocument(scope: HTMLElement, scopeHead: HTMLElement, mountPoi
   const proxy = new Proxy(document, {
     get(target, key: keyof Document) {
       if (key === 'querySelector') {
-        function q(selector: string) {
+        const q = (selector: string) => {
           const el = document.querySelector(selector);
           if (el?.tagName.toLowerCase() === 'head') {
             return scopeHead
@@ -332,8 +333,8 @@ function createFakeDocument(scope: HTMLElement, scopeHead: HTMLElement, mountPoi
         };
       } else {
         let v;
-        if (typeof target[key] === 'function') {
-          const d: any = target[key];
+        const d = target[key]
+        if (typeof d === 'function') {
           v = d.bind(target);
         } else {
           v = target[key];
@@ -349,7 +350,10 @@ function createFakeWindow(fakeDocument: Document) {
   const fakeWindow = Object.create(null);
   const cacheFn = Object.create(null);
   const proxy = new Proxy(window, {
-    get(target, key: any) {
+    get(target, key: string) {
+      if (key === '_scoped') {
+        return true;
+      }
       if (key === 'sharedScope') {
         return window.sharedScope;
       }
@@ -357,7 +361,7 @@ function createFakeWindow(fakeDocument: Document) {
       if (key === 'document') {
         return fakeDocument;
       }
-      const d: any = target[key];
+      const d = target[key as keyof Window];
       if (typeof d === 'function') {
         const pd = new Proxy(d, {
           set(target, p, newValue, receiver) {
@@ -388,10 +392,10 @@ function createFakeWindow(fakeDocument: Document) {
 
 function createScopeConsole(scope: string) {
   const proxy = new Proxy(console, {
-    get(target, key: keyof Console) {
+    get(target, key: 'log' | 'error' | 'warn' | 'info' | 'debug' | 'trace' | 'time' | 'timeEnd') {
       const c = console[key]
       if (typeof c === 'function') {
-        return (c as any).bind(console, `[${scope}]: `);
+        return c.bind(console, `[${scope}]: `)
       }
       return c;
     }
@@ -399,7 +403,9 @@ function createScopeConsole(scope: string) {
   return proxy
 }
 
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).__createFakeWindow = createFakeWindow;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).__createFakeDocument = createFakeDocument;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).__createScopeConsole = createScopeConsole;

@@ -1,6 +1,23 @@
-export function debounce<T extends Function>(fn: T, delay = 500) {
+declare global {
+  interface Document {
+    mozCancelFullScreen?: () => Promise<void>;
+    msExitFullscreen?: () => Promise<void>;
+    webkitExitFullscreen?: () => Promise<void>;
+    mozFullScreenElement?: Element;
+    msFullscreenElement?: Element;
+    webkitFullscreenElement?: Element;
+  }
+
+  interface HTMLElement {
+    msRequestFullscreen?: () => Promise<void>;
+    mozRequestFullscreen?: () => Promise<void>;
+    webkitRequestFullscreen?: () => Promise<void>;
+  }
+}
+
+export function debounce<T extends (...args: any[]) => void>(fn: T, delay = 500) {
   let timer: number | undefined;
-  let cachedArgs: any[] = [];
+  let cachedArgs: unknown[] = [];
   return (...args: any[]) => {
     cachedArgs = args;
     window.clearTimeout(timer);
@@ -10,15 +27,14 @@ export function debounce<T extends Function>(fn: T, delay = 500) {
   }
 }
 
-export async function fullscreen(el: HTMLElement): Promise<void> {
-  const elem: any = el; 
-  if (elem.requestFullScreen) {
-    return await elem.requestFullScreen();
-  } else if (elem.mozRequestFullScreen) {
-    return await elem.mozRequestFullScreen();
-  } else if (elem.webkitRequestFullScreen) {
-    return await elem.webkitRequestFullScreen();
-  } else if (elem.webkitEnterFullScreen) {
-    return await elem.webkitEnterFullScreen();
+export async function fullscreen(elem: HTMLElement): Promise<void> {
+  if (elem.requestFullscreen) {
+    return await elem.requestFullscreen();
+  } else if (elem.mozRequestFullscreen) {
+    return await elem.mozRequestFullscreen();
+  } else if (elem.webkitRequestFullscreen) {
+    return await elem.webkitRequestFullscreen();
+  } else {
+    throw new Error('fullscreen api is not supported');
   }
 }

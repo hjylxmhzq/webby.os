@@ -14,22 +14,8 @@ export interface MicroAppWindowInfo {
   height: number;
 }
 
-export interface AppDefinition {
-  mount(ctx: MicroAppContext): Promise<void>;
-  unmount(ctx: MicroAppContext): Promise<void>;
-  getAppInfo(): any;
-}
 export interface MicroApp {
   mount(ctx: MicroAppContext): Promise<void>;
   unmount(ctx: MicroAppContext): Promise<void>;
   getAppInfo(): Promise<void>;
-}
-interface AppContextInfo {
-  el: HTMLDivElement,
-  name: string,
-  isActive: boolean,
-  app: AppDefinition,
-  mountPoint: HTMLElement,
-  ctx: MicroAppContext,
-  channel: MessagePort,
 }

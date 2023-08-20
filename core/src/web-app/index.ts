@@ -1,4 +1,3 @@
-import { Theme } from "../types/theme";
 import EventEmitter from 'events';
 import { ProcessManager, processManager } from "./process-manager";
 import { WindowManager, windowManager } from "./window-manager";
@@ -8,7 +7,6 @@ import { SystemHook } from "./system-hook";
 export { ProcessManager } from './process-manager';
 export { AppManager, AppDefinitionWithContainer } from './app-manager';
 export { WindowManager, createAppWindow } from './window-manager';
-
 
 export interface SelectFileOptions {
   allowFile?: boolean;
@@ -273,12 +271,14 @@ export interface SystemSharedScope {
 
 export interface SharedScope {
   system: SystemSharedScope,
-  shared: { [key: string]: any }
+  shared: { [key: string]: unknown }
 }
 
 declare global {
-  interface Window { sharedScope: SharedScope; }
+  interface Window { sharedScope: SharedScope; __apps: Record<string, AppDefinition> }
 }
+
+export type ScopedWindow = Window & { __app: AppDefinition, __exitApp: () => void, _scoped: true, [key: string]: unknown };
 
 export function initSharedScope(system: Pick<SystemSharedScope, 'setSystemTitleBarFlow' | 'systemSelectFile' | 'systemMessage' | 'systemPrompt'>) {
   Object.assign(window.sharedScope.system, system);
@@ -303,19 +303,19 @@ export function getAppManager() {
 }
 
 export function getWindowManager() {
-  const sc = (window as any).sharedScope as SharedScope;
+  const sc = window.sharedScope;
   const windowManager = sc.system.windowManager;
   return windowManager;
 }
 
 export function getProcessManager() {
-  const sc = (window as any).sharedScope as SharedScope;
+  const sc = window.sharedScope;
   const processManager = sc.system.processManager;
   return processManager;
 }
 
 export function setSystemTitleBarFlow(isFlow: boolean) {
-  const sc = (window as any).sharedScope as SharedScope;
+  const sc = window.sharedScope;
   const ret = sc.system.setSystemTitleBarFlow!(isFlow);
   return ret;
 }
@@ -332,5 +332,5 @@ export interface App {
 }
 
 export function defineApp(app: AppDefinition) {
-  (window as any).__app = app;
+  (window as unknown as ScopedWindow).__app = app;
 }

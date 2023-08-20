@@ -1,6 +1,6 @@
 const xHeaderPrefix = 'x-header-';
 
-interface ExtraInit{
+interface ExtraInit {
   keepResponseHeaders?: string[];
 }
 
@@ -42,17 +42,18 @@ export async function fetch(url: RequestInfo | URL, init?: RequestInit & ExtraIn
   const proxyResp = new Proxy(resp, {
     get(resp, key: keyof Response) {
       if (key === 'headers') {
-        function getHeader(name: string) {
+        const getHeader = (name: string) => {
           return resp.headers.get(xHeaderPrefix + name);
         }
         return {
           get: getHeader,
         }
       } else {
-        if (typeof resp[key] === 'function') {
-          return (resp[key] as any).bind(resp)
+        const d = resp[key]
+        if (typeof d === 'function') {
+          return d.bind(resp)
         }
-        return resp[key];
+        return d;
       }
     }
   });

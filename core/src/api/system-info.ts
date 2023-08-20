@@ -2,6 +2,11 @@ import { post } from "../utils/http"
 
 export type IpAddr = { V6: string } | { V4: string } | { Unsupported: string } | null
 
+export type JSONValue = string | number | boolean | null | JSONObject;
+interface JSONObject {
+  [key: string]: JSONValue | JSONValue[];
+}
+
 export interface SystemInfo {
   "mounts"?:
   {
@@ -52,7 +57,7 @@ export interface SystemInfo {
       "encrypted": true
     }
   },
-  "socket_stats"?: any
+  "socket_stats"?: JSONObject
 }
 
 export async function getSystemInfo(): Promise<SystemInfo> {
