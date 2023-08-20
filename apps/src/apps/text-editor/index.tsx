@@ -96,7 +96,7 @@ export async function mount(ctx: AppContext) {
   padding: 5px;
   background-color: #eee;`;
   iframe.src = src;
-  let loadingPromise = new Promise((resolve) => {
+  const loadingPromise = new Promise((resolve) => {
     iframe.addEventListener('load', () => {
       rootEl.appendChild(btn);
       URL.revokeObjectURL(src);

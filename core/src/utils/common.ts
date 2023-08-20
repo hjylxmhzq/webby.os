@@ -11,7 +11,7 @@ export function debounce<T extends Function>(fn: T, delay = 500) {
 }
 
 export async function fullscreen(el: HTMLElement): Promise<void> {
-  let elem: any = el; 
+  const elem: any = el; 
   if (elem.requestFullScreen) {
     return await elem.requestFullScreen();
   } else if (elem.mozRequestFullScreen) {

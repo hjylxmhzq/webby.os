@@ -5,11 +5,11 @@ interface ExtraInit{
 }
 
 export async function fetch(url: RequestInfo | URL, init?: RequestInit & ExtraInit) {
-  let headers = init?.headers || {};
-  let newHeader: Record<string, string> = {};
+  const headers = init?.headers || {};
+  const newHeader: Record<string, string> = {};
   if (headers) {
     if (typeof headers.forEach === 'function') {
-      let newHeader: Record<string, string> = {};
+      const newHeader: Record<string, string> = {};
       headers.forEach((v) => {
         newHeader[xHeaderPrefix + v[0]] = v[1];
       });

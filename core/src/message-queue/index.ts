@@ -3,7 +3,7 @@ import EventEmitter from "events";
 function fromBytesToUuid(bytes: Uint8Array) {
 
   let count = 0;
-  let result = [];
+  const result = [];
   for (let i = 0; i < bytes.length; i++) {
     const b = ('00' + bytes[i].toString(16)).slice(-2);
     count += 2;
@@ -20,9 +20,9 @@ export class MessageQueue {
   ready: Promise<void>;
   eventBus = new EventEmitter();
   constructor(public queueKey: string) {
-    let protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    let host = window.location.host;
-    let url = `${protocol}://${host}/websocket/message_queue/join`;
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const host = window.location.host;
+    const url = `${protocol}://${host}/websocket/message_queue/join`;
     const urlObj = new URL(url);
     urlObj.searchParams.set('key', queueKey);
     const ws = new WebSocket(urlObj.toString());

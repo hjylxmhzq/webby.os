@@ -1,7 +1,7 @@
 import { post } from "../utils/http";
 
 export async function login(username: string, password: string) {
-    let resp = await post('/auth/login', {
+    const resp = await post('/auth/login', {
         name: username, password,
     });
     if (resp.status === 0) {
@@ -11,7 +11,7 @@ export async function login(username: string, password: string) {
 }
 
 export async function logout() {
-    let resp = await post('/auth/logout', {});
+    const resp = await post('/auth/logout', {});
     if (resp.status === 0) {
         return true;
     }
@@ -33,7 +33,7 @@ export interface SessionState {
 }
 
 export async function getSessionState() {
-    let resp = await post('/auth/get_session_state', {});
+    const resp = await post('/auth/get_session_state', {});
     if (resp.status === 0) {
         const data = resp.data;
         const sessions = Object.entries(data).map(([key, d]: any) => {
@@ -57,7 +57,7 @@ export async function getSessionState() {
 }
 
 export async function deleteSessionState(key: string) {
-    let resp = await post('/auth/delete_session_state', { key });
+    const resp = await post('/auth/delete_session_state', { key });
     if (resp.status === 0) {
         const data = resp.data;
         const sessions = Object.values(data).map((d: any) => {
@@ -80,7 +80,7 @@ export async function deleteSessionState(key: string) {
 }
 
 export async function resetPassword(oldPwd: string, newPwd: string) {
-    let resp = await post('/auth/reset_password', {
+    const resp = await post('/auth/reset_password', {
         old_password: oldPwd,
         new_password: newPwd,
     });
@@ -97,7 +97,7 @@ export interface UserInfo {
 }
 
 export async function getAllUsers(): Promise<UserInfo[]> {
-    let resp = await post('/auth/get_all_users', {});
+    const resp = await post('/auth/get_all_users', {});
     if (resp.status === 0) {
         return resp.data;
     }
@@ -105,7 +105,7 @@ export async function getAllUsers(): Promise<UserInfo[]> {
 }
 
 export async function enableOtp(secret: string, code: string): Promise<boolean> {
-    let resp = await post('/auth/enable_otp', { secret, code });
+    const resp = await post('/auth/enable_otp', { secret, code });
     if (resp.status === 0) {
         return resp.data;
     }
@@ -113,7 +113,7 @@ export async function enableOtp(secret: string, code: string): Promise<boolean> 
 }
 
 export async function disableOtp(): Promise<boolean> {
-    let resp = await post('/auth/disable_otp', {});
+    const resp = await post('/auth/disable_otp', {});
     if (resp.status === 0) {
         return resp.data;
     }
@@ -121,7 +121,7 @@ export async function disableOtp(): Promise<boolean> {
 }
 
 export async function isOtpEnabled(): Promise<boolean> {
-    let resp = await post('/auth/is_otp_enabled', {});
+    const resp = await post('/auth/is_otp_enabled', {});
     if (resp.status === 0) {
         return resp.data;
     }
@@ -135,7 +135,7 @@ export interface GroupInfo {
 }
 
 export async function getAllGroups(): Promise<GroupInfo[]> {
-    let resp = await post('/auth/get_all_groups', {});
+    const resp = await post('/auth/get_all_groups', {});
     if (resp.status === 0) {
         return resp.data;
     }
@@ -148,7 +148,7 @@ export async function addUser(user: {
     email: string,
     group: string,
 }): Promise<boolean> {
-    let resp = await post('/auth/register', user);
+    const resp = await post('/auth/register', user);
     if (resp.status === 0) {
         return true;
     }
@@ -158,7 +158,7 @@ export async function addUser(user: {
 export async function deleteUser(user: {
     username: string,
 }): Promise<boolean> {
-    let resp = await post('/auth/delete_user', user);
+    const resp = await post('/auth/delete_user', user);
     if (resp.status === 0) {
         return true;
     }
@@ -166,7 +166,7 @@ export async function deleteUser(user: {
 }
 
 export async function requestOneTimeToken(module_prefix = ""): Promise<string> {
-    let resp = await post('/auth/request_one_time_token', { module_prefix });
+    const resp = await post('/auth/request_one_time_token', { module_prefix });
     if (resp.status === 0) {
         return resp.data.token;
     }

@@ -6,7 +6,7 @@ export class CachedEventEmitter {
   private cachedArgs: Record<string, any[][]> = {};
   on(type: string, cb: (...args: any[]) => void) {
     if (this.cachedArgs[type]) {
-      for (let args of this.cachedArgs[type]) {
+      for (const args of this.cachedArgs[type]) {
         cb(...args);
       }
     }

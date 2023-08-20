@@ -3,7 +3,7 @@ import { AppContext, AppInfo, createAppWindow, defineApp } from '@webby/core/web
 import iconUrl from './icon.svg';
 
 export async function mount(ctx: AppContext) {
-  let key = Math.random().toString(16).substring(2);
+  const key = Math.random().toString(16).substring(2);
 
   const appWindow = createAppWindow();
   const root = appWindow.body;

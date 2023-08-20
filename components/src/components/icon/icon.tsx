@@ -20,8 +20,8 @@ export interface IconFile {
 }
 
 export function FileIcon(props: { className?: string, file: IconFile, size?: number | string }) {
-  let filename = props.file.name;
-  let guess = (mime as any).getType(filename);
+  const filename = props.file.name;
+  const guess = (mime as any).getType(filename);
   let name = 'file-b-2';
   if (props.file.is_dir) {
     name = 'file-b-';
@@ -36,8 +36,8 @@ export function FileIcon(props: { className?: string, file: IconFile, size?: num
 }
 
 export function FileThumbnailIcon(props: { imgStyle?: React.CSSProperties, noThumbnail?: boolean, className?: string, file: IconFile, dir: string, size?: number | string, imgHeight?: number, imgWidth?: number }) {
-  let filename = props.file.name;
-  let guess = (mime as any).getType(filename);
+  const filename = props.file.name;
+  const guess = (mime as any).getType(filename);
   let name = 'file-b-2';
 
   if (!props.noThumbnail && guess?.includes('image')) {

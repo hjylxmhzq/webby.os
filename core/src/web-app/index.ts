@@ -37,7 +37,7 @@ export class AppMenuManager {
     const eventBus = new EventEmitter();
     function convert(menus: AppMenu[], parent: AppActionMenu | null = null): AppActionMenu[] {
       const actionMenus: AppActionMenu[] = [];
-      for (let menu of menus) {
+      for (const menu of menus) {
         const actionMenu: AppActionMenu = {
           ...menu,
           children: [],
@@ -303,19 +303,19 @@ export function getAppManager() {
 }
 
 export function getWindowManager() {
-  const sc = (window as any).sharedScope as SharedScope;;
+  const sc = (window as any).sharedScope as SharedScope;
   const windowManager = sc.system.windowManager;
   return windowManager;
 }
 
 export function getProcessManager() {
-  const sc = (window as any).sharedScope as SharedScope;;
+  const sc = (window as any).sharedScope as SharedScope;
   const processManager = sc.system.processManager;
   return processManager;
 }
 
 export function setSystemTitleBarFlow(isFlow: boolean) {
-  const sc = (window as any).sharedScope as SharedScope;;
+  const sc = (window as any).sharedScope as SharedScope;
   const ret = sc.system.setSystemTitleBarFlow!(isFlow);
   return ret;
 }

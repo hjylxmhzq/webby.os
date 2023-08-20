@@ -121,7 +121,7 @@ function GlobalSearchSetting() {
       </div>
     </div>
   </div>
-};
+}
 
 function UserSetting() {
 
@@ -172,7 +172,7 @@ function UserSetting() {
           <div style={{ lineHeight: '35px', fontSize: 12, padding: '0 10px' }}>
             This operation requires to refresh page and login again
             <Button type="danger" onClick={async () => {
-              let success = await auth.resetPassword(...pwds);
+              const success = await auth.resetPassword(...pwds);
               if (success) {
                 window.location.pathname = '/';
               }
@@ -282,7 +282,7 @@ function UserSetting() {
               <Button style={{ fontSize: 12 }} onClick={() => setAdding(false)}>取消</Button>
               <Button style={{ fontSize: 12 }} onClick={async () => {
 
-                for (let k in newUser) {
+                for (const k in newUser) {
                   if (!(newUser as any)[k]) {
                     systemMessage({ type: 'error', title: '信息错误', content: `${k} 不能为空`, timeout: 5000 });
                     return;
@@ -439,7 +439,7 @@ function FileSetting() {
     <div className={classNames(style['setting-section'], style['limit-height'])}>
       <div className={style['setting-item']}>
         {
-          !!localFSCacheMeta?.metas.length ? localFSCacheMeta?.metas.map(m => {
+          localFSCacheMeta?.metas.length ? localFSCacheMeta?.metas.map(m => {
             return <div key={m.key} style={{ display: 'flex', justifyContent: 'space-between', margin: '5px 0' }}>
               <span>{m.key}</span>
               <span style={{ flex: '0 0 75px', textAlign: 'right' }}>{formatFileSize(m.size)}</span>
@@ -516,7 +516,7 @@ function AppSetting() {
     <div className={style['setting-section']}>
       <div className={style['setting-item']}>
         {
-          !!appManager.thirdPartyApps.length ? appManager.thirdPartyApps.map((app, idx) => {
+          appManager.thirdPartyApps.length ? appManager.thirdPartyApps.map((app, idx) => {
             return <div key={idx}>
               <span>{app.name}</span>
               <Button onClick={async () => {

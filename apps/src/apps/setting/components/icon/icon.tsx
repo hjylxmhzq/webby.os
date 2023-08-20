@@ -16,8 +16,8 @@ export interface IconFile {
 }
 
 export function FileIcon(props: { className?: string, file: IconFile, size?: number | string }) {
-  let filename = props.file.name;
-  let guess = mime.getType(filename);
+  const filename = props.file.name;
+  const guess = mime.getType(filename);
   let name = 'ziliao';
   if (props.file.is_dir) {
     name = 'wenjianjia';

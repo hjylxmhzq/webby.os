@@ -36,12 +36,12 @@ export function systemPrompt(prompt: PromptContent): Promise<PromptResult | null
 
 export function systemSelectFile(options: SelectFileOptions): Promise<string[] | null> {
   const app = (window as any).__app as AppDefinitionWithContainer;
-  const sc = (window as any).sharedScope as SharedScope;;
+  const sc = (window as any).sharedScope as SharedScope;
   return sc.system.systemSelectFile!(app, options);
 }
 
 export async function openFile(file: string): Promise<boolean> {
-  const sc = (window as any).sharedScope as SharedScope;;
+  const sc = (window as any).sharedScope as SharedScope;
   const appManager = sc.system.appManager;
   const windowManager = sc.system.windowManager;
 
@@ -56,11 +56,11 @@ export async function openFile(file: string): Promise<boolean> {
 }
 
 export async function openFileBy(appName: string, file: string): Promise<void> {
-  const sc = (window as any).sharedScope as SharedScope;;
+  const sc = (window as any).sharedScope as SharedScope;
   const windowManager = sc.system.windowManager;
   const processManager = getProcessManager();
   await processManager.startApp(appName);
-  let existApp = processManager.getAppByName(appName);
+  const existApp = processManager.getAppByName(appName);
   if (existApp) {
     existApp.eventBus.emit('open_file', file);
     return;

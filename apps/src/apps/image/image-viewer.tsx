@@ -88,7 +88,7 @@ export default function ImagePreview({ appWindow, ctx, dir, files, file, onPrevi
     let timer: number | undefined;
 
     const onMove = (e: MouseEvent, target: any) => {
-      let el = target as HTMLElement;
+      const el = target as HTMLElement;
       if (!el.nodeType || el.nodeType !== document.ELEMENT_NODE) return;
       if (containerRef.current?.contains(el)) {
         showThumbnail(true);
@@ -146,7 +146,7 @@ export default function ImagePreview({ appWindow, ctx, dir, files, file, onPrevi
 
   const _translate = useRef([0, 0]);
   useEffect(() => {
-    let translate = _translate.current;
+    const translate = _translate.current;
     if (!imgRef.current || !containerRef.current) return;
 
     const el = imgRef.current;
@@ -161,7 +161,7 @@ export default function ImagePreview({ appWindow, ctx, dir, files, file, onPrevi
       imgScaleRef.current -= e.deltaY / 30;
       if (imgScaleRef.current < 0.8) imgScaleRef.current = 0.8;
       if (imgScaleRef.current > 5) imgScaleRef.current = 5;
-      let scale = imgScaleRef.current;
+      const scale = imgScaleRef.current;
       const residual = 200;
       if (translate[0] * scale < -maxWidth + residual) {
         translate[0] = (-maxWidth + residual) / scale;
@@ -198,12 +198,12 @@ export default function ImagePreview({ appWindow, ctx, dir, files, file, onPrevi
     const onMouseMove = (e: MouseEvent) => {
       if (!isMouseDown) return;
       const scale = imgScaleRef.current;
-      let [currentX, currentY] = [e.clientX, e.clientY];
+      const [currentX, currentY] = [e.clientX, e.clientY];
       moveX = currentX - translateStart[0];
       moveY = currentY - translateStart[1];
       let nextX = (translate[0] + moveX);
       let nextY = (translate[1] + moveY);
-      let residual = 200;
+      const residual = 200;
       if (nextX * scale < -maxWidth + residual) {
         nextX = (-maxWidth + residual) / scale;
       } else if (nextX * scale > maxWidth - residual) {

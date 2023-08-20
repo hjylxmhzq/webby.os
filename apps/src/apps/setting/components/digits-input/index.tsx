@@ -7,7 +7,7 @@ export interface Props {
 }
 
 export default function DigitInput(props: Props) {
-  let [digits, setDigits] = useState<string[]>(Array.from({ length: props.length }).map(() => ''));
+  const [digits, setDigits] = useState<string[]>(Array.from({ length: props.length }).map(() => ''));
   return <div style={{ display: 'inline-flex' }}>
     {
       Array.from({ length: props.length }).map((_, idx) => {

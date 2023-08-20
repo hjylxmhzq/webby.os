@@ -292,7 +292,7 @@ export async function mount(ctx: AppContext) {
     let pageChangeTimer: number | undefined;
     let curAnimation = '';
     const nextPage = async () => {
-      let container = containerRef.current;
+      const container = containerRef.current;
       if (container) {
         if (pageChangeTimer) {
           clearTimeout(pageChangeTimer);
@@ -322,7 +322,7 @@ export async function mount(ctx: AppContext) {
     }
 
     const prevPage = async () => {
-      let container = containerRef.current;
+      const container = containerRef.current;
       if (container) {
         if (pageChangeTimer) {
           if (curAnimation === 'prev') {
@@ -431,7 +431,7 @@ function toc2Tree(toc: ePub.NavItem): TreeNode {
     value: toc.href,
     children: [],
   };
-  let children: TreeNode[] = [];
+  const children: TreeNode[] = [];
   toc.subitems?.forEach((v, i) => {
     children[i] = toc2Tree(v);
   });
@@ -508,7 +508,7 @@ function Tree(props: { isOpen?: boolean, tree: TreeNode, onClick: (ol: TreeNode)
   return <div className={style['outline-tree']}>
     <div className={style['tree-title']}>
       {
-        !!props.tree?.children?.length ? <Icon onClick={() => {
+        props.tree?.children?.length ? <Icon onClick={() => {
           setIsOpen(!isOpen)
         }} name='arrow-down' className={classNames(style.icon, { [style.open]: isOpen })} />
           : <span style={{ display: 'inline-block', width: 13 }}></span>

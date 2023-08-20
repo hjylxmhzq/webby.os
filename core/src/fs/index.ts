@@ -37,14 +37,14 @@ export interface FileStatWithDir {
 }
 
 export async function readdir(dir: string): Promise<FileStat[]> {
-  let resp = await post('/file/read_dir', {
+  const resp = await post('/file/read_dir', {
     file: dir
   }, 'read_dir_' + dir);
   return resp.data.files;
 }
 
 export async function search_files(keyword: string, dir = ''): Promise<FileStatWithDir[]> {
-  let resp = await post('/file/search_files', {
+  const resp = await post('/file/search_files', {
     keyword,
     dir
   });
@@ -52,21 +52,21 @@ export async function search_files(keyword: string, dir = ''): Promise<FileStatW
 }
 
 export async function delete_file(file: string): Promise<boolean> {
-  let resp = await post('/file/delete', {
+  const resp = await post('/file/delete', {
     file: path.join(file)
   });
   return resp.status === 0;
 }
 
 export async function delete_files(files: string[]): Promise<boolean> {
-  let resp = await post('/file/delete_batch', {
+  const resp = await post('/file/delete_batch', {
     files
   });
   return resp.status === 0;
 }
 
 export async function makedir(dir: string): Promise<boolean> {
-  let resp = await post('/file/create_dir', {
+  const resp = await post('/file/create_dir', {
     file: dir
   });
   return resp.status === 0;
@@ -76,7 +76,7 @@ export function create_download_link(dir: string, file: string, params: Record<s
   const url = new URL('/file/read', window.location.origin);
   const file_path = path.join(dir, file);
   url.searchParams.set('file', file_path);
-  for (let k in params) {
+  for (const k in params) {
     url.searchParams.set(k, params[k]);
   }
   return url.toString();
@@ -100,14 +100,14 @@ export function create_download_link_from_file_path(abs_file: string, options: G
 }
 
 export async function file_stat(abs_file: string): Promise<FileStat> {
-  let resp = await post('/file/stat', {
+  const resp = await post('/file/stat', {
     file: abs_file,
   });
   return resp.data;
 }
 
 export async function move_file(from_file: string, to_file: string): Promise<boolean> {
-  let resp = await post('/file/move', {
+  const resp = await post('/file/move', {
     from_file,
     to_file
   });
@@ -115,7 +115,7 @@ export async function move_file(from_file: string, to_file: string): Promise<boo
 }
 
 export async function copy_file(from_file: string, to_file: string): Promise<boolean> {
-  let resp = await post('/file/copy', {
+  const resp = await post('/file/copy', {
     from_file,
     to_file
   });
@@ -142,8 +142,8 @@ export function create_compression_download_link(dir: string, file: string) {
 export async function read_text_file(dir: string, file: string) {
   const url = new URL('/file/read', window.location.origin);
   const file_path = path.join(dir, file);
-  let resp = await post_raw(url.toString(), { file: file_path });
-  let content = await resp.text();
+  const resp = await post_raw(url.toString(), { file: file_path });
+  const content = await resp.text();
   return content;
 }
 
@@ -185,14 +185,14 @@ export async function read_file(file: string, options: ReadFileOptions = {}): Pr
     }
   }
   const getFile = async () => {
-    let body = {
+    const body = {
       file: file_path,
       ...(options.resize ? { param_resize: options.resize } : {}),
     }
     const url = new URL('/file/read', window.location.origin);
-    let resp = await post_raw(url.toString(), body, file);
+    const resp = await post_raw(url.toString(), body, file);
     const chunks = [];
-    let reader = resp.body?.getReader();
+    const reader = resp.body?.getReader();
     let content: Blob = new Blob();
     const contentType = resp.headers.get('content-type') || '';
     const total = parseInt(resp.headers.get('content-length') || '0', 10);
@@ -237,31 +237,31 @@ export async function read_file_to_link(file: string, options: ReadFileOptions =
 export async function read_zip_entries(dir: string, file: string) {
   const url = new URL('/file/read_zip_entries', window.location.origin);
   const file_path = path.join(dir, file);
-  let resp = await post(url.toString(), { file: file_path }, 'read_zip_entries');
+  const resp = await post(url.toString(), { file: file_path }, 'read_zip_entries');
   return resp.data;
 }
 
 export async function _search_files(keyword: string) {
   const url = new URL('/file/search', window.location.origin);
-  let resp = await post(url.toString(), { keyword }, 'search_files');
+  const resp = await post(url.toString(), { keyword }, 'search_files');
   return resp.data;
 }
 
 export async function search_files_content(keyword: string) {
   const url = new URL('/file/search_content', window.location.origin);
-  let resp = await post(url.toString(), { keyword }, 'search_files_content');
+  const resp = await post(url.toString(), { keyword }, 'search_files_content');
   return resp.data;
 }
 
 export async function get_file_index_updated_at() {
   const url = new URL('/file/index_updated_at', window.location.origin);
-  let resp = await post(url.toString(), {}, 'file_index_updated_at');
+  const resp = await post(url.toString(), {}, 'file_index_updated_at');
   return resp.data;
 }
 
 export async function get_storage_info() {
   const url = new URL('/file/storage_info', window.location.origin);
-  let resp = await post(url.toString(), {}, 'storage_info');
+  const resp = await post(url.toString(), {}, 'storage_info');
   return resp.data;
 }
 
@@ -269,14 +269,14 @@ export async function write_files(dir: string, files: File[], config?: { onUploa
   const url = new URL('/file/upload', window.location.origin);
 
   const form = new FormData();
-  for (let file of files) {
-    let name = file.webkitRelativePath || file.name;
+  for (const file of files) {
+    const name = file.webkitRelativePath || file.name;
     const file_path = path.join(dir, name);
     form.append(file_path, file, file.name);
   }
   form.append('dir', dir);
   const text = files.length > 1 ? files[0].name + `...(${files.length}Files)` : files[0].name;
-  let resp = await post_formdata(url.toString(), form, (e) => config?.onUploadProgress?.(e, { text }));
+  const resp = await post_formdata(url.toString(), form, (e) => config?.onUploadProgress?.(e, { text }));
   return resp;
 }
 
@@ -300,8 +300,8 @@ export async function upload(
         reject(undefined);
         return;
       }
-      let length = input.files.length;
-      let files: File[] = [];
+      const length = input.files.length;
+      const files: File[] = [];
       for (let i = 0; i < length; i++) {
         const f = input.files.item(i);
         if (f) {
@@ -309,7 +309,7 @@ export async function upload(
         }
       }
       if (files.length) {
-        let resp = await write_files(dir, files, config);
+        const resp = await write_files(dir, files, config);
         resolve(resp);
       } else {
         reject(undefined);

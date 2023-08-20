@@ -52,7 +52,7 @@ export class LocalCache {
   }
   async set<T extends string | number | ArrayBuffer | Blob>(key: string, value: T) {
     const now = Date.now();
-    let meta: Meta = {
+    const meta: Meta = {
       key,
       saved_at: now,
       size: 0,
@@ -101,7 +101,7 @@ export class LocalCache {
           break;
         }
       }
-      for (let m of toRemoved) {
+      for (const m of toRemoved) {
         await this.local.removeItem(`data:${m.key}`);
       }
       const totalSize = metaAll.metas.reduce((prev, next) => prev + next.size, 0);

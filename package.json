@@ -18,8 +18,8 @@
     "server": "cd server && cargo watch -x run",
     "update-assets": "cd client && bash scripts/update-icon.sh",
     "update-tag": "node build/update-version.js",
-    "lint": "eslint --ext .ts,.tsx,.js,.jsx --ignore-path .gitignore .",
-    "lint-fix": "eslint --fix --ext .ts,.tsx,.js,.jsx --ignore-path .gitignore ."
+    "lint": "eslint --ext .ts,.tsx --ignore-path .gitignore .",
+    "lint-fix": "eslint --fix --ext .ts,.tsx --ignore-path .gitignore ."
   },
   "devDependencies": {
     "@types/tinymce": "^4.6.5",

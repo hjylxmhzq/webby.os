@@ -42,7 +42,7 @@ export class Collection {
   getReactiveStateImmediatelly(key: string): { state: Record<string | number, any>, subscribe: SubscribeFn };
   getReactiveStateImmediatelly<T>(key: string, defaultState: T): { state: T, subscribe: SubscribeFn };
   getReactiveStateImmediatelly(key: string, defaultState: any = {}): any {
-    let _state = defaultState;
+    const _state = defaultState;
     const state = makeReactive(_state, () => {
       eventBus.emit('change');
       this.set(key, _state);
@@ -95,7 +95,7 @@ export class Collection {
       const r = await post('/kv_storage/get', {
         key, collection: this.collection
       }, 'collection_get' + '_' + key + '_' + this.collection);
-      let d = r.data;
+      const d = r.data;
       if (d.length > 0) {
         const val = JSON.parse(d[0].value);
         if (this.options.localFirst) {
@@ -121,7 +121,7 @@ export class Collection {
     const r = await post('/kv_storage/has', {
       key, collection: this.collection
     }, 'collection_has' + '_' + key + '_' + this.collection);
-    let d = r.data;
+    const d = r.data;
     return d;
   }
   async keys(): Promise<string[]> {
@@ -174,12 +174,12 @@ export class Collection {
     return r.data;
   }
   subscribe<V = any, T extends string = string>(key: T, cb: (value: V | null) => void): () => void {
-    let sc = (window as any).sharedScope;
+    const sc = (window as any).sharedScope;
     let ws = sc.__kv_subsribe_ws as WebSocket | undefined;
     if (!ws || (ws && !(ws.readyState === ws.CONNECTING || ws.readyState === ws.OPEN))) {
-      let protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-      let host = window.location.host;
-      let url = `${protocol}://${host}/websocket/kv_storage/subscribe`;
+      const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+      const host = window.location.host;
+      const url = `${protocol}://${host}/websocket/kv_storage/subscribe`;
       ws = new WebSocket(url);
       sc.__kv_subsribe_ws = ws;
     }

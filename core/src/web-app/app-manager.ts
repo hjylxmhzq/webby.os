@@ -111,7 +111,7 @@ export class AppManager {
     }
 
     const installPromises = [];
-    for (let [appScriptName, appName] of builtinApps) {
+    for (const [appScriptName, appName] of builtinApps) {
       if (selectedApps) {
         if (selectedApps.includes(appName)) {
           const p = install(appScriptName, appName);
@@ -132,7 +132,7 @@ export class AppManager {
         await this.install(appName);
       }
       this.thirdPartyApps = thirdPartyApps;
-      for (let app of thirdPartyApps) {
+      for (const app of thirdPartyApps) {
         await install(app.src, app.name);
       }
     }
@@ -181,7 +181,7 @@ export class AppManager {
   }
   get(appName: string): undefined | AppDefinitionWithContainer {
     return this.apps.find(app => app.name === appName);
-  };
+  }
   getSupportedAppsByExt(ext: string): string[] {
     function normalize(ext: string) {
       while (ext.startsWith('.')) {
@@ -191,7 +191,7 @@ export class AppManager {
     }
     return this.apps.filter(app => {
       const info = app.getAppInfo();
-      for (let e of info.supportExts) {
+      for (const e of info.supportExts) {
         if (normalize(e) === normalize(ext)) {
           return true;
         }
@@ -276,7 +276,7 @@ export async function loadModule(appScript: { scriptContent: string, scriptSrc: 
       });
     })
   }
-  let app = await loadScript(sandbox);
+  const app = await loadScript(sandbox);
   app.scoped.injectGlobalFunction = (fnName: string, fn) => {
     (app.scoped.window as any)[fnName] = fn;
   }
@@ -357,7 +357,7 @@ function createFakeWindow(fakeDocument: Document) {
       if (key === 'document') {
         return fakeDocument;
       }
-      let d: any = target[key];
+      const d: any = target[key];
       if (typeof d === 'function') {
         const pd = new Proxy(d, {
           set(target, p, newValue, receiver) {

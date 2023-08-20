@@ -14,7 +14,7 @@ export function getCsrfToken() {
 }
 
 export async function post(api: string, body: any, tag = 'default') {
-  let resp = await post_raw(api, body, tag).then(resp => resp.json() as Promise<Response>);
+  const resp = await post_raw(api, body, tag).then(resp => resp.json() as Promise<Response>);
   if (resp.status !== 0) {
     throw new Error(resp.message);
   }
@@ -32,7 +32,7 @@ export async function post_raw(
     return handlers[1].then((resp) => resp.clone());
   }
   const abort = new AbortController();
-  let p = fetch(api, {
+  const p = fetch(api, {
     method: 'post',
     signal: abort.signal,
     body: JSON.stringify(body),
@@ -42,23 +42,23 @@ export async function post_raw(
     }
   });
   httpGroupHandlers.set(tag, [abort, p]);
-  let resp = await p;
+  const resp = await p;
   httpGroupHandlers.delete(tag);
   return resp.clone();
 }
 
 export async function post_formdata(api: string, body: FormData, onUploadProgress?: (e: AxiosProgressEvent) => void) {
-  let resp = await axios.postForm(api, body, { headers: { 'csrf-token': getCsrfToken() || '', }, responseType: 'json', onUploadProgress });
+  const resp = await axios.postForm(api, body, { headers: { 'csrf-token': getCsrfToken() || '', }, responseType: 'json', onUploadProgress });
   return resp.data;
 }
 
 export async function inner_fetch(input: RequestInfo | URL, init?: RequestInit): Promise<globalThis.Response> {
-  let innerInit = init || {};
+  const innerInit = init || {};
 
   innerInit.headers = innerInit.headers || {};
   (innerInit.headers as any)['csrf-token'] = getCsrfToken() || ''
 
-  let p = fetch(input, init);
+  const p = fetch(input, init);
   return p;
 }
 

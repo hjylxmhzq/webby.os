@@ -24,9 +24,9 @@ export default function StoragePieChart(props: IProps) {
 
     let items: typeof props.items = [];
     if (showType === 0) {
-      let t: Record<string, number> = {};
-      for (let item of props.items) {
-        let mainType = item.name.split('/')[0] || 'unknown';
+      const t: Record<string, number> = {};
+      for (const item of props.items) {
+        const mainType = item.name.split('/')[0] || 'unknown';
         t[mainType] = (t[mainType] || 0) + item.size;
       }
       items = Object.keys(t).map(tt => ({

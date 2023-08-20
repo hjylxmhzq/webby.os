@@ -8,7 +8,7 @@ export interface Props {
 
 type imgProps = ImgHTMLAttributes<HTMLImageElement>;
 
-let _queueId = Math.random().toString().substring(2);
+const _queueId = Math.random().toString().substring(2);
 
 export function SmartImage(props: Props & imgProps) {
   const queueId = props.downloadQueueId || _queueId;
@@ -28,7 +28,7 @@ class DownloadQueue {
   public queue: HTMLImageElement[] = [];
   constructor(public id: string, public parallelNum: number = 3) { }
   destroy() {
-    for (let el of this.queue) {
+    for (const el of this.queue) {
       el.src = defaultImg;
     }
     this.queue.length = 0;

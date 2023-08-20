@@ -5,7 +5,7 @@ export function makeReactive<T extends {}>(obj: T, cb: () => void) {
     if (typeof obj !== 'object' || obj === null) {
       return obj;
     }
-    for (let k of Object.keys(obj)) {
+    for (const k of Object.keys(obj)) {
       obj[k] = _makeReactive(obj[k]);
     }
     const proxy = new Proxy(obj, {

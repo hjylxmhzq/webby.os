@@ -10,7 +10,7 @@ import style from './image-viewer.module.less';
 import { systemMessage, systemSelectFile } from '@webby/core/system';
 
 let reactRoot: ReactDom.Root;
-let eventBus = new CachedEventEmitter();
+const eventBus = new CachedEventEmitter();
 let appWindow: AppWindow | undefined;
 export async function mount(ctx: AppContext) {
   if (appWindow) {
@@ -64,7 +64,7 @@ function Index(props: { ctx: AppContext, onOpenFile: (cb: (file: string) => void
     const dir = path.parse(file).dir;
     const filename = path.basename(file);
     const files = await readdir(dir);
-    let f = files.find(f => f.name === filename);
+    const f = files.find(f => f.name === filename);
     setFiles(files);
     setFile(f);
     setFilePath(file);

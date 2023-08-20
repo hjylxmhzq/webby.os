@@ -8,8 +8,8 @@ export class Shell {
   onStdOutCb?: (text: string) => void;
   onStdErrCb?: (text: string) => void;
   constructor(url?: string) {
-    let protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    let host = window.location.host;
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const host = window.location.host;
     if (!url) {
       url = `${protocol}://${host}/websocket/shell/start`;
     }
@@ -20,8 +20,8 @@ export class Shell {
       });
       this.ws.addEventListener('message', async (e) => {
         if (e.data instanceof Blob) {
-          let ab = await e.data.arrayBuffer();
-          let isErr = false;
+          const ab = await e.data.arrayBuffer();
+          const isErr = false;
           const text = this.decoder.decode(ab, { stream: true });
           if (isErr) {
             if (this.onStdErrCb) {

@@ -10,9 +10,9 @@ class TcpSocket {
     }
   }
   open() {
-    let protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    let host = window.location.host;
-    let url = `${protocol}://${host}/websocket/websockify/connect?remote=${this.addr}`;
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const host = window.location.host;
+    const url = `${protocol}://${host}/websocket/websockify/connect?remote=${this.addr}`;
     this.ws = new WebSocket(url);
     this.readyPromise = new Promise((resolve, reject) => {
       this.ws!.addEventListener('open', () => {

@@ -34,10 +34,10 @@ export function Popover(props: Props) {
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      let target = e.composedPath()[0] as HTMLElement;
+      const target = e.composedPath()[0] as HTMLElement;
       if (contentRef.current && ref.current) {
-        let contentEl = contentRef.current;
-        let el = ref.current;
+        const contentEl = contentRef.current;
+        const el = ref.current;
         if (contentEl.contains(target) || el.contains(target)) {
           return;
         }

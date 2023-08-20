@@ -24,11 +24,11 @@ function debounce<T extends Function>(fn: T, delay = 500, mw?: (...args: any[]) 
     }, delay);
   }
 }
-let store = new Collection('shell_cache');
+const store = new Collection('shell_cache');
 let shell: Shell;
 const DefaultFontSize = 14;
 
-let eventBus = new CachedEventEmitter();
+const eventBus = new CachedEventEmitter();
 let appWindow: AppWindow;
 export async function mount(ctx: AppContext) {
   const appWindow = createAppWindow();
@@ -209,7 +209,7 @@ class Term {
   constructor(public term: Terminal, public promptText = '') {
   }
   clearLine() {
-    let tLen = this.currentLine.length + this.promptText.length;
+    const tLen = this.currentLine.length + this.promptText.length;
     this.term.write('\b'.repeat(tLen));
     this.term.write(' '.repeat(tLen));
     this.term.write('\b'.repeat(tLen));
