@@ -53,7 +53,7 @@ export function Popover(props: Props) {
   }, []);
 
 
-  const onClick = (e: React.MouseEvent) => {
+  const onClick = () => {
     if (props.auto) {
       setIsShow(true);
     }

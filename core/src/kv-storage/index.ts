@@ -1,33 +1,39 @@
 import { post } from "../utils/http";
 import EventEmitter from 'events';
 import { makeReactive } from "./reactive";
+import { ScopedWindow } from "../web-app";
 
 
 interface StorageOptions {
   localFirst?: boolean,
 }
 
-export type SubscribeFn = (cb: (state: any) => void, options?: { once?: boolean }) => void;
+type JSONValue = string | number | boolean | null | JSONObject;
+interface JSONObject {
+  [key: string]: JSONValue | JSONValue[];
+}
+
+export type SubscribeFn = (cb: (state: JSONValue) => void, options?: { once?: boolean }) => void;
 
 export class Collection {
   static allowBuiltIn = false;
   private eventBus = new EventEmitter();
   initedKeys = new Set();
-  async getReactiveState(key: string): Promise<{ state: Record<string | number, any>, subscribe: SubscribeFn }>;
-  async getReactiveState<T>(key: string, defaultState: T): Promise<{ state: T, subscribe: SubscribeFn }>;
-  async getReactiveState(key: string, defaultState: any = {}): Promise<any> {
-    let _state = await this.get(key) || defaultState;
+  async getReactiveState<T extends JSONObject>(key: string): Promise<{ state: T, subscribe: SubscribeFn }>;
+  async getReactiveState<T extends JSONObject>(key: string, defaultState: JSONValue): Promise<{ state: T, subscribe: SubscribeFn }>;
+  async getReactiveState<T extends JSONObject>(key: string, defaultState?: T): Promise<{ state: T, subscribe: SubscribeFn }> {
+    let _state = (await this.get(key) || defaultState) as JSONObject;
     if (typeof _state !== 'object' || _state === null) {
-      _state = defaultState;
+      _state = defaultState || {};
     }
     const state = makeReactive(_state, () => {
       eventBus.emit('change');
       this.set(key, _state);
-    });
+    }) as T;
     const eventBus = new EventEmitter();
     return {
       state,
-      subscribe(cb: (state: any) => void, options: { once?: boolean } = {}) {
+      subscribe(cb: (state: T) => void, options: { once?: boolean } = {}) {
         if (options.once) {
           eventBus.once('change', cb);
         } else {
@@ -39,14 +45,14 @@ export class Collection {
       }
     };
   }
-  getReactiveStateImmediatelly(key: string): { state: Record<string | number, any>, subscribe: SubscribeFn };
-  getReactiveStateImmediatelly<T>(key: string, defaultState: T): { state: T, subscribe: SubscribeFn };
-  getReactiveStateImmediatelly(key: string, defaultState: any = {}): any {
-    const _state = defaultState;
+  getReactiveStateImmediatelly<T extends JSONObject>(key: string): { state: T, subscribe: SubscribeFn };
+  getReactiveStateImmediatelly<T extends JSONObject>(key: string, defaultState: T): { state: T, subscribe: SubscribeFn };
+  getReactiveStateImmediatelly<T extends JSONObject>(key: string, defaultState?: T): { state: T, subscribe: SubscribeFn } {
+    const _state =(defaultState || {}) as JSONObject;
     const state = makeReactive(_state, () => {
       eventBus.emit('change');
       this.set(key, _state);
-    });
+    }) as T;
     this.get(key).then((v) => {
       if (typeof v === 'object' && v !== null) {
         Object.assign(state, v);
@@ -55,7 +61,7 @@ export class Collection {
     const eventBus = new EventEmitter();
     return {
       state,
-      subscribe(cb: (state: any) => void, options: { once?: boolean } = {}) {
+      subscribe(cb: (state: T) => void, options: { once?: boolean } = {}) {
         if (options.once) {
           eventBus.once('change', cb);
         } else {
@@ -72,7 +78,7 @@ export class Collection {
       throw new Error('collection with name starts with "_" is reserved by system');
     }
   }
-  async set(key: string, value: any): Promise<void> {
+  async set(key: string, value: JSONValue) {
     const v = JSON.stringify(value);
     if (this.options.localFirst) {
       localStorage.setItem(`_collection_${this.collection}|${key}`, v);
@@ -83,7 +89,7 @@ export class Collection {
     this.eventBus.emit(key, v, key);
     return r.data;
   }
-  async get<V = any>(key: string): Promise<V | null> {
+  async get<V = unknown>(key: string): Promise<V | null> {
     let localVal: V | undefined;
     if (this.options.localFirst) {
       const val = localStorage.getItem(`_collection_${this.collection}|${key}`);
@@ -122,10 +128,10 @@ export class Collection {
       key, collection: this.collection
     }, 'collection_has' + '_' + key + '_' + this.collection);
     const d = r.data;
-    return d;
+    return !!d;
   }
   async keys(): Promise<string[]> {
-    const r = await post('/kv_storage/keys', {
+    const r = await post<string[]>('/kv_storage/keys', {
       collection: this.collection
     });
     if (r.data.length) {
@@ -137,17 +143,17 @@ export class Collection {
     const r = await post('/kv_storage/remove_collection', {
       collection: this.collection
     }, 'collection_remove_all' + this.collection);
-    return r.data;
+    return !!r.data;
   }
   static async collections(): Promise<string[]> {
-    const r = await post('/kv_storage/collections', {});
+    const r = await post<string[]>('/kv_storage/collections', {});
     if (r.data.length) {
       return r.data;
     }
     return [];
   }
   async values() {
-    const r = await post('/kv_storage/values', {
+    const r = await post<string[]>('/kv_storage/values', {
       collection: this.collection
     });
     if (r.data.length) {
@@ -155,8 +161,8 @@ export class Collection {
     }
     return [];
   }
-  async entries(): Promise<[string, any][]> {
-    const r = await post('/kv_storage/entries', {
+  async entries(): Promise<[string, JSONValue][]> {
+    const r = await post<[string, string][]>('/kv_storage/entries', {
       collection: this.collection
     });
     if (r.data.length) {
@@ -171,10 +177,10 @@ export class Collection {
     const r = await post('/kv_storage/remove', {
       key, collection: this.collection
     });
-    return r.data;
+    return !!r.data;
   }
-  subscribe<V = any, T extends string = string>(key: T, cb: (value: V | null) => void): () => void {
-    const sc = (window as any).sharedScope;
+  subscribe<V = unknown, T extends string = string>(key: T, cb: (value: V | null) => void): () => void {
+    const sc = (window as unknown as ScopedWindow).sharedScope;
     let ws = sc.__kv_subsribe_ws as WebSocket | undefined;
     if (!ws || (ws && !(ws.readyState === ws.CONNECTING || ws.readyState === ws.OPEN))) {
       const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
@@ -206,7 +212,7 @@ async function waitForWs(ws: WebSocket): Promise<WebSocket> {
   if (ws.readyState === ws.OPEN) {
     return ws;
   }
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve, _reject) => {
     ws.addEventListener('open', () => {
       resolve(ws);
     });

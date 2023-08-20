@@ -272,6 +272,7 @@ export interface SystemSharedScope {
 export interface SharedScope {
   system: SystemSharedScope,
   shared: { [key: string]: unknown }
+  [key: string]: unknown
 }
 
 declare global {

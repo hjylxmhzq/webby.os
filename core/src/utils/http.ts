@@ -13,7 +13,7 @@ export function getCsrfToken() {
   return csrfToken;
 }
 
-export async function post<T>(api: string, body: T, tag = 'default') {
+export async function post<T>(api: string, body: unknown, tag = 'default') {
   const resp = await post_raw(api, body, tag).then(resp => resp.json() as Promise<Response<T>>);
   if (resp.status !== 0) {
     throw new Error(resp.message);
@@ -22,9 +22,9 @@ export async function post<T>(api: string, body: T, tag = 'default') {
 }
 
 // unique request by tag
-export async function post_raw<T>(
+export async function post_raw(
   api: string,
-  body: T,
+  body: unknown,
   tag: string = 'default',
 ) {
   const handlers = httpGroupHandlers.get(tag);
