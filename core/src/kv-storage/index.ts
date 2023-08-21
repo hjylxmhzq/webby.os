@@ -1,28 +1,23 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { post } from "../utils/http";
 import EventEmitter from 'events';
 import { makeReactive } from "./reactive";
 import { ScopedWindow } from "../web-app";
 
-
 interface StorageOptions {
   localFirst?: boolean,
 }
 
-type JSONValue = string | number | boolean | null | JSONObject;
-interface JSONObject {
-  [key: string]: JSONValue | JSONValue[];
-}
-
-export type SubscribeFn = (cb: (state: JSONValue) => void, options?: { once?: boolean }) => void;
+export type SubscribeFn<T> = (cb: (state: T) => void, options?: { once?: boolean }) => void;
 
 export class Collection {
   static allowBuiltIn = false;
   private eventBus = new EventEmitter();
   initedKeys = new Set();
-  async getReactiveState<T extends JSONObject>(key: string): Promise<{ state: T, subscribe: SubscribeFn }>;
-  async getReactiveState<T extends JSONObject>(key: string, defaultState: JSONValue): Promise<{ state: T, subscribe: SubscribeFn }>;
-  async getReactiveState<T extends JSONObject>(key: string, defaultState?: T): Promise<{ state: T, subscribe: SubscribeFn }> {
-    let _state = (await this.get(key) || defaultState) as JSONObject;
+  async getReactiveState<T>(key: string): Promise<{ state: T, subscribe: SubscribeFn<T> }>;
+  async getReactiveState<T>(key: string, defaultState: T): Promise<{ state: T, subscribe: SubscribeFn<T> }>;
+  async getReactiveState<T>(key: string, defaultState?: T): Promise<{ state: T, subscribe: SubscribeFn<T> }> {
+    let _state = (await this.get(key) || defaultState);
     if (typeof _state !== 'object' || _state === null) {
       _state = defaultState || {};
     }
@@ -45,17 +40,17 @@ export class Collection {
       }
     };
   }
-  getReactiveStateImmediatelly<T extends JSONObject>(key: string): { state: T, subscribe: SubscribeFn };
-  getReactiveStateImmediatelly<T extends JSONObject>(key: string, defaultState: T): { state: T, subscribe: SubscribeFn };
-  getReactiveStateImmediatelly<T extends JSONObject>(key: string, defaultState?: T): { state: T, subscribe: SubscribeFn } {
-    const _state =(defaultState || {}) as JSONObject;
+  getReactiveStateImmediatelly<T>(key: string): { state: T, subscribe: SubscribeFn<T> };
+  getReactiveStateImmediatelly<T>(key: string, defaultState: T): { state: T, subscribe: SubscribeFn<T> };
+  getReactiveStateImmediatelly<T>(key: string, defaultState?: T): { state: T, subscribe: SubscribeFn<T> } {
+    const _state = (defaultState || {});
     const state = makeReactive(_state, () => {
       eventBus.emit('change');
       this.set(key, _state);
     }) as T;
     this.get(key).then((v) => {
       if (typeof v === 'object' && v !== null) {
-        Object.assign(state, v);
+        Object.assign(state as any, v);
       }
     });
     const eventBus = new EventEmitter();
@@ -78,7 +73,7 @@ export class Collection {
       throw new Error('collection with name starts with "_" is reserved by system');
     }
   }
-  async set(key: string, value: JSONValue) {
+  async set(key: string, value: any) {
     const v = JSON.stringify(value);
     if (this.options.localFirst) {
       localStorage.setItem(`_collection_${this.collection}|${key}`, v);
@@ -98,7 +93,7 @@ export class Collection {
       }
     }
     const getRemoteVal = async () => {
-      const r = await post('/kv_storage/get', {
+      const r = await post<any[]>('/kv_storage/get', {
         key, collection: this.collection
       }, 'collection_get' + '_' + key + '_' + this.collection);
       const d = r.data;
@@ -161,7 +156,7 @@ export class Collection {
     }
     return [];
   }
-  async entries(): Promise<[string, JSONValue][]> {
+  async entries<T>(): Promise<[string, T][]> {
     const r = await post<[string, string][]>('/kv_storage/entries', {
       collection: this.collection
     });

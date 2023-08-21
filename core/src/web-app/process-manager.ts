@@ -6,6 +6,7 @@ import { setSystemTitleBarFlow } from "../system";
 import { CreateAppWindowOptions, windowManager } from "./window-manager";
 import { appManager } from "./app-manager";
 import { removeFromArray } from "../utils/array";
+import { JSONValue } from "../types";
 
 interface DockApp {
   app: ProcessState,
@@ -13,6 +14,11 @@ interface DockApp {
 }
 
 export interface StartAppOptions { isFullscreen?: boolean, params?: Record<string, string>, resume?: boolean }
+
+export interface CacheWindowInfo {
+  size: { w: number, h: number },
+  position: { x: number, y: number },
+}
 
 const store = commonCollection.processManager
 
@@ -22,11 +28,12 @@ export class ProcessManager {
   public onResize?: () => void;
   public eventBus = new EventEmitter();
   public activeApp: ProcessState | null = null;
-  public cacheProcessState: { [appName: string]: { isRunning: boolean } } = {};
+  public cacheProcessState: { [appName: string]: { isRunning: boolean, windowsInfo: { [windowId: string]: CacheWindowInfo } } } = {};
   public isInited = false;
   public dockEl = document.createElement('div');
   public appsInDock: DockApp[] = [];
   async storeProcessStatus() {
+    const _a: JSONValue = this.cacheProcessState
     await store.set('cacheProcessState', this.cacheProcessState);
   }
   async init() {
@@ -105,41 +112,76 @@ export class ProcessManager {
     }
   }
   async startApp(appName: string, options: StartAppOptions = { isFullscreen: false, params: {}, resume: false }) {
-    const existApp = this.openedApps.find(app => {
-      return app.app.name === appName;
-    });
+    const existApp = this.openedApps.find(app => app.app.name === appName);
     if (existApp) {
       // if app is running, not to create process again
       existApp.ctx.params = options.params || {};
       await existApp.app.start(existApp.ctx);
       return;
     }
-    const app = await startApp(appName, !!options.resume, options.params || {}, options);
-    if (!app) return;
+
+    const app = appManager.get(appName);
+    if (!app) {
+      console.error(`app not installed: ${appName}`);
+      return;
+    }
+
+    const { ctx, sender, eventBus } = createContext({
+      getProcess: () => processState
+    });
+    ctx.isResume = !!options.resume;
+    ctx.params = options.params || {};
+    if (options.isFullscreen) {
+      setSystemTitleBarFlow(true);
+    }
+    let windowIdx = 0
+    app.scoped.injectGlobalFunction('__createAppWindow', (id?: string, opts: CreateAppWindowOptions = {}) => {
+      if (!id) {
+        id = `${appName}_${windowIdx}`;
+      } else {
+        id = `${appName}_${id}`;
+      }
+      windowIdx++;
+      const win = windowManager.createWindow(app, id, processState);
+      if (options.isFullscreen) {
+        win.forceFullscreen();
+        win.showTitleBar(false);
+      }
+      if (opts.actived) {
+        win.setActive(true);
+      }
+      return win;
+    });
+    const processState = {
+      name: appName,
+      app: app,
+      ctx: ctx,
+      isActive: false,
+      channel: sender,
+      eventBus,
+      windows: [],
+    } as ProcessState;
+    await app.start(ctx);
     let isClose = false;
     const beforeClose = () => {
       if (isClose) return;
       isClose = true;
 
       this.cacheProcessState[appName].isRunning = false;
-      store.set('cacheProcessState', this.cacheProcessState);
-
-      app!.app.exit(app!.ctx);
+      processState!.app.exit(processState!.ctx);
       removeFromArray(this.appsInDock, app => app.app.name === appName);
       const oldApp = this.activeApp;
       this.activeApp = null;
       this.eventBus.emit('active_app_change', null, oldApp);
     };
-    if (!this.cacheProcessState[appName]) {
-      this.cacheProcessState[appName] = { isRunning: true };
-    }
+
     this.cacheProcessState[appName].isRunning = true;
     this.storeProcessStatus();
-    this.openedApps.push(app);
-    app.app.scoped.injectGlobalFunction('__exitApp', () => {
+    this.openedApps.push(processState);
+    processState.app.scoped.injectGlobalFunction('__exitApp', () => {
       beforeClose();
     });
-    return app;
+    return processState;
   }
   async close(appName: string) {
     const app = this.openedApps.find(app => app.name === appName);
@@ -147,53 +189,6 @@ export class ProcessManager {
       await app.app.exit(app.ctx);
     }
   }
-}
-
-export async function startApp(appName: string, resume: boolean, params: Record<string, string>, options: StartAppOptions): Promise<ProcessState | undefined> {
-
-  const app = appManager.get(appName);
-  if (!app) {
-    console.error(`app not installed: ${appName}`);
-    return;
-  }
-
-  const { ctx, sender, eventBus } = createContext({
-    getProcess: () => processState
-  });
-  ctx.isResume = resume;
-  ctx.params = params;
-  if (options.isFullscreen) {
-    setSystemTitleBarFlow(true);
-  }
-  let windowIdx = 0
-  app.scoped.injectGlobalFunction('__createAppWindow', (id?: string, opts: CreateAppWindowOptions = {}) => {
-    if (!id) {
-      id = `${appName}_${windowIdx}`;
-    } else {
-      id = `${appName}_${id}`;
-    }
-    windowIdx++;
-    const win = windowManager.createWindow(app, id, processState);
-    if (options.isFullscreen) {
-      win.forceFullscreen();
-      win.showTitleBar(false);
-    }
-    if (opts.actived) {
-      win.setActive(true);
-    }
-    return win;
-  });
-  const processState = {
-    name: appName,
-    app: app,
-    ctx: ctx,
-    isActive: false,
-    channel: sender,
-    eventBus,
-    windows: [],
-  };
-  await app.start(ctx);
-  return processState;
 }
 
 export function createContext({ getProcess }: { getProcess(): ProcessState }) {
