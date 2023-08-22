@@ -5237,6 +5237,7 @@ __metadata:
     axios: ^1.3.4
     cross-env: ^7.0.3
     events: ^3.3.0
+    hookable: ^5.5.3
     localforage: ^1.10.0
     path-browserify: ^1.0.1
     ts-loader: ^9.4.2
@@ -11289,6 +11290,13 @@ __metadata:
   version: 11.7.0
   resolution: "highlight.js@npm:11.7.0"
   checksum: 19e3fb8b56f4b361b057a8523b989dfeb6479bbd1e29cec3fac6fa5c78d09927d5fa61b7dba6631fdb57cfdca9b3084aa4da49405ceaf4a67f67beae2ed5b77d
+  languageName: node
+  linkType: hard
+
+"hookable@npm:^5.5.3":
+  version: 5.5.3
+  resolution: "hookable@npm:5.5.3"
+  checksum: df659977888398649b6ef8c4470719e7e8384a1d939a6587e332e86fd55b3881806e2f8aaebaabdb4f218f74b83b98f2110e143df225e16d62a39dc271e7e288
   languageName: node
   linkType: hard
 

@@ -258,7 +258,7 @@ export function HomePage() {
     });
     if (!mountPoint.current) return;
     if (processManager.isInited) return;
-    appManager.init(appName ? [appName] : undefined);
+    processManager.init();
     windowManager.setContainer(mountPoint.current);
     windowManager.onActiveWindowChange((win, _old) => {
       const process = win?.ownerProcess;

@@ -3,6 +3,7 @@ import { ProcessManager, processManager } from "./process-manager";
 import { WindowManager, windowManager } from "./window-manager";
 import { AppDefinitionWithContainer, AppManager, appManager } from "./app-manager";
 import { SystemHook } from "./system-hook";
+import { Hookable } from 'hookable';
 
 export { ProcessManager } from './process-manager';
 export { AppManager, AppDefinitionWithContainer } from './app-manager';
@@ -192,8 +193,14 @@ export interface AppWindow {
   toggleFullscreen(force?: boolean): void;
   forceFullscreen(fullscreen?: boolean): void;
   noBackground(noBg: boolean): void;
+  close(): void;
   isMinimized: boolean;
 }
+
+export interface ProcessStateHooks {
+  exit: (process: ProcessState) => void;
+}
+
 export interface ProcessState {
   name: string,
   isActive: boolean,
@@ -202,6 +209,7 @@ export interface ProcessState {
   channel: MessagePort,
   eventBus: EventEmitter,
   windows: AppWindow[],
+  hooks: Hookable<ProcessStateHooks>
 }
 
 export interface AppMenu {

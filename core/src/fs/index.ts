@@ -12,7 +12,7 @@ window.sharedScope.shared['localFSCache'] = localFSCache;
 
 export function getLocalFSCache(): LocalCache {
   const cache = window.sharedScope.shared['localFSCache'];
-  return cache;
+  return cache as LocalCache;
 }
 
 export interface FileStat {
@@ -37,14 +37,14 @@ export interface FileStatWithDir {
 }
 
 export async function readdir(dir: string): Promise<FileStat[]> {
-  const resp = await post('/file/read_dir', {
+  const resp = await post<{ files: FileStat[] }>('/file/read_dir', {
     file: dir
   }, 'read_dir_' + dir);
   return resp.data.files;
 }
 
 export async function search_files(keyword: string, dir = ''): Promise<FileStatWithDir[]> {
-  const resp = await post('/file/search_files', {
+  const resp = await post<FileStatWithDir[]>('/file/search_files', {
     keyword,
     dir
   });
@@ -100,7 +100,7 @@ export function create_download_link_from_file_path(abs_file: string, options: G
 }
 
 export async function file_stat(abs_file: string): Promise<FileStat> {
-  const resp = await post('/file/stat', {
+  const resp = await post<FileStat>('/file/stat', {
     file: abs_file,
   });
   return resp.data;
@@ -287,7 +287,8 @@ export async function upload(
     mulitple?: boolean,
     onUploadProgress?: (e: AxiosProgressEvent, info: { text: string }) => void
   }
-): Promise<Response> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Promise<Response<any>> {
   const input = document.createElement('input');
   input.setAttribute('type', 'file');
   input.style.display = 'none';

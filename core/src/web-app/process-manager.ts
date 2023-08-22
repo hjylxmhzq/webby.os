@@ -1,12 +1,13 @@
 import EventEmitter from "events";
-import { AppContext, AppMenuManager, ProcessState, ScopedWindow } from ".";
+import { AppContext, AppMenuManager, ProcessState, ProcessStateHooks, ScopedWindow } from ".";
 import { commonCollection } from "../kv-storage";
 import path from "path-browserify";
 import { setSystemTitleBarFlow } from "../system";
 import { CreateAppWindowOptions, windowManager } from "./window-manager";
 import { appManager } from "./app-manager";
 import { removeFromArray } from "../utils/array";
-import { JSONValue } from "../types";
+import { debounce } from "../utils/common";
+import hookable from 'hookable'
 
 interface DockApp {
   app: ProcessState,
@@ -16,8 +17,8 @@ interface DockApp {
 export interface StartAppOptions { isFullscreen?: boolean, params?: Record<string, string>, resume?: boolean }
 
 export interface CacheWindowInfo {
-  size: { w: number, h: number },
-  position: { x: number, y: number },
+  size: { width: number, height: number },
+  position: { left: number, top: number },
 }
 
 const store = commonCollection.processManager
@@ -33,8 +34,11 @@ export class ProcessManager {
   public dockEl = document.createElement('div');
   public appsInDock: DockApp[] = [];
   async storeProcessStatus() {
-    const _a: JSONValue = this.cacheProcessState
     await store.set('cacheProcessState', this.cacheProcessState);
+  }
+  getProcessState(appName: string) {
+    this.cacheProcessState[appName] = this.cacheProcessState[appName] || { isRunning: false, windowsInfo: {} };
+    return this.cacheProcessState[appName];
   }
   async init() {
     if (this.isInited) {
@@ -57,9 +61,7 @@ export class ProcessManager {
     }
     await appManager.init();
 
-
     store.get<typeof this['cacheProcessState']>('cacheProcessState').then(async (v) => {
-      const _toDockApp: ProcessState[] = [];
       if (v) {
         this.cacheProcessState = v;
         const tasks = Object.keys(this.cacheProcessState).map(async appName => {
@@ -125,7 +127,6 @@ export class ProcessManager {
       console.error(`app not installed: ${appName}`);
       return;
     }
-
     const { ctx, sender, eventBus } = createContext({
       getProcess: () => processState
     });
@@ -135,11 +136,12 @@ export class ProcessManager {
       setSystemTitleBarFlow(true);
     }
     let windowIdx = 0
-    app.scoped.injectGlobalFunction('__createAppWindow', (id?: string, opts: CreateAppWindowOptions = {}) => {
-      if (!id) {
+    app.scoped.injectGlobalFunction('__createAppWindow', (_id?: string, opts: CreateAppWindowOptions = {}) => {
+      let id: string
+      if (!_id) {
         id = `${appName}_${windowIdx}`;
       } else {
-        id = `${appName}_${id}`;
+        id = `${appName}_${_id}`;
       }
       windowIdx++;
       const win = windowManager.createWindow(app, id, processState);
@@ -150,8 +152,37 @@ export class ProcessManager {
       if (opts.actived) {
         win.setActive(true);
       }
+      const ps = this.getProcessState(appName);
+      if (ps.windowsInfo[id]) {
+        const { size, position } = ps.windowsInfo[id];
+        win.setSize(size.width, size.height);
+        win.setPos(position.left, position.top);
+      } else {
+        ps.windowsInfo[id] = {
+          size: { ...win.getSize() },
+          position: { ...win.getPos() },
+        }
+        this.storeProcessStatus();
+      }
+      win.onWindowResize(debounce((width, height) => {
+        const ps = this.getProcessState(appName);
+        ps.windowsInfo[id].size = { width, height };
+        this.storeProcessStatus();
+      }));
+      win.onWindowMove(debounce((left, top) => {
+        const ps = this.getProcessState(appName);
+        ps.windowsInfo[id].position = { left, top };
+        this.storeProcessStatus();
+      }));
+      win.onBeforeClose(() => {
+        if (!processState.windows.length) {
+          hooks.callHook('exit', processState);
+        }
+        this.storeProcessStatus();
+      })
       return win;
     });
+    const hooks = hookable.createHooks<ProcessStateHooks>()
     const processState = {
       name: appName,
       app: app,
@@ -160,15 +191,17 @@ export class ProcessManager {
       channel: sender,
       eventBus,
       windows: [],
+      hooks,
     } as ProcessState;
     await app.start(ctx);
     let isClose = false;
-    const beforeClose = () => {
+    const exitProcess = () => {
       if (isClose) return;
       isClose = true;
-
-      this.cacheProcessState[appName].isRunning = false;
+      const ps = this.getProcessState(appName);
+      ps.isRunning = false;
       processState!.app.exit(processState!.ctx);
+      processState!.windows.forEach(win => win.close());
       removeFromArray(this.appsInDock, app => app.app.name === appName);
       const oldApp = this.activeApp;
       this.activeApp = null;
@@ -179,7 +212,7 @@ export class ProcessManager {
     this.storeProcessStatus();
     this.openedApps.push(processState);
     processState.app.scoped.injectGlobalFunction('__exitApp', () => {
-      beforeClose();
+      exitProcess();
     });
     return processState;
   }

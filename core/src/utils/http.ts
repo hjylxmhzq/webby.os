@@ -13,7 +13,8 @@ export function getCsrfToken() {
   return csrfToken;
 }
 
-export async function post<T>(api: string, body: unknown, tag = 'default') {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function post<T = any>(api: string, body: unknown, tag = 'default') {
   const resp = await post_raw(api, body, tag).then(resp => resp.json() as Promise<Response<T>>);
   if (resp.status !== 0) {
     throw new Error(resp.message);

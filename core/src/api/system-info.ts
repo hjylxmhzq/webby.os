@@ -61,6 +61,6 @@ export interface SystemInfo {
 }
 
 export async function getSystemInfo(): Promise<SystemInfo> {
-  const resp = await post('/system_info/all', {});
+  const resp = await post<SystemInfo>('/system_info/all', {});
   return resp.data;
 }

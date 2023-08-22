@@ -462,15 +462,23 @@ export class WindowManager {
     const onResizeDebounced = debounce((width: number, height: number) => {
       windowEventBus.emit(WindowEventType.Resize, width, height);
     });
+    let first = true;
     const resizeOb = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (entry) {
         const { width, height } = entry.contentRect;
+        if (first) {
+          first = false;
+          return;
+        }
         onResizeDebounced(width, height);
       }
     });
-
-    resizeOb.observe(appContainer);
+    const startResizeObserve = () => {
+      appEl.removeEventListener('transitionend', startResizeObserve);
+      resizeOb.observe(appContainer);
+    }
+    appEl.addEventListener('transitionend', startResizeObserve);
     windowEventBus.on(WindowEventType.BeforeClose, () => {
       appEl.removeEventListener('mousedown', _setActive, false);
       appWindow.setActive(false)
@@ -569,6 +577,10 @@ export class WindowManager {
       return () => windowEventBus.off(WindowEventType.BeforeClose, cb);
     }
 
+    const close = () => {
+      windowEventBus.emit(WindowEventType.BeforeClose);
+    }
+
     const appWindow: AppWindow = {
       id: windowId,
       ownerApp: app,
@@ -598,6 +610,7 @@ export class WindowManager {
       toggleFullscreen,
       showTitleBar,
       forceFullscreen,
+      close,
     };
     this.container.append(appEl);
     this.windows.push(appWindow);
