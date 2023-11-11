@@ -1,7 +1,7 @@
-use std::path::PathBuf;
+// use std::path::PathBuf;
+// use pdf::file::File;
 
 use super::error::AppError;
-use pdf::file::File;
 use tokio::{fs, io::AsyncReadExt};
 
 #[allow(unused)]
@@ -17,22 +17,22 @@ pub fn read_txt_to_string_sync(file: &str) -> Result<String, AppError> {
   Ok(s)
 }
 
-pub fn read_pdf_to_string(file: &str) -> Result<String, AppError> {
-  let path = PathBuf::from(file);
-  let file = File::open(&path).unwrap();
+pub fn read_pdf_to_string(_file: &str) -> Result<String, AppError> {
+  // let path = PathBuf::from(file);
+  // let file = File::open(&path).unwrap();
 
-  let mut result = String::new();
-  if let Some(ref info) = file.trailer.info_dict {
-    info
-      .iter()
-      .filter(|(_, primitive)| primitive.to_string_lossy().is_ok())
-      .for_each(|(key, value)| {
-        let s = format!("{}: {}", key, value.to_string_lossy().unwrap());
-        result.push_str(&s);
-      });
-  }
+  // let mut result = String::new();
+  // if let Some(ref info) = file.trailer.info_dict {
+  //   info
+  //     .iter()
+  //     .filter(|(_, primitive)| primitive.to_string_lossy().is_ok())
+  //     .for_each(|(key, value)| {
+  //       let s = format!("{}: {}", key, value.to_string_lossy().unwrap());
+  //       result.push_str(&s);
+  //     });
+  // }
 
-  Ok(result)
+  Ok(String::new())
 }
 
 #[allow(unused)]

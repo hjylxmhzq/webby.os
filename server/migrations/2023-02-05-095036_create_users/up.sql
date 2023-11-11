@@ -7,6 +7,7 @@ CREATE TABLE users (
   user_root TEXT NOT NULL,
   group_name TEXT NOT NULL,
   otp_secret TEXT,
+  web_authn_id TEXT,
   CONSTRAINT fk_groups
     FOREIGN KEY(group_name) REFERENCES groups(name),
   PRIMARY KEY (username)

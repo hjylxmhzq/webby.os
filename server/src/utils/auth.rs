@@ -141,6 +141,10 @@ pub fn auto_create_user(db: &mut SqliteConnection) {
   if let Ok(_) = user {
     return ();
   }
+  let err = user.unwrap_err();
+  if err != diesel::NotFound {
+    panic!("create admin autmatically failed {:#?}", err);
+  }
   diesel::insert_into(schema::users::table)
     .values(NewUser {
       username: "admin",

@@ -159,7 +159,7 @@ export function HomePage() {
           setWallpaper('');
         }
       });
-      commonCollection.desktop.subscribe('bg-fill-mode', (v) => {
+      commonCollection.desktop.subscribe('bg-fill-mode', (v: any) => {
         setBgFillMode(v || 'contain');
       });
     })();

@@ -3,7 +3,7 @@ use diesel::prelude::*;
 use serde::Serialize;
 
 
-#[derive(Serialize, Queryable)]
+#[derive(Serialize, Queryable, Debug)]
 #[diesel(table_name = users)]
 pub struct User {
   pub username: String,
@@ -13,6 +13,7 @@ pub struct User {
   pub user_root: String,
   pub group_name: String,
   pub otp_secret: Option<String>,
+  pub web_authn_id: Option<String>,
 }
 
 #[derive(Serialize, Queryable)]

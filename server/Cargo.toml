@@ -58,6 +58,7 @@ log4rs = "1.2.0"
 systemstat = { version = "0.2.3", features = ["serde"] }
 thotp = "0.1.11"
 etag = { version = "4.0.0", features = ["std"] }
+webauthn-rs = "0.4.8"
 
 [target.'cfg(not(target_os = "windows"))'.dependencies]
 ptyprocess = "0.4.1"

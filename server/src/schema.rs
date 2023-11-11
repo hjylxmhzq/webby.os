@@ -41,6 +41,7 @@ diesel::table! {
         user_root -> Text,
         group_name -> Text,
         otp_secret -> Nullable<Text>,
+        web_authn_id -> Nullable<Text>,
     }
 }
 

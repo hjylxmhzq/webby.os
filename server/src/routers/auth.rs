@@ -98,7 +98,7 @@ pub async fn login(
   let user_data = sess.get::<UserSessionData>("user")?;
 
   let user = user.get(0).unwrap();
-  
+
   let otp_code = body.otp_code.clone().map_or(String::new(), |v| v);
   let success = verify_otp(&user.username, &otp_code)?;
   if !success {
@@ -149,9 +149,7 @@ pub async fn enable_otp(
   Ok(create_resp(true, result, "done"))
 }
 
-pub async fn is_otp_enabled(
-  sess: Session,
-) -> Result<HttpResponse, AppError> {
+pub async fn is_otp_enabled(sess: Session) -> Result<HttpResponse, AppError> {
   let user_data = sess
     .get::<UserSessionData>("user")?
     .ok_or_else(|| AppError::new("no use session data"))?;
@@ -356,7 +354,7 @@ async fn user_info(sess: Session) -> Result<HttpResponse, AppError> {
     .filter(username.eq(user_data.username))
     .load::<crate::models::User>(conn)?;
   if _users.len() > 0 {
-    let mut user = &mut _users[0];
+    let user = &mut _users[0];
     user.user_root = "".to_owned();
     return Ok(create_resp(true, user, "done"));
   }
@@ -383,11 +381,47 @@ pub async fn request_one_time_token(
   Ok(create_resp(true, token, "done"))
 }
 
+#[derive(Debug, Deserialize)]
+pub struct EnableWebAuthnReq {
+  pub url: String,
+}
+
+pub async fn web_authn_start_register(
+  sess: Session,
+  body: web::Json<EnableWebAuthnReq>,
+  req: HttpRequest,
+) -> Result<HttpResponse, AppError> {
+  use webauthn_rs::prelude::*;
+
+  let user_data = sess.get::<UserSessionData>("user")?.unwrap();
+  let url = &body.url;
+  let rp_origin = Url::parse(url).expect("Invalid URL");
+  let rp_id = rp_origin.domain().expect("Invalid host");
+  println!("rp_id: {} {:#?} {}", rp_id, rp_origin, url);
+  let builder = WebauthnBuilder::new(rp_id, &rp_origin).expect("Invalid configuration");
+  let builder = builder.rp_name("webby_os");
+  let web_authn = builder.build().expect("Invalid configuration");
+  let exclude_credentials = Option::None;
+
+  let user_unique_id = Uuid::new_v4();
+  let (ccr, reg_state) = web_authn
+    .start_passkey_registration(user_unique_id, &user_data.username, &user_data.username, exclude_credentials)
+    .unwrap();
+  let user_data = sess.get::<UserSessionData>("user")?.unwrap();
+
+  println!("user_data: {:#?} {:#?} {:#?}", user_data, ccr, reg_state);
+  Ok(create_resp(true, ccr, "done"))
+}
+
 pub fn auth_routers() -> Scope {
   web::scope("/auth")
     .route("/login", web::post().to(login))
     .route("/enable_otp", web::post().to(enable_otp))
     .route("/disable_otp", web::post().to(disbale_otp))
+    .route(
+      "/web_authn_start_register",
+      web::post().to(web_authn_start_register),
+    )
     .route("/is_otp_enabled", web::post().to(is_otp_enabled))
     .route("/reset_password", web::post().to(reset_password))
     .route("/register", web::post().to(register))
